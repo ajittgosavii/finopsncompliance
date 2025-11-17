@@ -525,6 +525,17 @@ def get_github_client(token: str):
         st.error(f"Error initializing GitHub client: {str(e)}")
         return None
 
+def get_claude_client(api_key: str):
+    """Initialize Anthropic Claude client"""
+    try:
+        # Initialize Anthropic client with API key
+        client = anthropic.Anthropic(api_key=api_key)
+        # Test the connection with a simple request
+        return client
+    except Exception as e:
+        st.error(f"Error initializing Claude client: {str(e)}")
+        return None
+
 # ============================================================================
 # AWS DATA FETCHING FUNCTIONS
 # ============================================================================
@@ -4150,7 +4161,7 @@ def render_sidebar():
                         st.rerun()
         
         except Exception as e:
-    # Ignore exceptions if already connected - everything is working
+            # Ignore exceptions if already connected - everything is working
             pass
 
         st.markdown("---")
