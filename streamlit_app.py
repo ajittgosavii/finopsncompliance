@@ -2791,7 +2791,7 @@ def render_main_header():
     """Render main application header"""
     st.markdown("""
     <div class='main-header'>
-        <h1>🛡️ AI-Enhanced AWS Compliance Platform</h1>
+        <h1>🛡️ AI-Enhanced AWS FinOps & Compliance Platform</h1>
         <p>Multi-Account Security Monitoring | Automated Remediation | GitOps Integration | Account Lifecycle Management</p>
         <div class='company-badge'>Future Minds</div>
         <div class='stats'>
