@@ -343,6 +343,19 @@ st.markdown("""
 
 def initialize_session_state():
     """Initialize all session state variables"""
+    if 'initialized' not in st.session_state:
+        st.session_state.initialized = True
+        st.session_state.aws_connected = False
+        st.session_state.demo_mode = False
+        
+        # ✅ ADD THESE LINES
+        if 'service_status' not in st.session_state:
+            st.session_state.service_status = {
+                'Cost Explorer': 'Unknown',
+                'Cost Anomaly Detection': 'Unknown',
+                'Compute Optimizer': 'Unknown'
+            }
+        # ✅ END OF ADDITION
     defaults = {
         # Connection status
         'aws_connected': False,
@@ -446,8 +459,37 @@ def get_aws_clients(access_key: str, secret_key: str, region: str):
             # AI Services
             'bedrock-runtime': session.client('bedrock-runtime')
         }
+
+    # ✅ ADD THIS SECTION HERE (before return)
+        # FinOps Services
+    try:
+            clients['ce'] = session.client('ce', region_name='us-east-1')
+            st.session_state.service_status['Cost Explorer'] = 'Active'
+    except Exception as e:
+            clients['ce'] = None
+            st.session_state.service_status['Cost Explorer'] = 'Inactive'
+        
+    try:
+            clients['compute_optimizer'] = session.client('compute-optimizer')
+            st.session_state.service_status['Compute Optimizer'] = 'Active'
+    except Exception as e:
+            clients['compute_optimizer'] = None
+            st.session_state.service_status['Compute Optimizer'] = 'Inactive'
+        
+    if clients.get('ce'):
+            st.session_state.service_status['Cost Anomaly Detection'] = 'Active'
+    else:
+            st.session_state.service_status['Cost Anomaly Detection'] = 'Inactive'
+        
+        st.session_state.boto3_session = session
+        # ✅ END OF ADDED SECTION    
+
+    
     except Exception as e:
         st.error(f"Error initializing AWS clients: {str(e)}")
+        st.session_state.service_status['Cost Explorer'] = 'Inactive'
+        st.session_state.service_status['Compute Optimizer'] = 'Inactive'
+        st.session_state.service_status['Cost Anomaly Detection'] = 'Inactive'
         return None
     # Add to your initialize_aws_clients() function or equivalent
     try:
