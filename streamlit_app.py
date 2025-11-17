@@ -4151,7 +4151,7 @@ def render_sidebar():
         
         except Exception as e:
             if not demo_mode:
-                st.error("⚠️ Configure secrets.toml file")
+                #st.error("⚠️ Configure secrets.toml file")
                 st.info("""
                 Create `.streamlit/secrets.toml`:
             [aws]
