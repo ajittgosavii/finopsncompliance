@@ -462,24 +462,24 @@ def get_aws_clients(access_key: str, secret_key: str, region: str):
 
     # ✅ ADD THIS SECTION HERE (before return)
         # FinOps Services
-    try:
-            clients['ce'] = session.client('ce', region_name='us-east-1')
-            st.session_state.service_status['Cost Explorer'] = 'Active'
-    except Exception as e:
-            clients['ce'] = None
-            st.session_state.service_status['Cost Explorer'] = 'Inactive'
-        
-    try:
-            clients['compute_optimizer'] = session.client('compute-optimizer')
-            st.session_state.service_status['Compute Optimizer'] = 'Active'
-    except Exception as e:
-            clients['compute_optimizer'] = None
-            st.session_state.service_status['Compute Optimizer'] = 'Inactive'
-        
-    if clients.get('ce'):
-            st.session_state.service_status['Cost Anomaly Detection'] = 'Active'
-    else:
-            st.session_state.service_status['Cost Anomaly Detection'] = 'Inactive'
+        try:
+                clients['ce'] = session.client('ce', region_name='us-east-1')
+                st.session_state.service_status['Cost Explorer'] = 'Active'
+        except Exception as e:
+                clients['ce'] = None
+                st.session_state.service_status['Cost Explorer'] = 'Inactive'
+            
+        try:
+                clients['compute_optimizer'] = session.client('compute-optimizer')
+                st.session_state.service_status['Compute Optimizer'] = 'Active'
+        except Exception as e:
+                clients['compute_optimizer'] = None
+                st.session_state.service_status['Compute Optimizer'] = 'Inactive'
+            
+        if clients.get('ce'):
+                st.session_state.service_status['Cost Anomaly Detection'] = 'Active'
+        else:
+                st.session_state.service_status['Cost Anomaly Detection'] = 'Inactive'
         
         st.session_state.boto3_session = session
         # ✅ END OF ADDED SECTION    
