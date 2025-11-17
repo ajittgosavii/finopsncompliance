@@ -1,5 +1,5 @@
 """
-Future Minds | AI-Enhanced AWS Compliance Platform
+Future Minds | AI-Enhanced AWS FinOps & Compliance Platform
 Multi-Account Security Monitoring, Automated Remediation, Account Lifecycle Management & FinOps Integration
 
 Integrated Services:
