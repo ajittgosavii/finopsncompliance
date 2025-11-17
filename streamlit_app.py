@@ -5450,7 +5450,7 @@ def main():
         "🤖 AI Remediation",
         "🐙 GitHub & GitOps",
         "🔄 Account Lifecycle",
-        "🔍 Security Findings"
+        "🔍 Security Findings",
         "💰 FinOps & Cost Management"  # 🆕 NEW TAB
     ])
     
