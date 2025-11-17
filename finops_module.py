@@ -994,6 +994,7 @@ def render_spend_analytics():
     st.markdown("---")
     
     # Service breakdown
+    # Service breakdown
     st.markdown("#### 🔧 Cost by Service")
     
     if cost_data and 'ResultsByTime' in cost_data:
@@ -1021,11 +1022,11 @@ def render_spend_analytics():
             )
             st.plotly_chart(fig_pie, use_container_width=True)
             
-            # Service table
+            # Service table - Calculate percentage BEFORE formatting
+            df_services['Percentage'] = df_services['Cost'].apply(
+                lambda x: f"{(x / total_cost * 100):.1f}%" if total_cost > 0 else "0.0%"
+            )
             df_services['Cost'] = df_services['Cost'].apply(lambda x: f"${x:,.2f}")
-            df_services['Percentage'] = (df_services.index.map(
-                lambda i: (service_costs[df_services.iloc[i]['Service']] / total_cost * 100)
-            )).apply(lambda x: f"{x:.1f}%")
             
             st.dataframe(df_services, use_container_width=True, hide_index=True)
 
