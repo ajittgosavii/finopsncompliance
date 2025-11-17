@@ -468,7 +468,7 @@ def get_aws_clients(access_key: str, secret_key: str, region: str):
         
         # Cost Explorer (must use us-east-1)
         try:
-            clients['ce'] = session.client('ce', region_name='us-east-2')
+            clients['ce'] = session.client('ce', region_name='us-east-1')
             st.session_state.service_status['Cost Explorer'] = 'active'
             print("✅ Cost Explorer initialized: active")
         except Exception as e:
