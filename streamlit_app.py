@@ -4171,7 +4171,7 @@ def render_sidebar():
             #where you've enabled Security Hub in your AWS account.
             #""")
         
-        st.markdown("---")
+        #st.markdown("---")
         
         # Portfolio & Service Filters
         st.markdown("### 🎛️ Filters")
