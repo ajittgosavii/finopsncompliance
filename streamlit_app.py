@@ -2841,6 +2841,13 @@ def render_service_status_grid():
     st.markdown("### 🎛️ Service Status Overview")
     
     # CHECK DEMO MODE
+    # Replace the services dictionary section in render_service_status_grid()
+# Starting around line 2845
+
+def render_service_status_grid():
+    """Render service status grid showing all integrated AWS services"""
+    st.markdown("### 🔧 Integrated Services Status")
+    
     if st.session_state.get('demo_mode', False):
         # DEMO MODE - Show demo data
         services = {
@@ -2852,9 +2859,21 @@ def render_service_status_grid():
             'Service Control Policies': {'status': 'active', 'policies': 24, 'violations': 4},
             'OPA Policies': {'status': 'active', 'policies': 18, 'violations': 19},
             'KICS Scanning': {'status': 'active', 'scans': 45, 'issues': 67},
-            'Cost Explorer': st.session_state.service_status.get('Cost Explorer', 'Unknown'),
-            'Cost Anomaly Detection': st.session_state.service_status.get('Cost Anomaly Detection', 'Unknown'),
-            'Compute Optimizer': st.session_state.service_status.get('Compute Optimizer', 'Unknown'),
+            'Cost Explorer': {
+                'status': 'active',
+                'region': 'us-east-1',
+                'api_calls': '45/day'
+            },
+            'Cost Anomaly Detection': {
+                'status': 'active',
+                'monitors': 2,
+                'anomalies': 3
+            },
+            'Compute Optimizer': {
+                'status': 'active',
+                'recommendations': 12,
+                'savings': '$216'
+            },
         }
     else:
         # LIVE MODE - Get real data from AWS
@@ -2864,7 +2883,7 @@ def render_service_status_grid():
             # Security Hub
             sec_hub_data = st.session_state.get('security_hub_data', {})
             services['Security Hub'] = {
-                'status': 'active',  # Show active when connected to AWS
+                'status': 'active',
                 'accounts': st.session_state.get('sec_hub_accounts', 'All'),
                 'findings': sec_hub_data.get('total_findings', 0) if sec_hub_data else 0
             }
@@ -2872,7 +2891,7 @@ def render_service_status_grid():
             # AWS Config
             config_data = st.session_state.get('config_data', {})
             services['AWS Config'] = {
-                'status': 'active',  # Show active when connected to AWS
+                'status': 'active',
                 'accounts': st.session_state.get('config_accounts', 'All'),
                 'rules': config_data.get('total_rules', 0) if config_data else 0
             }
@@ -2880,7 +2899,7 @@ def render_service_status_grid():
             # GuardDuty
             guardduty_data = st.session_state.get('guardduty_data', {})
             services['GuardDuty'] = {
-                'status': 'active',  # Show active when connected to AWS
+                'status': 'active',
                 'accounts': st.session_state.get('guardduty_accounts', 'All'),
                 'threats': guardduty_data.get('active_threats', 0) if guardduty_data else 0
             }
@@ -2888,7 +2907,7 @@ def render_service_status_grid():
             # Inspector
             inspector_data = st.session_state.get('inspector_data', {})
             services['Inspector'] = {
-                'status': 'active',  # Show active when connected to AWS
+                'status': 'active',
                 'accounts': st.session_state.get('inspector_accounts', 'All'),
                 'vulns': inspector_data.get('total_findings', 0) if inspector_data else 0
             }
@@ -2923,6 +2942,30 @@ def render_service_status_grid():
                 'scans': kics_data.get('total_scans', 0),
                 'issues': kics_data.get('total_issues', 0)
             }
+            
+            # Cost Explorer (FinOps)
+            ce_status = st.session_state.service_status.get('Cost Explorer', 'inactive')
+            services['Cost Explorer'] = {
+                'status': ce_status.lower() if isinstance(ce_status, str) else 'inactive',
+                'region': 'us-east-1',
+                'enabled': ce_status == 'Active'
+            }
+            
+            # Cost Anomaly Detection (FinOps)
+            anomaly_status = st.session_state.service_status.get('Cost Anomaly Detection', 'inactive')
+            services['Cost Anomaly Detection'] = {
+                'status': anomaly_status.lower() if isinstance(anomaly_status, str) else 'inactive',
+                'monitors': st.session_state.get('anomaly_monitors', 0),
+                'anomalies': st.session_state.get('recent_anomalies', 0)
+            }
+            
+            # Compute Optimizer (FinOps)
+            optimizer_status = st.session_state.service_status.get('Compute Optimizer', 'inactive')
+            services['Compute Optimizer'] = {
+                'status': optimizer_status.lower() if isinstance(optimizer_status, str) else 'inactive',
+                'recommendations': st.session_state.get('optimization_count', 0),
+                'savings': f"${st.session_state.get('potential_savings', 0):.0f}"
+            }
         else:
             # Not connected - show inactive
             services = {
@@ -2933,7 +2976,10 @@ def render_service_status_grid():
                 'CloudTrail': {'status': 'inactive', 'accounts': 'N/A', 'events': 0},
                 'Service Control Policies': {'status': 'inactive', 'policies': 0, 'violations': 0},
                 'OPA Policies': {'status': 'inactive', 'policies': 0, 'violations': 0},
-                'KICS Scanning': {'status': 'inactive', 'scans': 0, 'issues': 0}
+                'KICS Scanning': {'status': 'inactive', 'scans': 0, 'issues': 0},
+                'Cost Explorer': {'status': 'inactive', 'region': 'N/A', 'enabled': False},
+                'Cost Anomaly Detection': {'status': 'inactive', 'monitors': 0, 'anomalies': 0},
+                'Compute Optimizer': {'status': 'inactive', 'recommendations': 0, 'savings': '$0'},
             }
     
     cols = st.columns(4)
@@ -2943,15 +2989,20 @@ def render_service_status_grid():
             status_class = 'active' if data['status'] == 'active' else 'inactive'
             badge_html = f'<span class="service-badge {status_class}">{data["status"].upper()}</span>'
             
-            # Get the first metric key/value
-            metric_key = list(data.keys())[1]
-            metric_value = data[metric_key]
+            # Get the first metric key/value (skip 'status')
+            metric_keys = [k for k in data.keys() if k != 'status']
+            if metric_keys:
+                metric_key = metric_keys[0]
+                metric_value = data[metric_key]
+            else:
+                metric_key = 'Status'
+                metric_value = data['status']
             
             st.markdown(f"""
             <div style='padding: 1rem; background: white; border-radius: 8px; margin: 0.5rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
                 <strong>{service}</strong><br>
                 {badge_html}<br>
-                <small>{metric_key.title()}: {metric_value}</small>
+                <small>{metric_key.title().replace('_', ' ')}: {metric_value}</small>
             </div>
             """, unsafe_allow_html=True)
 
