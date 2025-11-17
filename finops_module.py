@@ -1023,8 +1023,10 @@ def render_spend_analytics():
             st.plotly_chart(fig_pie, use_container_width=True)
             
             # Service table - Calculate percentage BEFORE formatting
+            # Use sum of service_costs instead of total_cost for accurate percentage
+            service_total = sum(service_costs.values())
             df_services['Percentage'] = df_services['Cost'].apply(
-                lambda x: f"{(x / total_cost * 100):.1f}%" if total_cost > 0 else "0.0%"
+                lambda x: f"{(x / service_total * 100):.1f}%" if service_total > 0 else "0.0%"
             )
             df_services['Cost'] = df_services['Cost'].apply(lambda x: f"${x:,.2f}")
             
