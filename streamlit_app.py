@@ -4194,9 +4194,19 @@ def render_sidebar():
         
         # System Status
         st.markdown("### 📡 System Status")
-        st.markdown(f"{'✅' if st.session_state.get('aws_connected') else '❌'} AWS Connected")
-        st.markdown(f"{'✅' if st.session_state.get('claude_connected') else '❌'} Claude AI Connected")
-        st.markdown(f"{'✅' if st.session_state.get('github_connected') else '❌'} GitHub Connected")
+        
+        # ✅ FIX: Show demo status or real status based on mode
+        if st.session_state.get('demo_mode', False):
+            # Demo Mode - Show all as connected
+            st.markdown("✅ AWS Connected *(Demo)*")
+            st.markdown("✅ Claude AI Connected *(Demo)*")
+            st.markdown("✅ GitHub Connected *(Demo)*")
+        else:
+            # Live Mode - Show actual status
+            st.markdown(f"{'✅' if st.session_state.get('aws_connected') else '❌'} AWS Connected")
+            st.markdown(f"{'✅' if st.session_state.get('claude_connected') else '❌'} Claude AI Connected")
+            st.markdown(f"{'✅' if st.session_state.get('github_connected') else '❌'} GitHub Connected")
+        
         st.markdown(f"✅ Multi-Account Monitoring Active")
         st.markdown(f"✅ Last Updated: {datetime.now().strftime('%H:%M:%S')}")
         
@@ -4758,7 +4768,8 @@ def render_github_gitops_tab():
     """Render GitHub & GitOps integration tab with Detection and Remediation workflow"""
     st.markdown("## 🐙 GitHub & GitOps Integration")
     
-    if not st.session_state.get('github_connected'):
+    # ✅ FIX: Only show warning if in LIVE mode AND not connected
+    if not st.session_state.get('demo_mode', False) and not st.session_state.get('github_connected'):
         st.warning("⚠️ Configure GitHub token in sidebar to enable GitOps features")
         return
     
