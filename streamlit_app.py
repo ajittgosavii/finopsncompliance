@@ -429,7 +429,8 @@ def get_aws_clients(access_key: str, secret_key: str, region: str):
             region_name=region
         )
         
-        return {
+        # Initialize clients dictionary
+        clients = {
             # Security Services
             'securityhub': session.client('securityhub'),
             'config': session.client('config'),
@@ -459,54 +460,59 @@ def get_aws_clients(access_key: str, secret_key: str, region: str):
             # AI Services
             'bedrock-runtime': session.client('bedrock-runtime')
         }
-
-    # ✅ ADD THIS SECTION HERE (before return)
-        # FinOps Services
-        try:
-                clients['ce'] = session.client('ce', region_name='us-east-1')
-                st.session_state.service_status['Cost Explorer'] = 'Active'
-        except Exception as e:
-                clients['ce'] = None
-                st.session_state.service_status['Cost Explorer'] = 'Inactive'
-            
-        try:
-                clients['compute_optimizer'] = session.client('compute-optimizer')
-                st.session_state.service_status['Compute Optimizer'] = 'Active'
-        except Exception as e:
-                clients['compute_optimizer'] = None
-                st.session_state.service_status['Compute Optimizer'] = 'Inactive'
-            
-        if clients.get('ce'):
-                st.session_state.service_status['Cost Anomaly Detection'] = 'Active'
-        else:
-                st.session_state.service_status['Cost Anomaly Detection'] = 'Inactive'
         
+        # FinOps Services - Initialize BEFORE returning
+        # Initialize service_status if it doesn't exist
+        if 'service_status' not in st.session_state:
+            st.session_state.service_status = {}
+        
+        # Cost Explorer (must use us-east-1)
+        try:
+            clients['ce'] = session.client('ce', region_name='us-east-1')
+            st.session_state.service_status['Cost Explorer'] = 'active'
+            print("✅ Cost Explorer initialized: active")
+        except Exception as e:
+            clients['ce'] = None
+            st.session_state.service_status['Cost Explorer'] = 'inactive'
+            print(f"⚠️ Cost Explorer initialization failed: {e}")
+        
+        # Compute Optimizer
+        try:
+            clients['compute_optimizer'] = session.client('compute-optimizer', region_name=region)
+            st.session_state.service_status['Compute Optimizer'] = 'active'
+            print("✅ Compute Optimizer initialized: active")
+        except Exception as e:
+            clients['compute_optimizer'] = None
+            st.session_state.service_status['Compute Optimizer'] = 'inactive'
+            print(f"⚠️ Compute Optimizer initialization failed: {e}")
+        
+        # Cost Anomaly Detection (uses Cost Explorer)
+        if clients.get('ce'):
+            st.session_state.service_status['Cost Anomaly Detection'] = 'active'
+            print("✅ Cost Anomaly Detection: active (via Cost Explorer)")
+        else:
+            st.session_state.service_status['Cost Anomaly Detection'] = 'inactive'
+            print("⚠️ Cost Anomaly Detection: inactive (no Cost Explorer)")
+        
+        # Store boto3 session for finops_module to use
         st.session_state.boto3_session = session
-        # ✅ END OF ADDED SECTION    
-
-    
+        
+        # Debug: Print final service status
+        print(f"DEBUG: Final service_status = {st.session_state.service_status}")
+        
+        # Return clients dictionary with ALL services initialized
+        return clients
+        
     except Exception as e:
         st.error(f"Error initializing AWS clients: {str(e)}")
-        st.session_state.service_status['Cost Explorer'] = 'Inactive'
-        st.session_state.service_status['Compute Optimizer'] = 'Inactive'
-        st.session_state.service_status['Cost Anomaly Detection'] = 'Inactive'
-        return None
-    # Add to your initialize_aws_clients() function or equivalent
-    try:
-        clients['ce'] = session.client('ce', region_name='us-east-1')  # Cost Explorer is only in us-east-1
-        st.session_state.service_status['Cost Explorer'] = 'Active'
-    except Exception as e:
-        st.warning(f"Cost Explorer not available: {str(e)}")
-        st.session_state.service_status['Cost Explorer'] = 'Inactive'
-
-
-@st.cache_resource
-def get_claude_client(api_key: str):
-    """Initialize Anthropic Claude client"""
-    try:
-        return anthropic.Anthropic(api_key=api_key)
-    except Exception as e:
-        st.error(f"Error initializing Claude client: {str(e)}")
+        
+        # Set all FinOps services as inactive on error
+        if 'service_status' not in st.session_state:
+            st.session_state.service_status = {}
+        st.session_state.service_status['Cost Explorer'] = 'inactive'
+        st.session_state.service_status['Compute Optimizer'] = 'inactive'
+        st.session_state.service_status['Cost Anomaly Detection'] = 'inactive'
+        
         return None
 
 def get_github_client(token: str):
