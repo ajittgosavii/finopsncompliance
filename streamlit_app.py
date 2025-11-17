@@ -2851,7 +2851,7 @@ def render_service_status_grid():
             'CloudTrail': {'status': 'active', 'accounts': 'All', 'events': '2.4M/day'},
             'Service Control Policies': {'status': 'active', 'policies': 24, 'violations': 4},
             'OPA Policies': {'status': 'active', 'policies': 18, 'violations': 19},
-            'KICS Scanning': {'status': 'active', 'scans': 45, 'issues': 67}
+            'KICS Scanning': {'status': 'active', 'scans': 45, 'issues': 67},
             'Cost Explorer': st.session_state.service_status.get('Cost Explorer', 'Unknown'),
             'Cost Anomaly Detection': st.session_state.service_status.get('Cost Anomaly Detection', 'Unknown'),
             'Compute Optimizer': st.session_state.service_status.get('Compute Optimizer', 'Unknown'),
