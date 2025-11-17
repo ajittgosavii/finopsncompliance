@@ -1,6 +1,6 @@
 """
 Future Minds | AI-Enhanced AWS Compliance Platform
-Multi-Account Security Monitoring, Automated Remediation & Account Lifecycle Management
+Multi-Account Security Monitoring, Automated Remediation, Account Lifecycle Management & FinOps Integration
 
 Integrated Services:
 - AWS Security Hub, Config, GuardDuty, Inspector, CloudTrail
@@ -12,6 +12,7 @@ Integrated Services:
 - Account Lifecycle Management (Onboarding/Offboarding)
 - CI/CD Pipeline Integration
 - Portfolio-Based Account Organization
+- FinOps Module for Cost Management & Optimization
 
 Features:
 ✓ AI-Powered Detection & Analysis (Claude/Bedrock)
@@ -23,6 +24,8 @@ Features:
 ✓ Multi-Portfolio Support (Retail, Healthcare, Financial)
 ✓ Real-time Compliance Monitoring
 ✓ Automated CI/CD Pipeline Integration
+✓ FinOps Dashboard & Cost Optimization
+
 
 Company: Future Minds
 Version: 4.0 - AWS Edition
