@@ -4169,7 +4169,7 @@ def render_sidebar():
             
             #**Note:** Security Hub is a regional service. Ensure the region matches 
             #where you've enabled Security Hub in your AWS account.
-            """)
+            #""")
         
         st.markdown("---")
         
