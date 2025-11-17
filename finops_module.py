@@ -32,6 +32,9 @@ def fetch_cost_data(ce_client, start_date: str, end_date: str, granularity: str 
         return generate_demo_cost_data()
     
     try:
+        # Debug: Show what we're querying
+        st.info(f"📊 Fetching cost data from {start_date} to {end_date} with {granularity} granularity")
+        
         response = ce_client.get_cost_and_usage(
             TimePeriod={
                 'Start': start_date,
@@ -43,9 +46,73 @@ def fetch_cost_data(ce_client, start_date: str, end_date: str, granularity: str 
                 {'Type': 'DIMENSION', 'Key': 'SERVICE'},
             ]
         )
+        
+        # Debug: Check if we got data
+        if response and 'ResultsByTime' in response:
+            num_results = len(response['ResultsByTime'])
+            st.success(f"✅ Successfully fetched {num_results} time periods of data")
+            
+            # Check if there's actually any cost data
+            total_check = 0
+            for result in response['ResultsByTime']:
+                total_check += float(result['Total'].get('UnblendedCost', {}).get('Amount', 0))
+            
+            if total_check == 0:
+                st.warning("⚠️ Cost Explorer returned data but all costs are $0.00. Trying alternative query...")
+                
+                # Try without GroupBy to see if we can get any data
+                try:
+                    alt_response = ce_client.get_cost_and_usage(
+                        TimePeriod={
+                            'Start': start_date,
+                            'End': end_date
+                        },
+                        Granularity=granularity,
+                        Metrics=['UnblendedCost']
+                    )
+                    
+                    alt_total = 0
+                    if alt_response and 'ResultsByTime' in alt_response:
+                        for result in alt_response['ResultsByTime']:
+                            alt_total += float(result['Total'].get('UnblendedCost', {}).get('Amount', 0))
+                    
+                    if alt_total > 0:
+                        st.warning(f"⚠️ Found ${alt_total:.2f} in total costs without service grouping.\n"
+                                  "This indicates the issue is with the GROUP BY SERVICE dimension.\n"
+                                  "Possible causes:\n"
+                                  "- Portfolio filter may be applied but not passed to Cost Explorer\n"
+                                  "- Service dimension might not be available in this account")
+                    else:
+                        st.warning("⚠️ No cost data found even without grouping. This indicates:\n"
+                                  "- No usage in the selected time period\n"
+                                  "- Cost data not yet available (AWS has 24-48h delay)\n"
+                                  "- Account might not have Cost Explorer enabled\n"
+                                  "- Insufficient permissions to view cost data")
+                except Exception as inner_e:
+                    st.error(f"Alternative query also failed: {str(inner_e)}")
+        else:
+            st.warning("⚠️ Cost Explorer response has no 'ResultsByTime' data")
+        
         return response
+        
     except ClientError as e:
-        st.error(f"Error fetching cost data: {str(e)}")
+        error_code = e.response.get('Error', {}).get('Code', 'Unknown')
+        error_msg = e.response.get('Error', {}).get('Message', str(e))
+        st.error(f"❌ Error fetching cost data:\n**Error Code:** {error_code}\n**Message:** {error_msg}")
+        
+        # Provide helpful suggestions based on error code
+        if error_code == 'AccessDeniedException':
+            st.error("💡 **Solution:** Ensure your IAM role/user has the `ce:GetCostAndUsage` permission")
+        elif error_code == 'DataUnavailableException':
+            st.error("💡 **Solution:** Cost data may not be available yet. AWS Cost Explorer has a 24-48 hour delay")
+        elif error_code == 'InvalidNextTokenException':
+            st.error("💡 **Solution:** Try refreshing the page")
+        
+        return generate_demo_cost_data()
+    except Exception as e:
+        st.error(f"❌ Unexpected error: {str(e)}")
+        import traceback
+        st.code(traceback.format_exc())
         return generate_demo_cost_data()
 
 def fetch_cost_by_portfolio(ce_client, start_date: str, end_date: str, portfolio_tag: str = 'Portfolio') -> Dict:
@@ -922,6 +989,44 @@ def render_spend_analytics():
     """Render spend analytics dashboard"""
     st.markdown("### 📊 AWS Spend Analytics")
     
+    # Diagnostic section - Add expander for troubleshooting
+    with st.expander("🔍 Troubleshooting & Diagnostics", expanded=False):
+        st.markdown("#### Connection Status")
+        
+        # Check session state
+        has_session = st.session_state.get('boto3_session') is not None
+        has_ce_client = st.session_state.get('aws_clients', {}).get('ce') is not None
+        demo_mode = st.session_state.get('demo_mode', False)
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Boto3 Session", "✅ Connected" if has_session else "❌ Not Found")
+        with col2:
+            st.metric("Cost Explorer Client", "✅ Available" if has_ce_client else "❌ Missing")
+        with col3:
+            st.metric("Mode", "🎭 Demo" if demo_mode else "🔴 Live")
+        
+        if not has_ce_client:
+            st.error("**Cost Explorer client is not initialized.** This could mean:\n"
+                    "- AWS credentials are not properly configured\n"
+                    "- The session initialization failed\n"
+                    "- Cost Explorer service is not available in your region")
+        
+        st.markdown("---")
+        st.markdown("#### Quick Fixes")
+        
+        fix_col1, fix_col2 = st.columns(2)
+        
+        with fix_col1:
+            if st.button("🔄 Re-initialize AWS Session"):
+                st.info("This would re-initialize your AWS session. Please reconnect via the sidebar.")
+        
+        with fix_col2:
+            if st.button("🎭 Switch to Demo Mode"):
+                st.session_state['demo_mode'] = True
+                st.success("Switched to Demo Mode! Refresh to see demo data.")
+                st.rerun()
+    
     # Date range selector
     col1, col2, col3 = st.columns([2, 2, 1])
     with col1:
@@ -962,6 +1067,33 @@ def render_spend_analytics():
             st.metric("Trend", f"{trend:+.1f}%", delta=f"{trend:+.1f}%")
         else:
             st.metric("Trend", "N/A")
+    
+    # Debug: Show raw API response
+    with st.expander("🔍 View Raw API Response (Debug)", expanded=False):
+        if cost_data:
+            st.json(cost_data)
+            
+            # Provide analysis
+            st.markdown("#### Response Analysis")
+            if 'ResultsByTime' in cost_data:
+                st.success(f"✅ Found {len(cost_data['ResultsByTime'])} time periods")
+                
+                # Count services
+                service_count = 0
+                for result in cost_data.get('ResultsByTime', []):
+                    service_count += len(result.get('Groups', []))
+                
+                st.info(f"📊 Total service entries: {service_count}")
+                
+                if service_count == 0:
+                    st.warning("⚠️ No services found in response. This usually means:\n"
+                              "1. No AWS resources were running during this period\n"
+                              "2. Cost data is not yet available (24-48h delay)\n"
+                              "3. You don't have permission to view service-level details")
+            else:
+                st.error("❌ No 'ResultsByTime' in response")
+        else:
+            st.error("❌ No data returned from Cost Explorer")
     
     st.markdown("---")
     
