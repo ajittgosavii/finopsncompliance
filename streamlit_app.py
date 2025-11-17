@@ -4151,7 +4151,7 @@ def render_sidebar():
         
         except Exception as e:
     # Ignore exceptions if already connected - everything is working
-        pass
+            pass
 
         st.markdown("---")
         
