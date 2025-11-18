@@ -43,11 +43,19 @@ def get_anthropic_client():
     # Try to get API key from multiple sources
     api_key = None
     
-    # 1. Try Streamlit secrets
-    if hasattr(st, 'secrets') and 'ANTHROPIC_API_KEY' in st.secrets:
+    # 1. Try Streamlit secrets - nested format [anthropic] section
+    if hasattr(st, 'secrets'):
+        try:
+            if 'anthropic' in st.secrets and 'api_key' in st.secrets['anthropic']:
+                api_key = st.secrets['anthropic']['api_key']
+        except Exception:
+            pass
+    
+    # 2. Try Streamlit secrets - direct format
+    if not api_key and hasattr(st, 'secrets') and 'ANTHROPIC_API_KEY' in st.secrets:
         api_key = st.secrets['ANTHROPIC_API_KEY']
     
-    # 2. Try environment variable
+    # 3. Try environment variable
     if not api_key:
         api_key = os.environ.get('ANTHROPIC_API_KEY')
     
