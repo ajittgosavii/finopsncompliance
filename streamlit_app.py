@@ -44,6 +44,7 @@ from typing import Dict, List, Any, Optional, Tuple
 import time
 import hashlib
 import base64
+from pipeline_simulator import render_pipeline_simulator
 # Import FinOps module
 # WITH this import:
 # Import AI-Enhanced FinOps module
@@ -5616,7 +5617,8 @@ def main():
         "🐙 GitHub & GitOps",
         "🔄 Account Lifecycle",
         "🔍 Security Findings",
-        "💰 FinOps & Cost Management"  # 🆕 NEW TAB
+        "💰 FinOps & Cost Management",
+        "🔄 Pipeline Simulator"  # 🆕 ADD THIS  # 🆕 NEW TAB
     ])
     
     with tabs[0]:
@@ -5695,6 +5697,8 @@ def main():
             render_enhanced_finops_dashboard()
         else:
             render_finops_dashboard()
+    with tabs[8]:  # 🆕 Pipeline Simulator tab
+        render_pipeline_simulator()
     # Footer
     st.markdown("---")
     st.markdown("""
