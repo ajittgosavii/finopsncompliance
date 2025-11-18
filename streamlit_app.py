@@ -45,12 +45,40 @@ import time
 import hashlib
 import base64
 # Import FinOps module
-from finops_module import (
-    render_finops_dashboard,
+# WITH this import:
+# Import AI-Enhanced FinOps module
+from finops_module_enhanced_complete import (
+    render_enhanced_finops_dashboard,
+    render_finops_dashboard,  # Keep for backward compatibility
     fetch_cost_data,
     fetch_tag_compliance,
     fetch_resource_inventory,
-    fetch_cost_optimization_recommendations
+    fetch_cost_optimization_recommendations,
+    get_anthropic_client
+)
+    
+    # AI-powered functions
+    analyze_costs_with_ai,
+    generate_rightsizing_recommendations_ai,
+    detect_anomalies_with_ai,
+    natural_language_query,
+    generate_executive_report_ai,
+    suggest_cost_allocation_strategy,
+    
+    # UI components
+    render_ai_insights_panel,
+    render_ai_query_interface,
+    render_ai_rightsizing_advisor,
+    render_ai_anomaly_detection,
+    render_ai_executive_report,
+    
+    # Utility functions
+    get_anthropic_client,
+    
+    # Original functions (backward compatible)
+    fetch_cost_data,
+    fetch_tag_compliance,
+    fetch_resource_inventory
 )
 
 # Note: Uncomment these imports when deploying with required packages
@@ -5623,8 +5651,44 @@ def main():
                 # Show empty dataframe structure for reference
                 empty_df = pd.DataFrame(columns=['ID', 'Title', 'Severity', 'Resource', 'Status'])
                 st.dataframe(empty_df, use_container_width=True, hide_index=True)
-    with tabs[7]:  # FinOps tab (8th tab, index 7)
-        render_finops_dashboard()
+    with tabs[7]:  # FinOps tab (8th tab, index 7) - AI-ENHANCED
+        # AI-Enhanced FinOps Dashboard
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #232F3E 0%, #37475A 100%); 
+                    padding: 1rem; 
+                    border-radius: 10px; 
+                    text-align: center;
+                    border-top: 4px solid #FF9900;
+                    margin-bottom: 1rem;'>
+            <h2 style='color: white; margin: 0;'>🤖 AI-Enhanced FinOps Dashboard</h2>
+            <p style='color: #E8F4F8; margin: 0.5rem 0 0 0; font-size: 0.9rem;'>Powered by Anthropic Claude</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Check AI status and show indicator
+        from finops_module_enhanced_complete import get_anthropic_client
+        ai_client = get_anthropic_client()
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            if ai_client:
+                st.success("✅ AI Features Active - Anthropic Claude Connected")
+            else:
+                st.warning("⚠️ AI Features Disabled - Configure ANTHROPIC_API_KEY to enable")
+        
+        with col2:
+            # View selector
+            view_mode = st.selectbox(
+                "View Mode",
+                ["🤖 AI-Enhanced", "📊 Traditional"],
+                help="AI mode uses Anthropic Claude for intelligent insights"
+            )
+        
+        # Render appropriate dashboard
+        if view_mode == "🤖 AI-Enhanced":
+            render_enhanced_finops_dashboard()
+        else:
+            render_finops_dashboard()
     # Footer
     st.markdown("---")
     st.markdown("""
