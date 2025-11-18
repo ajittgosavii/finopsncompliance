@@ -55,7 +55,7 @@ from finops_module_enhanced_complete import (
     fetch_resource_inventory,
     fetch_cost_optimization_recommendations,
     get_anthropic_client
-)
+
     
     # AI-powered functions
     analyze_costs_with_ai,
