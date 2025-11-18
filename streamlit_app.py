@@ -44,41 +44,15 @@ from typing import Dict, List, Any, Optional, Tuple
 import time
 import hashlib
 import base64
-# Import FinOps module
-# WITH this import:
 # Import AI-Enhanced FinOps module
 from finops_module_enhanced_complete import (
     render_enhanced_finops_dashboard,
-    render_finops_dashboard,  # Keep for backward compatibility
+    render_finops_dashboard,
     fetch_cost_data,
     fetch_tag_compliance,
     fetch_resource_inventory,
     fetch_cost_optimization_recommendations,
     get_anthropic_client
-)
-    
-    # AI-powered functions
-    analyze_costs_with_ai,
-    generate_rightsizing_recommendations_ai,
-    detect_anomalies_with_ai,
-    natural_language_query,
-    generate_executive_report_ai,
-    suggest_cost_allocation_strategy,
-    
-    # UI components
-    render_ai_insights_panel,
-    render_ai_query_interface,
-    render_ai_rightsizing_advisor,
-    render_ai_anomaly_detection,
-    render_ai_executive_report,
-    
-    # Utility functions
-    get_anthropic_client,
-    
-    # Original functions (backward compatible)
-    fetch_cost_data,
-    fetch_tag_compliance,
-    fetch_resource_inventory
 )
 
 # Note: Uncomment these imports when deploying with required packages
