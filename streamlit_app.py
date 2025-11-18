@@ -339,6 +339,60 @@ st.markdown("""
         background-color: #FF6B00;
         border-color: #FF6B00;
     }
+    
+    /* ============================================ */
+    /* TAB STYLING - AWS THEME */
+    /* ============================================ */
+    
+    /* Tab container */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #232F3E;
+        padding: 0.5rem 1rem;
+        border-radius: 10px 10px 0 0;
+    }
+    
+    /* Individual tab buttons */
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        padding: 0 24px;
+        background-color: #37475A;
+        border-radius: 8px 8px 0 0;
+        color: #E8F4F8;
+        font-weight: 600;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    /* Tab hover state */
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: #485F78;
+        color: white;
+    }
+    
+    /* Active/Selected tab */
+    .stTabs [aria-selected="true"] {
+        background-color: #FF9900 !important;
+        color: white !important;
+        border-bottom: 3px solid #FF6B00;
+    }
+    
+    /* Tab panel content area */
+    .stTabs [data-baseweb="tab-panel"] {
+        background-color: transparent;
+        padding-top: 1rem;
+    }
+    
+    /* Tab highlight bar */
+    .stTabs [data-baseweb="tab-highlight"] {
+        background-color: #FF9900;
+        height: 3px;
+    }
+    
+    /* Tab border */
+    .stTabs [data-baseweb="tab-border"] {
+        background-color: #37475A;
+    }
 </style>
 """, unsafe_allow_html=True)
 
