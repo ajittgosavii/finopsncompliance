@@ -9,26 +9,32 @@ Integrated Services:
 - KICS (Keeping Infrastructure as Code Secure)
 - AWS Bedrock (Claude AI) for Detection & Remediation
 - GitHub/GitOps Integration
-- Account Lifecycle Management (Onboarding/Offboarding)
+- **Account Lifecycle Management (Automated Onboarding/Offboarding)**
 - CI/CD Pipeline Integration
 - Portfolio-Based Account Organization
 - FinOps Module for Cost Management & Optimization
 
 Features:
+✓ **Automated Account Onboarding** - One-click setup with all security services
+✓ **Safe Account Offboarding** - Automated decommissioning with archive
 ✓ AI-Powered Detection & Analysis (Claude/Bedrock)
 ✓ Automated Remediation with Code Generation
 ✓ GitHub/GitOps Integration with Version Control
 ✓ Tech Guardrails: SCP, OPA, KICS
-✓ Account Onboarding/Offboarding Automation
-✓ Policy as Code Management
 ✓ Multi-Portfolio Support (Retail, Healthcare, Financial)
 ✓ Real-time Compliance Monitoring
 ✓ Automated CI/CD Pipeline Integration
 ✓ FinOps Dashboard & Cost Optimization
 
+**PRIMARY USE CASE: AWS Account Lifecycle Management**
+- Onboard new accounts with Security Hub, GuardDuty, Config, Inspector, CloudTrail
+- Apply compliance frameworks: PCI DSS, HIPAA, GDPR, SOC 2, ISO 27001
+- Deploy tech guardrails: SCPs, EventBridge, OPA policies
+- Commit configurations to GitHub for version control
+- Safely offboard accounts with full archival and audit trail
 
 Company: Future Minds
-Version: 4.0 - AWS Edition
+Version: 4.0 - AWS Edition with Account Lifecycle Management
 """
 
 import streamlit as st
@@ -469,46 +475,6 @@ def initialize_session_state():
         
         # Service status
         'service_status': {},
-        
-        # Migration data
-        'migration_data': {
-            'jenkins_pipelines': {
-                'total': 150000,
-                'migrated': 45000,
-                'in_progress': 30000,
-                'pending': 75000,
-                'migration_rate': 3500
-            },
-            'infra_pipelines': {
-                'total': 2600,
-                'migrated': 850,
-                'in_progress': 650,
-                'pending': 1100,
-                'migration_rate': 120
-            },
-            'future_state': {
-                'target_pipelines': 25000,
-                'estimated_completion': 'Q2 2026',
-                'consolidation_ratio': 6.1
-            },
-            'migration_phases': [
-                {'phase': 'Phase 1: Assessment', 'status': 'Complete', 'completion': 100, 'pipelines': 15260, 'duration': '12 weeks'},
-                {'phase': 'Phase 2: POC', 'status': 'Complete', 'completion': 100, 'pipelines': 7630, 'duration': '8 weeks'},
-                {'phase': 'Phase 3: Wave 1', 'status': 'In Progress', 'completion': 75, 'pipelines': 38150, 'duration': '16 weeks'},
-                {'phase': 'Phase 4: Wave 2', 'status': 'In Progress', 'completion': 30, 'pipelines': 45780, 'duration': '20 weeks'},
-                {'phase': 'Phase 5: Wave 3', 'status': 'Pending', 'completion': 0, 'pipelines': 45780, 'duration': '20 weeks'}
-            ],
-            'weekly_migration_trend': [
-                {'week': 'Week 1', 'migrated': 2800},
-                {'week': 'Week 2', 'migrated': 3200},
-                {'week': 'Week 3', 'migrated': 3500},
-                {'week': 'Week 4', 'migrated': 3800},
-                {'week': 'Week 5', 'migrated': 4100},
-                {'week': 'Week 6', 'migrated': 4200},
-                {'week': 'Week 7', 'migrated': 3900},
-                {'week': 'Week 8', 'migrated': 4300}
-            ]
-        },
         
         # Compliance data
         'compliance_data': {
@@ -5615,6 +5581,21 @@ def render_account_lifecycle_tab():
             
             df = pd.DataFrame(account_data)
             st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No accounts found. Connect to AWS Organizations to see accounts.")
+        
+        # Recent lifecycle events
+        st.markdown("---")
+        st.markdown("### 📋 Recent Lifecycle Events")
+        
+        lifecycle_events = st.session_state.get('account_lifecycle_events', [])
+        if lifecycle_events:
+            events_df = pd.DataFrame(lifecycle_events[-10:])  # Last 10 events
+            st.dataframe(events_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No lifecycle events recorded yet.")
+
+
 def render_mode_banner():
     """Render a prominent banner showing current mode"""
     if st.session_state.get('demo_mode', False):
@@ -5667,449 +5648,6 @@ def render_mode_banner():
 # ============================================================================
 
 # ============================================================================
-# NEW DEVOPS MIGRATION DASHBOARDS
-# ============================================================================
-
-def render_migration_overview():
-    """Render comprehensive migration overview dashboard (NEW)"""
-    st.markdown("## 🚀 DevOps Platform Migration Overview")
-    
-    migration_data = st.session_state.migration_data
-    
-    # Top-level metrics
-    col1, col2, col3, col4, col5 = st.columns(5)
-    
-    total_pipelines = migration_data['jenkins_pipelines']['total'] + migration_data['infra_pipelines']['total']
-    migrated_pipelines = migration_data['jenkins_pipelines']['migrated'] + migration_data['infra_pipelines']['migrated']
-    in_progress = migration_data['jenkins_pipelines']['in_progress'] + migration_data['infra_pipelines']['in_progress']
-    pending = migration_data['jenkins_pipelines']['pending'] + migration_data['infra_pipelines']['pending']
-    migration_percentage = (migrated_pipelines / total_pipelines) * 100
-    
-    with col1:
-        st.metric("Total Pipelines", f"{total_pipelines:,}", help="Jenkins (150K) + Infrastructure (2.6K)")
-    with col2:
-        st.metric("Migrated", f"{migrated_pipelines:,}", f"{migration_percentage:.1f}%", delta_color="normal")
-    with col3:
-        st.metric("In Progress", f"{in_progress:,}", f"{(in_progress/total_pipelines)*100:.1f}%")
-    with col4:
-        st.metric("Pending", f"{pending:,}", f"{(pending/total_pipelines)*100:.1f}%")
-    with col5:
-        st.metric("Target State", f"{migration_data['future_state']['target_pipelines']:,}", f"{migration_data['future_state']['consolidation_ratio']:.1f}x consolidation")
-    
-    st.markdown("---")
-    
-    # Jenkins vs Infrastructure Pipeline Breakdown
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### 🔧 Jenkins Pipelines (150K)")
-        jenkins = migration_data['jenkins_pipelines']
-        fig = go.Figure(data=[go.Pie(
-            labels=['Migrated', 'In Progress', 'Pending'],
-            values=[jenkins['migrated'], jenkins['in_progress'], jenkins['pending']],
-            hole=0.4,
-            marker=dict(colors=['#A3BE8C', '#EBCB8B', '#5E81AC'])
-        )])
-        fig.update_layout(height=300)
-        st.plotly_chart(fig, use_container_width=True)
-        st.markdown(f"""<div class="migration-card in-progress">
-            <strong>Migration Rate:</strong> {jenkins['migration_rate']:,} pipelines/week<br>
-            <strong>Estimated Completion:</strong> {int(jenkins['pending'] / jenkins['migration_rate'])} weeks
-        </div>""", unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("### 🏗️ Infrastructure Pipelines (2.6K)")
-        infra = migration_data['infra_pipelines']
-        fig = go.Figure(data=[go.Pie(
-            labels=['Migrated', 'In Progress', 'Pending'],
-            values=[infra['migrated'], infra['in_progress'], infra['pending']],
-            hole=0.4,
-            marker=dict(colors=['#A3BE8C', '#EBCB8B', '#5E81AC'])
-        )])
-        fig.update_layout(height=300)
-        st.plotly_chart(fig, use_container_width=True)
-        st.markdown(f"""<div class="migration-card complete">
-            <strong>Migration Rate:</strong> {infra['migration_rate']:,} pipelines/week<br>
-            <strong>Estimated Completion:</strong> {int(infra['pending'] / infra['migration_rate'])} weeks
-        </div>""", unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # Migration Phase Timeline
-    st.markdown("### 📅 Migration Phase Timeline")
-    phases_df = pd.DataFrame(migration_data['migration_phases'])
-    fig = px.bar(phases_df, x='phase', y='completion', color='status', text='completion',
-                 color_discrete_map={'Complete': '#A3BE8C', 'In Progress': '#EBCB8B', 'Pending': '#5E81AC'})
-    fig.update_traces(texttemplate='%{text}%', textposition='outside')
-    fig.update_layout(xaxis_title="Migration Phase", yaxis_title="Completion %", yaxis_range=[0, 110], height=400)
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Phase details table
-    st.markdown("#### 📋 Phase Details")
-    phase_table = phases_df[['phase', 'status', 'completion', 'pipelines', 'duration']].copy()
-    phase_table['completion'] = phase_table['completion'].apply(lambda x: f"{x}%")
-    phase_table['pipelines'] = phase_table['pipelines'].apply(lambda x: f"{x:,}")
-    st.dataframe(phase_table, use_container_width=True, hide_index=True)
-    
-    st.markdown("---")
-    
-    # Weekly Migration Trend
-    st.markdown("### 📈 Weekly Migration Velocity")
-    trend_df = pd.DataFrame(migration_data['weekly_migration_trend'])
-    fig = px.line(trend_df, x='week', y='migrated', markers=True, line_shape='spline')
-    fig.update_traces(line_color='#88C0D0', marker=dict(size=10, color='#5E81AC'))
-    fig.update_layout(xaxis_title="Week", yaxis_title="Pipelines Migrated", height=300)
-    st.plotly_chart(fig, use_container_width=True)
-    avg_velocity = sum([w['migrated'] for w in migration_data['weekly_migration_trend']]) / len(migration_data['weekly_migration_trend'])
-    st.info(f"📊 **Average Weekly Velocity:** {avg_velocity:,.0f} pipelines/week")
-
-
-def render_scm_cicd_guardrails():
-    """Render SCM & CI/CD guardrails monitoring dashboard (NEW)"""
-    st.markdown("## 🛡️ SCM & CI/CD Guardrails")
-    st.markdown("""<div class="guardrail-active">
-        <h4>✅ Active Guardrails</h4>
-        <ul>
-            <li><strong>GitHub Cloud Repos:</strong> KICS scans integrated via GitHub Actions</li>
-            <li><strong>OPA Policy Enforcement:</strong> All pipelines (on-prem & AWS deployments)</li>
-            <li><strong>GitHub Advanced Security:</strong> Code scanning & secret detection enabled</li>
-            <li><strong>Branch Protection:</strong> Automated PR validation & approval workflows</li>
-        </ul>
-    </div>""", unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # GitHub Advanced Security Metrics
-    col1, col2, col3, col4 = st.columns(4)
-    ghas = st.session_state.compliance_data['github_advanced_security']
-    with col1:
-        st.metric("Code Scanning Alerts", ghas['code_scanning_alerts'], help="Static code analysis findings")
-    with col2:
-        st.metric("Secret Scanning Alerts", ghas['secret_scanning_alerts'], help="Exposed secrets detected")
-    with col3:
-        st.metric("Dependency Alerts", ghas['dependency_alerts'], help="Vulnerable dependencies")
-    with col4:
-        st.metric("Repositories Scanned", f"{ghas['repositories_scanned']:,}", help="Total repos under GHAS")
-    
-    st.markdown("---")
-    
-    # KICS Scanning Dashboard
-    st.markdown("### 🔍 KICS IaC Security Scanning")
-    kics = st.session_state.compliance_data['kics_scans']
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Total Scans", f"{kics['total_scans']:,}")
-    with col2:
-        st.metric("Files Scanned", f"{kics['files_scanned']:,}")
-    with col3:
-        st.metric("Compliance Score", f"{kics['compliance_score']}%")
-    with col4:
-        st.metric("Last Scan", kics['last_scan'].split()[1])
-    
-    # KICS findings breakdown
-    st.markdown("#### 📊 KICS Findings by Severity")
-    kics_data = {
-        'Severity': ['High', 'Medium', 'Low', 'Info'],
-        'Count': [kics['high_severity'], kics['medium_severity'], kics['low_severity'], kics['info']]
-    }
-    fig = px.bar(kics_data, x='Severity', y='Count', color='Severity',
-                 color_discrete_sequence=['#BF616A', '#EBCB8B', '#5E81AC', '#88C0D0'])
-    fig.update_layout(showlegend=False, height=300)
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.markdown("---")
-    
-    # OPA Policy Enforcement
-    st.markdown("### ⚖️ OPA Policy Enforcement")
-    opa = st.session_state.compliance_data['opa_policies']
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total Policies", opa['total_policies'])
-    with col2:
-        st.metric("Passing", opa['passing'], delta=f"{opa['compliance_percentage']:.1f}%")
-    with col3:
-        st.metric("Failing", opa['failing'], delta="-{:.1f}%".format(100-opa['compliance_percentage']), delta_color="inverse")
-    
-    # Policy breakdown
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(f"""<div class="compliance-metric good">
-            <h4>🔄 GitHub Actions Policies</h4>
-            <h3>{opa['github_actions_policies']}</h3>
-            <p>Workflow validation, deployment gates, security checks</p>
-        </div>""", unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""<div class="compliance-metric good">
-            <h4>🏗️ IaC Policies</h4>
-            <h3>{opa['iac_policies']}</h3>
-            <p>Terraform, CloudFormation, resource compliance</p>
-        </div>""", unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # Recent Guardrail Violations
-    st.markdown("### 🚨 Recent Guardrail Violations")
-    violations = [
-        {'Timestamp': '2025-11-21 14:32:15', 'Type': 'KICS', 'Severity': 'HIGH', 'Repository': 'infrastructure-core', 'Issue': 'Unencrypted S3 bucket detected in terraform', 'Status': 'Blocked'},
-        {'Timestamp': '2025-11-21 13:45:22', 'Type': 'OPA', 'Severity': 'CRITICAL', 'Repository': 'deployment-pipelines', 'Issue': 'Production deployment without approval', 'Status': 'Blocked'},
-        {'Timestamp': '2025-11-21 12:18:44', 'Type': 'GHAS', 'Severity': 'CRITICAL', 'Repository': 'api-service', 'Issue': 'AWS access key exposed in code', 'Status': 'Blocked'},
-        {'Timestamp': '2025-11-21 11:55:30', 'Type': 'KICS', 'Severity': 'MEDIUM', 'Repository': 'network-config', 'Issue': 'Security group with overly permissive rules', 'Status': 'Warning'}
-    ]
-    df = pd.DataFrame(violations)
-    st.dataframe(df, use_container_width=True, hide_index=True)
-
-
-def render_infrastructure_guardrails():
-    """Render infrastructure guardrails monitoring dashboard (NEW)"""
-    st.markdown("## 🏗️ Infrastructure Guardrails")
-    st.markdown("""<div class="guardrail-active">
-        <h4>✅ Active Infrastructure Guardrails</h4>
-        <ul>
-            <li><strong>SCP Enforcement:</strong> Service Control Policies active on 640+ AWS accounts</li>
-            <li><strong>OPA for GitHub Actions:</strong> IaC validation in all workflows</li>
-            <li><strong>KICS Automation:</strong> Scans triggered on every PR merge to main branch</li>
-            <li><strong>Drift Detection:</strong> Continuous monitoring of infrastructure changes</li>
-        </ul>
-    </div>""", unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # AWS SCP Enforcement
-    st.markdown("### 🔐 AWS Service Control Policies (SCP)")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("AWS Accounts", "640+", help="Multi-portfolio coverage")
-    with col2:
-        st.metric("Active SCPs", "47", help="Organization-wide policies")
-    with col3:
-        st.metric("Compliance Rate", "98.7%")
-    with col4:
-        st.metric("Policy Violations", "8", delta="-3", delta_color="inverse")
-    
-    # SCP Coverage by Portfolio
-    st.markdown("#### 📊 SCP Coverage by Portfolio")
-    scp_data = pd.DataFrame([
-        {'Portfolio': 'Retail', 'Accounts': 245, 'SCPs': 18, 'Compliance': 99.2},
-        {'Portfolio': 'Healthcare', 'Accounts': 198, 'SCPs': 15, 'Compliance': 98.5},
-        {'Portfolio': 'Financial', 'Accounts': 197, 'SCPs': 14, 'Compliance': 98.3}
-    ])
-    fig = px.bar(scp_data, x='Portfolio', y='Compliance', color='Compliance', text='Compliance', color_continuous_scale='Greens')
-    fig.update_traces(texttemplate='%{text}%', textposition='outside')
-    fig.update_layout(height=300, yaxis_range=[0, 105])
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.markdown("---")
-    
-    # Automated KICS Scanning
-    st.markdown("### 🤖 Automated KICS IaC Scanning")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("""<div class="compliance-metric excellent">
-            <h4>PR Merge Automation</h4>
-            <p><strong>Status:</strong> ✅ Active</p>
-            <p><strong>Trigger:</strong> Every PR merge to main branch</p>
-            <p><strong>Scan Time:</strong> ~2-5 minutes average</p>
-            <p><strong>Auto-Block:</strong> Critical & High findings</p>
-        </div>""", unsafe_allow_html=True)
-    with col2:
-        st.markdown("""<div class="compliance-metric good">
-            <h4>Scan Statistics (Last 30 Days)</h4>
-            <p><strong>Total PRs:</strong> 2,847</p>
-            <p><strong>Scans Executed:</strong> 2,847 (100%)</p>
-            <p><strong>PRs Blocked:</strong> 127 (4.5%)</p>
-            <p><strong>Issues Remediated:</strong> 543</p>
-        </div>""", unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # OPA Workflow Policies
-    st.markdown("### ⚖️ OPA Policies for GitHub Actions Workflows")
-    workflow_policies = [
-        {'Policy': 'Require Security Scanning', 'Status': '✅ Enforced', 'Workflows': 1240, 'Violations': 0},
-        {'Policy': 'Mandate Approval for Production', 'Status': '✅ Enforced', 'Workflows': 856, 'Violations': 2},
-        {'Policy': 'Terraform Plan Required', 'Status': '✅ Enforced', 'Workflows': 678, 'Violations': 1},
-        {'Policy': 'Secret Scanning Pre-Deploy', 'Status': '✅ Enforced', 'Workflows': 1240, 'Violations': 5}
-    ]
-    df = pd.DataFrame(workflow_policies)
-    st.dataframe(df, use_container_width=True, hide_index=True)
-    
-    st.markdown("---")
-    
-    # Infrastructure Drift Detection
-    st.markdown("### 🎯 Infrastructure Drift Detection")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Resources Monitored", "145,230")
-    with col2:
-        st.metric("Drift Detected", "23", delta="-5", delta_color="inverse")
-    with col3:
-        st.metric("Auto-Remediated", "18")
-    with col4:
-        st.metric("Manual Review", "5")
-    
-    drift_events = [
-        {'Resource': 'vpc-prod-east-1', 'Type': 'VPC', 'Drift': 'Security group rules modified', 'Action': 'Auto-remediated'},
-        {'Resource': 's3-logs-bucket', 'Type': 'S3', 'Drift': 'Encryption disabled', 'Action': 'Auto-remediated'},
-        {'Resource': 'rds-prod-cluster', 'Type': 'RDS', 'Drift': 'Backup retention changed', 'Action': 'Manual review'},
-    ]
-    st.markdown("#### 📋 Recent Drift Events")
-    df = pd.DataFrame(drift_events)
-    st.dataframe(df, use_container_width=True, hide_index=True)
-
-
-def render_unified_compliance_dashboard():
-    """Render unified compliance dashboard aggregating all sources (NEW)"""
-    st.markdown("## 🎯 Unified Compliance Dashboard")
-    st.markdown("**Single Pane of Glass:** Policy Compliance • IaC Security • Pipeline Migration Progress")
-    
-    compliance_data = st.session_state.compliance_data
-    
-    # Overall Compliance Score
-    weights = {
-        'aws_security_hub': 0.25,
-        'aws_config': 0.20,
-        'opa_policies': 0.20,
-        'kics_scans': 0.15,
-        'wiz_io': 0.15,
-        'github_advanced_security': 0.05
-    }
-    
-    overall_score = (
-        compliance_data['aws_security_hub']['compliance_score'] * weights['aws_security_hub'] +
-        compliance_data['aws_config']['compliance_percentage'] * weights['aws_config'] +
-        compliance_data['opa_policies']['compliance_percentage'] * weights['opa_policies'] +
-        compliance_data['kics_scans']['compliance_score'] * weights['kics_scans'] +
-        compliance_data['wiz_io']['posture_score'] * weights['wiz_io'] +
-        compliance_data['github_advanced_security']['compliance_score'] * weights['github_advanced_security']
-    )
-    
-    # Overall Score Card
-    score_color = "excellent" if overall_score >= 90 else "good" if overall_score >= 80 else "warning" if overall_score >= 70 else "critical"
-    st.markdown(f"""<div class="compliance-metric {score_color}">
-        <h2 style='text-align: center; margin: 0;'>Overall Compliance Score</h2>
-        <h1 style='text-align: center; font-size: 4rem; margin: 1rem 0;'>{overall_score:.1f}%</h1>
-        <p style='text-align: center; margin: 0;'>Aggregated from 6 compliance sources</p>
-    </div>""", unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # Source-by-Source Breakdown
-    st.markdown("### 📊 Compliance by Source")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown("#### 🛡️ AWS Security Hub")
-        sec_hub = compliance_data['aws_security_hub']
-        st.metric("Compliance Score", f"{sec_hub['compliance_score']}%")
-        st.metric("Total Findings", sec_hub['total_findings'])
-        st.metric("Critical", sec_hub['critical'], delta=f"High: {sec_hub['high']}")
-    with col2:
-        st.markdown("#### ⚙️ AWS Config")
-        config = compliance_data['aws_config']
-        st.metric("Compliance Rate", f"{config['compliance_percentage']}%")
-        st.metric("Total Rules", config['total_rules'])
-        st.metric("Compliant", config['compliant'], delta=f"Non-compliant: {config['non_compliant']}")
-    with col3:
-        st.markdown("#### ⚖️ OPA Policies")
-        opa = compliance_data['opa_policies']
-        st.metric("Compliance Rate", f"{opa['compliance_percentage']}%")
-        st.metric("Total Policies", opa['total_policies'])
-        st.metric("Passing", opa['passing'], delta=f"Failing: {opa['failing']}")
-    
-    st.markdown("---")
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown("#### 🔍 KICS Scans")
-        kics = compliance_data['kics_scans']
-        st.metric("Compliance Score", f"{kics['compliance_score']}%")
-        st.metric("Total Scans", f"{kics['total_scans']:,}")
-        st.metric("High Severity", kics['high_severity'], delta=f"Medium: {kics['medium_severity']}")
-    with col2:
-        st.markdown("#### 🌐 Wiz.io")
-        wiz = compliance_data['wiz_io']
-        st.metric("Posture Score", f"{wiz['posture_score']}%")
-        st.metric("Resources Scanned", f"{wiz['resources_scanned']:,}")
-        st.metric("Critical Issues", wiz['critical_issues'], delta=f"High: {wiz['high_issues']}")
-    with col3:
-        st.markdown("#### 🐙 GitHub Advanced Security")
-        ghas = compliance_data['github_advanced_security']
-        st.metric("Compliance Score", f"{ghas['compliance_score']}%")
-        st.metric("Repositories", f"{ghas['repositories_scanned']:,}")
-        st.metric("Code Alerts", ghas['code_scanning_alerts'], delta=f"Secrets: {ghas['secret_scanning_alerts']}")
-    
-    st.markdown("---")
-    
-    # Compliance Trend Over Time
-    st.markdown("### 📈 Compliance Trend (Last 30 Days)")
-    trend_data = pd.DataFrame({
-        'Date': pd.date_range(start='2025-10-22', end='2025-11-21', freq='D'),
-        'AWS Security Hub': [85 + i*0.08 for i in range(31)],
-        'AWS Config': [88 + i*0.1 for i in range(31)],
-        'OPA': [83 + i*0.08 for i in range(31)],
-        'KICS': [90 + i*0.07 for i in range(31)],
-        'Wiz.io': [86 + i*0.08 for i in range(31)],
-        'Overall': [86 + i*0.07 for i in range(31)]
-    })
-    fig = px.line(trend_data, x='Date', y=['AWS Security Hub', 'AWS Config', 'OPA', 'KICS', 'Wiz.io', 'Overall'],
-                  labels={'value': 'Compliance %', 'variable': 'Source'})
-    fig.update_layout(height=400, hovermode='x unified')
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.markdown("---")
-    
-    # Migration Progress Integration
-    st.markdown("### 🚀 Pipeline Migration Progress")
-    migration_data = st.session_state.migration_data
-    total = migration_data['jenkins_pipelines']['total'] + migration_data['infra_pipelines']['total']
-    migrated = migration_data['jenkins_pipelines']['migrated'] + migration_data['infra_pipelines']['migrated']
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Total Pipelines", f"{total:,}")
-    with col2:
-        st.metric("Migrated", f"{migrated:,}", f"{(migrated/total)*100:.1f}%")
-    with col3:
-        st.metric("Target State", f"{migration_data['future_state']['target_pipelines']:,}")
-    with col4:
-        st.metric("ETA", migration_data['future_state']['estimated_completion'])
-    
-    # Combined migration progress bar
-    progress = (migrated / total) * 100
-    st.progress(progress / 100)
-    st.markdown(f"**Migration Progress:** {progress:.1f}% complete")
-    
-    st.markdown("---")
-    
-    # Consolidated Findings Table
-    st.markdown("### 📋 Consolidated Findings Across All Sources")
-    consolidated_findings = [
-        {'Source': 'AWS Security Hub', 'Category': 'S3 Public Access', 'Severity': 'CRITICAL', 'Count': 12, 'Status': 'In Remediation', 'SLA': '24 hours'},
-        {'Source': 'KICS', 'Category': 'Unencrypted Storage', 'Severity': 'HIGH', 'Count': 56, 'Status': 'Active', 'SLA': '72 hours'},
-        {'Source': 'OPA', 'Category': 'Policy Violations', 'Severity': 'HIGH', 'Count': 13, 'Status': 'Blocked', 'SLA': 'Immediate'},
-        {'Source': 'GitHub Advanced Security', 'Category': 'Secret Exposure', 'Severity': 'CRITICAL', 'Count': 23, 'Status': 'Revoked', 'SLA': 'Immediate'},
-        {'Source': 'Wiz.io', 'Category': 'Misconfigurations', 'Severity': 'HIGH', 'Count': 34, 'Status': 'In Remediation', 'SLA': '48 hours'},
-        {'Source': 'AWS Config', 'Category': 'Non-Compliant Resources', 'Severity': 'MEDIUM', 'Count': 14, 'Status': 'Active', 'SLA': '1 week'}
-    ]
-    df = pd.DataFrame(consolidated_findings)
-    st.dataframe(df, use_container_width=True, hide_index=True)
-    
-    # Export Options
-    st.markdown("---")
-    st.markdown("### 📤 Export Compliance Data")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("📊 Export to CSV"):
-            st.success("✅ Compliance data exported to compliance_report.csv")
-    with col2:
-        if st.button("📄 Generate PDF Report"):
-            st.success("✅ PDF report generated: compliance_report.pdf")
-    with col3:
-        if st.button("📧 Email Report"):
-            st.success("✅ Report emailed to stakeholders")
-
-
-
-# ============================================================================
-# MAIN APPLICATION - COMPREHENSIVE WITH MIGRATION
 # ============================================================================
 
 def main():
@@ -6119,22 +5657,12 @@ def main():
     # Render sidebar
     render_sidebar()
     
-    # Main header with migration stats
-    migration_data = st.session_state.migration_data
-    total_pipelines = migration_data['jenkins_pipelines']['total'] + migration_data['infra_pipelines']['total']
-    migrated_pipelines = migration_data['jenkins_pipelines']['migrated'] + migration_data['infra_pipelines']['migrated']
-    migration_percentage = (migrated_pipelines / total_pipelines) * 100
-    
+    # Main header
     st.markdown(f"""
     <div class="main-header">
-        <h1>🚀 Future Minds | Enterprise DevOps Migration & Compliance Platform</h1>
-        <p>Complete AWS Security Monitoring + GitHub Cloud Migration + Automated Guardrails</p>
-        <div class="stats">
-            <strong>Migration Progress:</strong> {migrated_pipelines:,} / {total_pipelines:,} Pipelines ({migration_percentage:.1f}% Complete) | 
-            <strong>Target:</strong> {migration_data['future_state']['target_pipelines']:,} Consolidated | 
-            <strong>ETA:</strong> {migration_data['future_state']['estimated_completion']}
-        </div>
-        <div class="company-badge">Future Minds Enterprise Platform v5.0</div>
+        <h1>🚀 Future Minds | Enterprise AWS Compliance Platform</h1>
+        <p>Complete AWS Security Monitoring + Automated Guardrails + AI-Powered Remediation</p>
+        <div class="company-badge">Future Minds Enterprise Platform v4.0</div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -6158,55 +5686,42 @@ def main():
     
     st.markdown("---")
     
-    # Main navigation tabs - COMPREHENSIVE (12 tabs)
+    # Main navigation tabs
     tabs = st.tabs([
-        "🚀 Migration Overview",          # NEW - Tab 0
-        "🛡️ SCM & CI/CD Guardrails",     # NEW - Tab 1
-        "🏗️ Infrastructure Guardrails",   # NEW - Tab 2
-        "🎯 Unified Compliance",           # NEW - Tab 3
-        "📊 Overview Dashboard",            # Original - Tab 4
-        "🔬 Inspector Vulnerabilities",    # Original - Tab 5
-        "🚧 Tech Guardrails",              # Original - Tab 6
-        "🤖 AI Remediation",               # Original - Tab 7
-        "🐙 GitHub & GitOps",              # Original - Tab 8
-        "🔄 Account Lifecycle",            # Original - Tab 9
-        "🔍 Security Findings",            # Original - Tab 10
-        "💰 FinOps & Cost Management"      # Original - Tab 11
+        "🎯 Unified Compliance",            # Tab 0
+        "📊 Overview Dashboard",            # Tab 1
+        "🔬 Inspector Vulnerabilities",    # Tab 2
+        "🚧 Tech Guardrails",              # Tab 3
+        "🤖 AI Remediation",               # Tab 4
+        "🐙 GitHub & GitOps",              # Tab 5
+        "🔄 Account Lifecycle",            # Tab 6
+        "🔍 Security Findings",            # Tab 7
+        "💰 FinOps & Cost Management"      # Tab 8
     ])
     
-    # NEW MIGRATION TABS
+    # TABS
     with tabs[0]:
-        render_migration_overview()
-    
-    with tabs[1]:
-        render_scm_cicd_guardrails()
-    
-    with tabs[2]:
-        render_infrastructure_guardrails()
-    
-    with tabs[3]:
         render_unified_compliance_dashboard()
     
-    # ORIGINAL TABS
-    with tabs[4]:
+    with tabs[1]:
         render_overview_dashboard()
     
-    with tabs[5]:
+    with tabs[2]:
         render_inspector_vulnerability_dashboard()
     
-    with tabs[6]:
+    with tabs[3]:
         render_policy_guardrails()
     
-    with tabs[7]:
+    with tabs[4]:
         render_ai_remediation_tab()
     
-    with tabs[8]:
+    with tabs[5]:
         render_github_gitops_tab()
     
-    with tabs[9]:
+    with tabs[6]:
         render_account_lifecycle_tab()
     
-    with tabs[10]:
+    with tabs[7]:
         st.markdown("## 🔍 Security Findings Details")
         security_findings = st.session_state.get('security_findings', [])
         
@@ -6235,7 +5750,7 @@ def main():
             else:
                 st.info("No security findings available. Connect to AWS to fetch findings.")
     
-    with tabs[11]:
+    with tabs[8]:
         view_mode = st.selectbox(
             "Dashboard View",
             ["🤖 AI-Enhanced", "📊 Traditional"],
@@ -6250,9 +5765,10 @@ def main():
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #666; padding: 2rem;'>
-        <p><strong>Future Minds | Enterprise DevOps Migration & Compliance Platform v5.0</strong></p>        
+        <p><strong>Future Minds | Enterprise AWS Compliance Platform v4.0</strong></p>        
         <p style='font-size: 0.9rem;'>Integrated: AWS Security Hub • Config • GuardDuty • Inspector • GitHub GHAS • KICS • OPA • Wiz.io • Claude AI</p>
-        <p style='font-size: 0.9rem;'>Features: Migration Tracking • SCM/CI/CD Guardrails • Infrastructure Guardrails • Unified Compliance • AI Remediation • FinOps</p>
+        <p style='font-size: 0.9rem;'><strong>Primary Feature:</strong> Account Lifecycle Management (Automated Onboarding/Offboarding)</p>
+        <p style='font-size: 0.9rem;'>Additional Features: Unified Compliance • Tech Guardrails • AI Remediation • FinOps</p>
         <p style='font-size: 0.8rem;'>⚠️ Ensure proper AWS IAM permissions for all services | 📚 Documentation | 🐛 Report Issues</p>
     </div>
     """, unsafe_allow_html=True)
