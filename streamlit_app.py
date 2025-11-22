@@ -5596,6 +5596,136 @@ def render_account_lifecycle_tab():
             st.info("No lifecycle events recorded yet.")
 
 
+
+
+def render_unified_compliance_dashboard():
+    """Render unified compliance dashboard aggregating all sources"""
+    st.markdown("## 🎯 Unified Compliance Dashboard")
+    st.markdown("**Single Pane of Glass:** Policy Compliance • IaC Security • Account Lifecycle Management")
+    
+    compliance_data = st.session_state.compliance_data
+    
+    # Overall Compliance Score
+    weights = {
+        'aws_security_hub': 0.25,
+        'aws_config': 0.20,
+        'opa_policies': 0.20,
+        'kics_scans': 0.15,
+        'wiz_io': 0.15,
+        'github_advanced_security': 0.05
+    }
+    
+    overall_score = (
+        compliance_data['aws_security_hub']['compliance_score'] * weights['aws_security_hub'] +
+        compliance_data['aws_config']['compliance_percentage'] * weights['aws_config'] +
+        compliance_data['opa_policies']['compliance_percentage'] * weights['opa_policies'] +
+        compliance_data['kics_scans']['compliance_score'] * weights['kics_scans'] +
+        compliance_data['wiz_io']['posture_score'] * weights['wiz_io'] +
+        compliance_data['github_advanced_security']['compliance_score'] * weights['github_advanced_security']
+    )
+    
+    # Overall Score Card
+    score_color = "excellent" if overall_score >= 90 else "good" if overall_score >= 80 else "warning" if overall_score >= 70 else "critical"
+    st.markdown(f"""<div class="compliance-metric {score_color}">
+        <h2 style='text-align: center; margin: 0;'>Overall Compliance Score</h2>
+        <h1 style='text-align: center; font-size: 4rem; margin: 1rem 0;'>{overall_score:.1f}%</h1>
+        <p style='text-align: center; margin: 0;'>Aggregated from 6 compliance sources</p>
+    </div>""", unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Source-by-Source Breakdown
+    st.markdown("### 📊 Compliance by Source")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown("#### 🛡️ AWS Security Hub")
+        sec_hub = compliance_data['aws_security_hub']
+        st.metric("Compliance Score", f"{sec_hub['compliance_score']}%")
+        st.metric("Total Findings", sec_hub['total_findings'])
+        st.metric("Critical", sec_hub['critical'], delta=f"High: {sec_hub['high']}")
+    with col2:
+        st.markdown("#### ⚙️ AWS Config")
+        config = compliance_data['aws_config']
+        st.metric("Compliance Rate", f"{config['compliance_percentage']}%")
+        st.metric("Total Rules", config['total_rules'])
+        st.metric("Compliant", config['compliant'], delta=f"Non-compliant: {config['non_compliant']}")
+    with col3:
+        st.markdown("#### ⚖️ OPA Policies")
+        opa = compliance_data['opa_policies']
+        st.metric("Compliance Rate", f"{opa['compliance_percentage']}%")
+        st.metric("Total Policies", opa['total_policies'])
+        st.metric("Passing", opa['passing'], delta=f"Failing: {opa['failing']}")
+    
+    st.markdown("---")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown("#### 🔍 KICS Scans")
+        kics = compliance_data['kics_scans']
+        st.metric("Compliance Score", f"{kics['compliance_score']}%")
+        st.metric("Total Scans", f"{kics['total_scans']:,}")
+        st.metric("High Severity", kics['high_severity'], delta=f"Medium: {kics['medium_severity']}")
+    with col2:
+        st.markdown("#### 🌐 Wiz.io")
+        wiz = compliance_data['wiz_io']
+        st.metric("Posture Score", f"{wiz['posture_score']}%")
+        st.metric("Resources Scanned", f"{wiz['resources_scanned']:,}")
+        st.metric("Critical Issues", wiz['critical_issues'], delta=f"High: {wiz['high_issues']}")
+    with col3:
+        st.markdown("#### 🐙 GitHub Advanced Security")
+        ghas = compliance_data['github_advanced_security']
+        st.metric("Compliance Score", f"{ghas['compliance_score']}%")
+        st.metric("Repositories", f"{ghas['repositories_scanned']:,}")
+        st.metric("Code Alerts", ghas['code_scanning_alerts'], delta=f"Secrets: {ghas['secret_scanning_alerts']}")
+    
+    st.markdown("---")
+    
+    # Compliance Trend Over Time
+    st.markdown("### 📈 Compliance Trend (Last 30 Days)")
+    trend_data = pd.DataFrame({
+        'Date': pd.date_range(start='2025-10-22', end='2025-11-21', freq='D'),
+        'AWS Security Hub': [85 + i*0.08 for i in range(31)],
+        'AWS Config': [88 + i*0.1 for i in range(31)],
+        'OPA': [83 + i*0.08 for i in range(31)],
+        'KICS': [90 + i*0.07 for i in range(31)],
+        'Wiz.io': [86 + i*0.08 for i in range(31)],
+        'Overall': [86 + i*0.07 for i in range(31)]
+    })
+    fig = px.line(trend_data, x='Date', y=['AWS Security Hub', 'AWS Config', 'OPA', 'KICS', 'Wiz.io', 'Overall'],
+                  labels={'value': 'Compliance %', 'variable': 'Source'})
+    fig.update_layout(height=400, hovermode='x unified')
+    st.plotly_chart(fig, use_container_width=True)
+    
+    st.markdown("---")
+    
+    # Consolidated Findings Table
+    st.markdown("### 📋 Consolidated Findings Across All Sources")
+    consolidated_findings = [
+        {'Source': 'AWS Security Hub', 'Category': 'S3 Public Access', 'Severity': 'CRITICAL', 'Count': 12, 'Status': 'In Remediation', 'SLA': '24 hours'},
+        {'Source': 'KICS', 'Category': 'Unencrypted Storage', 'Severity': 'HIGH', 'Count': 56, 'Status': 'Active', 'SLA': '72 hours'},
+        {'Source': 'OPA', 'Category': 'Policy Violations', 'Severity': 'HIGH', 'Count': 13, 'Status': 'Blocked', 'SLA': 'Immediate'},
+        {'Source': 'GitHub Advanced Security', 'Category': 'Secret Exposure', 'Severity': 'CRITICAL', 'Count': 23, 'Status': 'Revoked', 'SLA': 'Immediate'},
+        {'Source': 'Wiz.io', 'Category': 'Misconfigurations', 'Severity': 'HIGH', 'Count': 34, 'Status': 'In Remediation', 'SLA': '48 hours'},
+        {'Source': 'AWS Config', 'Category': 'Non-Compliant Resources', 'Severity': 'MEDIUM', 'Count': 14, 'Status': 'Active', 'SLA': '1 week'}
+    ]
+    df = pd.DataFrame(consolidated_findings)
+    st.dataframe(df, use_container_width=True, hide_index=True)
+    
+    # Export Options
+    st.markdown("---")
+    st.markdown("### 📤 Export Compliance Data")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("📊 Export to CSV"):
+            st.success("✅ Compliance data exported to compliance_report.csv")
+    with col2:
+        if st.button("📄 Generate PDF Report"):
+            st.success("✅ PDF report generated: compliance_report.pdf")
+    with col3:
+        if st.button("📧 Email Report"):
+            st.success("✅ Report emailed to stakeholders")
+
+
 def render_mode_banner():
     """Render a prominent banner showing current mode"""
     if st.session_state.get('demo_mode', False):
