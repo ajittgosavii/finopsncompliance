@@ -468,7 +468,47 @@ def initialize_session_state():
         'selected_services': ['Security Hub', 'Config', 'GuardDuty', 'Inspector'],
         
         # Service status
-        'service_status': {}
+        'service_status': {},
+        
+        # Migration data
+        'migration_data': {
+            'jenkins_pipelines': {
+                'total': 150000,
+                'migrated': 45000,
+                'in_progress': 30000,
+                'pending': 75000,
+                'migration_rate': 3500
+            },
+            'infra_pipelines': {
+                'total': 2600,
+                'migrated': 850,
+                'in_progress': 650,
+                'pending': 1100,
+                'migration_rate': 120
+            },
+            'future_state': {
+                'target_pipelines': 25000,
+                'estimated_completion': 'Q2 2026',
+                'consolidation_ratio': 6.1
+            },
+            'migration_phases': [
+                {'phase': 'Phase 1: Assessment', 'status': 'Complete', 'completion': 100, 'pipelines': 15260, 'duration': '12 weeks'},
+                {'phase': 'Phase 2: POC', 'status': 'Complete', 'completion': 100, 'pipelines': 7630, 'duration': '8 weeks'},
+                {'phase': 'Phase 3: Wave 1', 'status': 'In Progress', 'completion': 75, 'pipelines': 38150, 'duration': '16 weeks'},
+                {'phase': 'Phase 4: Wave 2', 'status': 'In Progress', 'completion': 30, 'pipelines': 45780, 'duration': '20 weeks'},
+                {'phase': 'Phase 5: Wave 3', 'status': 'Pending', 'completion': 0, 'pipelines': 45780, 'duration': '20 weeks'}
+            ],
+            'weekly_migration_trend': [
+                {'week': 'Week 1', 'migrated': 2800},
+                {'week': 'Week 2', 'migrated': 3200},
+                {'week': 'Week 3', 'migrated': 3500},
+                {'week': 'Week 4', 'migrated': 3800},
+                {'week': 'Week 5', 'migrated': 4100},
+                {'week': 'Week 6', 'migrated': 4200},
+                {'week': 'Week 7', 'migrated': 3900},
+                {'week': 'Week 8', 'migrated': 4300}
+            ]
+        }
     }
     
     for key, value in defaults.items():
