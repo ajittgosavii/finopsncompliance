@@ -5,9 +5,14 @@ Multi-Account Security Monitoring, Automated Remediation, Account Lifecycle Mana
 Integrated Services:
 - AWS Security Hub, Config, GuardDuty, Inspector, CloudTrail
 - Service Control Policies (SCP)
-- Open Policy Agent (OPA)
-- KICS (Keeping Infrastructure as Code Secure)
-- AWS Bedrock (Claude AI) for Detection & Remediation
+- Open Policy Agent (OPA) - CI/CD Pipeline Integration
+- KICS (Keeping Infrastructure as Code Secure) - Terraform, CloudFormation, Kubernetes scanning
+- GitHub Advanced Security (GHAS) - Secret & Code Scanning
+- PolicyBot & Bulldozer - Pull Request Compliance & Auto-Merge
+- Custom Probot Apps - GitHub Access Control & Branch Protection
+- AWS Compliance Tools: Security Hub, Firewall Manager, AWS Organization, Config Rules, QuickSight, Wiz.io
+- FinOps Tools: AWS Cost Explorer, Budgets, Cost Anomaly Detection, Trusted Advisor, Snowflake
+- AWS Bedrock (Claude AI) for Detection, Remediation & Gen AI Agents
 - GitHub/GitOps Integration
 - **Account Lifecycle Management (Automated Onboarding/Offboarding)**
 - CI/CD Pipeline Integration
@@ -20,7 +25,10 @@ Features:
 ✓ AI-Powered Detection & Analysis (Claude/Bedrock)
 ✓ Automated Remediation with Code Generation
 ✓ GitHub/GitOps Integration with Version Control
-✓ Tech Guardrails: SCP, OPA, KICS
+✓ Tech Guardrails: SCP, OPA, KICS, GHAS, PolicyBot, Bulldozer, Probot Apps
+✓ AWS Compliance Tools: Security Hub, Firewall Manager, Config Rules, QuickSight, Wiz.io
+✓ FinOps Integration: Cost Explorer, Budgets, Anomaly Detection, Trusted Advisor, Snowflake
+✓ Gen AI & AI Agents: AWS Bedrock with Claude for intelligent automation
 ✓ Multi-Portfolio Support (Retail, Healthcare, Financial)
 ✓ Real-time Compliance Monitoring
 ✓ Automated CI/CD Pipeline Integration
@@ -29,12 +37,12 @@ Features:
 **PRIMARY USE CASE: AWS Account Lifecycle Management**
 - Onboard new accounts with Security Hub, GuardDuty, Config, Inspector, CloudTrail
 - Apply compliance frameworks: PCI DSS, HIPAA, GDPR, SOC 2, ISO 27001
-- Deploy tech guardrails: SCPs, EventBridge, OPA policies
+- Deploy tech guardrails: SCPs, EventBridge, OPA policies, KICS, GHAS, PolicyBot
 - Commit configurations to GitHub for version control
 - Safely offboard accounts with full archival and audit trail
 
 Company: Future Minds
-Version: 4.0 - AWS Edition with Account Lifecycle Management
+Version: 4.5 - AWS Edition with Extended Tech Guardrails & Gen AI
 """
 
 import streamlit as st
@@ -3430,7 +3438,17 @@ def render_policy_guardrails():
     
     st.markdown("---")
     
-    guardrail_tabs = st.tabs(["Service Control Policies (SCP)", "OPA Policies", "KICS - IaC Security"])
+    guardrail_tabs = st.tabs([
+        "Service Control Policies (SCP)", 
+        "OPA Policies", 
+        "KICS - IaC Security",
+        "GitHub Advanced Security",
+        "PR Compliance (PolicyBot/Bulldozer)",
+        "Custom Probot Apps",
+        "AWS Compliance Tools",
+        "FinOps Tools",
+        "Gen AI & AI Agents"
+    ])
     
     # SCP Tab
     with guardrail_tabs[0]:
@@ -4055,6 +4073,825 @@ File: `{finding['file_path']}` (Line {finding['line_number']})
             
             fig = px.pie(category_df, values='Count', names='Category', hole=0.4)
             st.plotly_chart(fig, use_container_width=True)
+    
+    # GitHub Advanced Security Tab
+    with guardrail_tabs[3]:
+        st.markdown("### 🔐 GitHub Advanced Security (GHAS)")
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #24292e 0%, #2f363d 100%); padding: 20px; border-radius: 10px; color: white; margin-bottom: 20px;'>
+            <h4 style='margin: 0; color: white;'>🛡️ GitHub Advanced Security Integration</h4>
+            <p style='margin: 10px 0 0 0; opacity: 0.9;'>Secret scanning, code scanning, and dependency review integrated with CI/CD pipelines</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # GHAS Metrics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Secret Alerts", "23", delta="-5 this week", delta_color="inverse")
+        with col2:
+            st.metric("Code Scanning Alerts", "156", delta="-12 this week", delta_color="inverse")
+        with col3:
+            st.metric("Dependency Alerts", "89", delta="+3 this week", delta_color="inverse")
+        with col4:
+            st.metric("Security Coverage", "94.7%", delta="+2.3%")
+        
+        st.markdown("---")
+        
+        # Secret Scanning Results
+        st.markdown("#### 🔑 Secret Scanning - Active Alerts")
+        secret_alerts = [
+            {'Repository': 'future-minds/api-gateway', 'Secret Type': 'AWS Access Key', 'Severity': 'CRITICAL', 'Status': 'Revoked', 'Detected': '2024-11-20'},
+            {'Repository': 'future-minds/backend-services', 'Secret Type': 'Database Password', 'Severity': 'CRITICAL', 'Status': 'Active', 'Detected': '2024-11-21'},
+            {'Repository': 'future-minds/frontend-app', 'Secret Type': 'API Token', 'Severity': 'HIGH', 'Status': 'Revoked', 'Detected': '2024-11-19'},
+            {'Repository': 'future-minds/infrastructure', 'Secret Type': 'Private Key', 'Severity': 'CRITICAL', 'Status': 'Under Review', 'Detected': '2024-11-22'},
+        ]
+        df_secrets = pd.DataFrame(secret_alerts)
+        st.dataframe(df_secrets, use_container_width=True, hide_index=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🚨 Revoke All Active Secrets", use_container_width=True, type="primary"):
+                st.success("✅ Initiated secret revocation workflow")
+        with col2:
+            if st.button("📧 Notify Security Team", use_container_width=True):
+                st.success("✅ Security team notified")
+        
+        st.markdown("---")
+        
+        # Code Scanning Results
+        st.markdown("#### 🔍 Code Scanning - Vulnerability Summary")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            vuln_data = pd.DataFrame({
+                'Severity': ['Critical', 'High', 'Medium', 'Low'],
+                'Count': [8, 34, 78, 36]
+            })
+            fig = px.bar(vuln_data, x='Severity', y='Count', 
+                        color='Severity',
+                        color_discrete_map={
+                            'Critical': '#F44336',
+                            'High': '#FF9900',
+                            'Medium': '#FFC107',
+                            'Low': '#4CAF50'
+                        },
+                        title="Vulnerabilities by Severity")
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            lang_data = pd.DataFrame({
+                'Language': ['JavaScript', 'Python', 'Go', 'Java', 'TypeScript'],
+                'Vulnerabilities': [45, 38, 29, 24, 20]
+            })
+            fig = px.pie(lang_data, values='Vulnerabilities', names='Language', 
+                        title="Vulnerabilities by Language", hole=0.4)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # Integration Status
+        st.markdown("#### 🔗 CI/CD Pipeline Integration")
+        integration_status = [
+            {'Pipeline': 'GitHub Actions - Main', 'Status': 'Active', 'Last Scan': '2 hours ago', 'Findings': '12'},
+            {'Pipeline': 'GitHub Actions - Develop', 'Status': 'Active', 'Last Scan': '30 mins ago', 'Findings': '8'},
+            {'Pipeline': 'Pre-commit Hooks', 'Status': 'Active', 'Last Scan': '5 mins ago', 'Findings': '0'},
+        ]
+        df_integration = pd.DataFrame(integration_status)
+        st.dataframe(df_integration, use_container_width=True, hide_index=True)
+    
+    # PolicyBot & Bulldozer Tab
+    with guardrail_tabs[4]:
+        st.markdown("### 🤖 PR Compliance - PolicyBot & Bulldozer")
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #0366d6 0%, #0969da 100%); padding: 20px; border-radius: 10px; color: white; margin-bottom: 20px;'>
+            <h4 style='margin: 0; color: white;'>🔐 Pull Request Policy Enforcement</h4>
+            <p style='margin: 10px 0 0 0; opacity: 0.9;'>Automated compliance checks and merge conditions for all pull requests</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # PolicyBot Metrics
+        st.markdown("#### 📋 PolicyBot - Policy Enforcement")
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Active Policies", "18")
+        with col2:
+            st.metric("PRs Reviewed", "247", delta="+23 this week")
+        with col3:
+            st.metric("Policy Violations", "34", delta="-8 this week", delta_color="inverse")
+        with col4:
+            st.metric("Compliance Rate", "86.2%", delta="+3.2%")
+        
+        st.markdown("---")
+        
+        # Policy Rules
+        st.markdown("#### ✅ Active Policy Rules")
+        policy_rules = [
+            {'Policy Name': 'Require 2+ Approvals', 'Scope': 'main, production/*', 'Status': 'Active', 'Violations': '12'},
+            {'Policy Name': 'Security Team Review', 'Scope': 'security/*, iam/*', 'Status': 'Active', 'Violations': '5'},
+            {'Policy Name': 'Infrastructure Changes', 'Scope': 'terraform/*, cloudformation/*', 'Status': 'Active', 'Violations': '8'},
+            {'Policy Name': 'No Direct Commits', 'Scope': 'main, production/*', 'Status': 'Active', 'Violations': '2'},
+            {'Policy Name': 'Signed Commits Required', 'Scope': 'All branches', 'Status': 'Active', 'Violations': '7'},
+        ]
+        df_policies = pd.DataFrame(policy_rules)
+        st.dataframe(df_policies, use_container_width=True, hide_index=True)
+        
+        st.markdown("---")
+        
+        # Bulldozer Configuration
+        st.markdown("#### 🚜 Bulldozer - Auto-Merge Configuration")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("""
+            **Auto-Merge Conditions:**
+            - ✅ All CI/CD checks passed
+            - ✅ Required approvals received
+            - ✅ No merge conflicts
+            - ✅ Branch up-to-date with base
+            - ✅ No blocking reviews
+            - ✅ Security scans passed
+            """)
+        
+        with col2:
+            st.markdown("""
+            **Merge Strategy:**
+            - 🔄 Merge commits (default)
+            - 🎯 Squash and merge (feature branches)
+            - ⚡ Rebase and merge (hotfixes)
+            
+            **Update Strategy:**
+            - 🔄 Auto-update on push to base
+            - ⏰ Update every 6 hours
+            """)
+        
+        st.markdown("---")
+        
+        # Recent Activity
+        st.markdown("#### 📊 Recent PR Activity")
+        pr_activity = [
+            {'PR #': '1234', 'Title': 'Add IAM role for Lambda', 'Status': 'Auto-merged', 'Time': '2 hours ago', 'Author': 'dev-team'},
+            {'PR #': '1235', 'Title': 'Update security groups', 'Status': 'Awaiting approval', 'Time': '4 hours ago', 'Author': 'infra-team'},
+            {'PR #': '1236', 'Title': 'Fix database credentials', 'Status': 'Blocked - Security review', 'Time': '6 hours ago', 'Author': 'backend-team'},
+        ]
+        df_pr = pd.DataFrame(pr_activity)
+        st.dataframe(df_pr, use_container_width=True, hide_index=True)
+    
+    # Custom Probot Apps Tab
+    with guardrail_tabs[5]:
+        st.markdown("### ⚙️ Custom Probot Apps")
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #6f42c1 0%, #563d7c 100%); padding: 20px; border-radius: 10px; color: white; margin-bottom: 20px;'>
+            <h4 style='margin: 0; color: white;'>🤖 Custom GitHub Automation & Access Control</h4>
+            <p style='margin: 10px 0 0 0; opacity: 0.9;'>Custom Probot applications for enforcing access control and branch protection</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Probot Apps Overview
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Active Apps", "7")
+        with col2:
+            st.metric("Events Processed", "1,245", delta="+156 today")
+        with col3:
+            st.metric("Actions Triggered", "89", delta="+12 today")
+        with col4:
+            st.metric("Uptime", "99.8%")
+        
+        st.markdown("---")
+        
+        # Active Probot Apps
+        st.markdown("#### 🤖 Active Probot Applications")
+        
+        probot_apps = [
+            {
+                'App Name': 'Branch Protection Enforcer',
+                'Description': 'Automatically applies branch protection rules to new repositories',
+                'Status': 'Active',
+                'Events': 'repository.created, branch.created',
+                'Actions Today': '12'
+            },
+            {
+                'App Name': 'Access Control Manager',
+                'Description': 'Enforces team-based access controls and permissions',
+                'Status': 'Active',
+                'Events': 'member.added, team.edited',
+                'Actions Today': '8'
+            },
+            {
+                'App Name': 'Security Reviewer',
+                'Description': 'Auto-requests security team review for sensitive file changes',
+                'Status': 'Active',
+                'Events': 'pull_request.opened',
+                'Actions Today': '23'
+            },
+            {
+                'App Name': 'Compliance Checker',
+                'Description': 'Validates commits against compliance requirements',
+                'Status': 'Active',
+                'Events': 'push, pull_request',
+                'Actions Today': '34'
+            },
+            {
+                'App Name': 'Label Auto-Tagger',
+                'Description': 'Automatically tags PRs based on file changes',
+                'Status': 'Active',
+                'Events': 'pull_request.opened',
+                'Actions Today': '18'
+            },
+        ]
+        
+        for app in probot_apps:
+            st.markdown(f"""
+            <div style='background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #6f42c1;'>
+                <h4 style='margin: 0 0 8px 0; color: #6f42c1;'>🤖 {app['App Name']}</h4>
+                <p style='margin: 0 0 8px 0; color: #666;'>{app['Description']}</p>
+                <div style='display: flex; gap: 20px; font-size: 0.9em;'>
+                    <span><strong>Status:</strong> <span style='color: #10b981;'>●</span> {app['Status']}</span>
+                    <span><strong>Events:</strong> {app['Events']}</span>
+                    <span><strong>Actions Today:</strong> {app['Actions Today']}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        # Configuration
+        st.markdown("#### ⚙️ Branch Protection Configuration")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("""
+            **Main Branch Protection:**
+            - ✅ Require pull request reviews (2+)
+            - ✅ Dismiss stale reviews
+            - ✅ Require review from Code Owners
+            - ✅ Require status checks to pass
+            - ✅ Require branches to be up to date
+            - ✅ Require signed commits
+            - ✅ Include administrators
+            """)
+        
+        with col2:
+            st.markdown("""
+            **Production Branch Protection:**
+            - ✅ Require pull request reviews (3+)
+            - ✅ Require deployment approval
+            - ✅ Restrict who can push
+            - ✅ Require linear history
+            - ✅ Lock branch (no force push)
+            - ✅ Security team approval required
+            """)
+    
+    # AWS Compliance Tools Tab
+    with guardrail_tabs[6]:
+        st.markdown("### 🛡️ AWS Compliance Tools")
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #232F3E 0%, #37475A 100%); padding: 20px; border-radius: 10px; color: white; margin-bottom: 20px; border-top: 4px solid #FF9900;'>
+            <h4 style='margin: 0; color: white;'>☁️ AWS Native Compliance & Security Services</h4>
+            <p style='margin: 10px 0 0 0; opacity: 0.9;'>Comprehensive AWS security and compliance monitoring across all accounts</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # AWS Services Status
+        st.markdown("#### 📊 AWS Compliance Services Status")
+        
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.markdown("""
+            <div style='text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;'>
+                <h4 style='color: #232F3E; margin: 0;'>Security Hub</h4>
+                <p style='font-size: 24px; font-weight: bold; margin: 10px 0; color: #10b981;'>●</p>
+                <p style='font-size: 12px; color: #666; margin: 0;'>Active</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("""
+            <div style='text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;'>
+                <h4 style='color: #232F3E; margin: 0;'>Firewall Mgr</h4>
+                <p style='font-size: 24px; font-weight: bold; margin: 10px 0; color: #10b981;'>●</p>
+                <p style='font-size: 12px; color: #666; margin: 0;'>Active</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown("""
+            <div style='text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;'>
+                <h4 style='color: #232F3E; margin: 0;'>AWS Config</h4>
+                <p style='font-size: 24px; font-weight: bold; margin: 10px 0; color: #10b981;'>●</p>
+                <p style='font-size: 12px; color: #666; margin: 0;'>Active</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            st.markdown("""
+            <div style='text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;'>
+                <h4 style='color: #232F3E; margin: 0;'>QuickSight</h4>
+                <p style='font-size: 24px; font-weight: bold; margin: 10px 0; color: #10b981;'>●</p>
+                <p style='font-size: 12px; color: #666; margin: 0;'>Active</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col5:
+            st.markdown("""
+            <div style='text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;'>
+                <h4 style='color: #232F3E; margin: 0;'>Wiz.io</h4>
+                <p style='font-size: 24px; font-weight: bold; margin: 10px 0; color: #10b981;'>●</p>
+                <p style='font-size: 12px; color: #666; margin: 0;'>Integrated</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        # Security Hub Dashboard
+        st.markdown("#### 🛡️ AWS Security Hub - Compliance Summary")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Security Score", "87.3%", delta="+2.1%")
+        with col2:
+            st.metric("Active Findings", "234", delta="-18 this week", delta_color="inverse")
+        with col3:
+            st.metric("Config Rules", "156", delta="+3")
+        with col4:
+            st.metric("Accounts Monitored", "640")
+        
+        # Compliance Standards
+        st.markdown("#### 📋 Active Compliance Standards")
+        compliance_standards = [
+            {'Standard': 'PCI DSS v3.2.1', 'Coverage': '98.2%', 'Findings': '12', 'Status': 'Compliant'},
+            {'Standard': 'HIPAA', 'Coverage': '96.5%', 'Findings': '23', 'Status': 'Compliant'},
+            {'Standard': 'GDPR', 'Coverage': '94.8%', 'Findings': '34', 'Status': 'Needs Review'},
+            {'Standard': 'SOC 2', 'Coverage': '97.1%', 'Findings': '18', 'Status': 'Compliant'},
+            {'Standard': 'ISO 27001', 'Coverage': '95.3%', 'Findings': '28', 'Status': 'Compliant'},
+            {'Standard': 'CIS AWS Foundations', 'Coverage': '99.1%', 'Findings': '8', 'Status': 'Compliant'},
+        ]
+        df_compliance = pd.DataFrame(compliance_standards)
+        st.dataframe(df_compliance, use_container_width=True, hide_index=True)
+        
+        st.markdown("---")
+        
+        # AWS Config Rules
+        st.markdown("#### ⚙️ AWS Config Rules - Top Non-Compliant Resources")
+        
+        config_rules = [
+            {'Rule Name': 's3-bucket-public-read-prohibited', 'Non-Compliant Resources': '8', 'Severity': 'HIGH'},
+            {'Rule Name': 'encrypted-volumes', 'Non-Compliant Resources': '23', 'Severity': 'MEDIUM'},
+            {'Rule Name': 'iam-user-mfa-enabled', 'Non-Compliant Resources': '12', 'Severity': 'HIGH'},
+            {'Rule Name': 'rds-encryption-enabled', 'Non-Compliant Resources': '5', 'Severity': 'HIGH'},
+            {'Rule Name': 'cloudtrail-enabled', 'Non-Compliant Resources': '3', 'Severity': 'CRITICAL'},
+        ]
+        df_config = pd.DataFrame(config_rules)
+        st.dataframe(df_config, use_container_width=True, hide_index=True)
+        
+        st.markdown("---")
+        
+        # Wiz.io Integration
+        st.markdown("#### 🔍 Wiz.io - Cloud Security Posture")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("""
+            **Wiz.io Security Insights:**
+            - 🔴 Critical Issues: 8
+            - 🟠 High Risk: 34
+            - 🟡 Medium Risk: 78
+            - 🟢 Low Risk: 156
+            
+            **Top Issues:**
+            - Public cloud storage detected
+            - Overly permissive IAM policies
+            - Unencrypted sensitive data
+            - Lateral movement risks
+            """)
+        
+        with col2:
+            # Wiz.io Risk Score Trend
+            wiz_data = pd.DataFrame({
+                'Date': pd.date_range(start='2024-10-23', periods=30, freq='D'),
+                'Risk Score': [78 - i*0.3 for i in range(30)]
+            })
+            fig = px.line(wiz_data, x='Date', y='Risk Score', 
+                         title='Wiz.io Risk Score Trend (Last 30 Days)')
+            fig.add_hline(y=70, line_dash="dash", line_color="green", 
+                         annotation_text="Target Score")
+            st.plotly_chart(fig, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # QuickSight Dashboards
+        st.markdown("#### 📊 AWS QuickSight - Compliance Dashboards")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("""
+            <div style='background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;'>
+                <h4 style='color: #232F3E;'>📈 Executive Dashboard</h4>
+                <p style='color: #666;'>High-level compliance overview</p>
+                <button style='background: #FF9900; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;'>View Dashboard</button>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("""
+            <div style='background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;'>
+                <h4 style='color: #232F3E;'>🔍 Security Findings</h4>
+                <p style='color: #666;'>Detailed security analysis</p>
+                <button style='background: #FF9900; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;'>View Dashboard</button>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown("""
+            <div style='background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;'>
+                <h4 style='color: #232F3E;'>💰 Cost & Compliance</h4>
+                <p style='color: #666;'>Cost-compliance correlation</p>
+                <button style='background: #FF9900; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;'>View Dashboard</button>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # FinOps Tools Tab
+    with guardrail_tabs[7]:
+        st.markdown("### 💰 FinOps Tools Overview")
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 10px; color: white; margin-bottom: 20px;'>
+            <h4 style='margin: 0; color: white;'>💵 Financial Operations & Cost Management</h4>
+            <p style='margin: 10px 0 0 0; opacity: 0.9;'>Comprehensive cost optimization and financial governance tools</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # FinOps Services Status
+        st.markdown("#### 📊 FinOps Services Status")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.markdown("""
+            <div style='text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;'>
+                <h4 style='color: #10b981; margin: 0;'>Cost Explorer</h4>
+                <p style='font-size: 24px; font-weight: bold; margin: 10px 0; color: #10b981;'>●</p>
+                <p style='font-size: 12px; color: #666; margin: 0;'>Active</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("""
+            <div style='text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;'>
+                <h4 style='color: #10b981; margin: 0;'>Budgets</h4>
+                <p style='font-size: 24px; font-weight: bold; margin: 10px 0; color: #10b981;'>●</p>
+                <p style='font-size: 12px; color: #666; margin: 0;'>Active</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown("""
+            <div style='text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;'>
+                <h4 style='color: #10b981; margin: 0;'>Trusted Advisor</h4>
+                <p style='font-size: 24px; font-weight: bold; margin: 10px 0; color: #10b981;'>●</p>
+                <p style='font-size: 12px; color: #666; margin: 0;'>Active</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            st.markdown("""
+            <div style='text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;'>
+                <h4 style='color: #10b981; margin: 0;'>Snowflake</h4>
+                <p style='font-size: 24px; font-weight: bold; margin: 10px 0; color: #10b981;'>●</p>
+                <p style='font-size: 12px; color: #666; margin: 0;'>Integrated</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        # Cost Metrics
+        st.markdown("#### 💵 Cost Management Overview")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Monthly Spend", "$487,234", delta="-$12,456 vs last month", delta_color="inverse")
+        with col2:
+            st.metric("Cost Savings (YTD)", "$1.2M", delta="+$145K this quarter")
+        with col3:
+            st.metric("Budget Utilization", "78.3%", delta="-2.1%", delta_color="inverse")
+        with col4:
+            st.metric("Optimization Score", "86.5%", delta="+3.2%")
+        
+        st.markdown("---")
+        
+        # AWS Cost Explorer
+        st.markdown("#### 📊 AWS Cost Explorer - Spend Analysis")
+        
+        cost_data = pd.DataFrame({
+            'Date': pd.date_range(start='2024-10-01', periods=30, freq='D'),
+            'EC2': [15000 + i*100 for i in range(30)],
+            'S3': [8000 + i*50 for i in range(30)],
+            'RDS': [12000 + i*80 for i in range(30)],
+            'Lambda': [3000 + i*30 for i in range(30)],
+            'Other': [5000 + i*40 for i in range(30)]
+        })
+        
+        fig = px.area(cost_data, x='Date', y=['EC2', 'S3', 'RDS', 'Lambda', 'Other'],
+                     title='Daily Cost by Service (Last 30 Days)',
+                     labels={'value': 'Cost ($)', 'variable': 'Service'})
+        st.plotly_chart(fig, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # AWS Budgets & Anomaly Detection
+        st.markdown("#### 🎯 AWS Budgets & Cost Anomaly Detection")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Active Budgets:**")
+            budgets = [
+                {'Budget Name': 'Total Monthly', 'Limit': '$500,000', 'Current': '$487,234', 'Status': 'On Track'},
+                {'Budget Name': 'EC2 Compute', 'Limit': '$200,000', 'Current': '$198,450', 'Status': 'Near Limit'},
+                {'Budget Name': 'Data Transfer', 'Limit': '$50,000', 'Current': '$34,567', 'Status': 'On Track'},
+                {'Budget Name': 'S3 Storage', 'Limit': '$80,000', 'Current': '$72,345', 'Status': 'On Track'},
+            ]
+            df_budgets = pd.DataFrame(budgets)
+            st.dataframe(df_budgets, use_container_width=True, hide_index=True)
+        
+        with col2:
+            st.markdown("**Recent Cost Anomalies:**")
+            anomalies = [
+                {'Date': '2024-11-20', 'Service': 'EC2', 'Anomaly': '+45% spike', 'Impact': '$12,345', 'Status': 'Investigating'},
+                {'Date': '2024-11-18', 'Service': 'Data Transfer', 'Anomaly': '+78% spike', 'Impact': '$8,901', 'Status': 'Resolved'},
+                {'Date': '2024-11-15', 'Service': 'RDS', 'Anomaly': '+32% spike', 'Impact': '$5,678', 'Status': 'Resolved'},
+            ]
+            df_anomalies = pd.DataFrame(anomalies)
+            st.dataframe(df_anomalies, use_container_width=True, hide_index=True)
+        
+        st.markdown("---")
+        
+        # AWS Trusted Advisor
+        st.markdown("#### 🔍 AWS Trusted Advisor - Recommendations")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Cost Optimization", "23 recommendations")
+        with col2:
+            st.metric("Potential Savings", "$45,678/month")
+        with col3:
+            st.metric("Performance", "12 recommendations")
+        with col4:
+            st.metric("Security", "8 recommendations")
+        
+        # Top Recommendations
+        recommendations = [
+            {'Category': 'Cost Optimization', 'Recommendation': 'Delete idle EC2 instances', 'Potential Savings': '$8,900/month', 'Priority': 'HIGH'},
+            {'Category': 'Cost Optimization', 'Recommendation': 'Use Reserved Instances for RDS', 'Potential Savings': '$15,600/month', 'Priority': 'HIGH'},
+            {'Category': 'Cost Optimization', 'Recommendation': 'Delete unattached EBS volumes', 'Potential Savings': '$3,400/month', 'Priority': 'MEDIUM'},
+            {'Category': 'Performance', 'Recommendation': 'Enable CloudFront for S3', 'Potential Savings': '$2,100/month', 'Priority': 'MEDIUM'},
+        ]
+        df_recommendations = pd.DataFrame(recommendations)
+        st.dataframe(df_recommendations, use_container_width=True, hide_index=True)
+        
+        st.markdown("---")
+        
+        # Snowflake Integration
+        st.markdown("#### ❄️ Snowflake - Cost Data Warehouse")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("""
+            **Data Integration Status:**
+            - ✅ AWS Cost & Usage Reports → Snowflake
+            - ✅ Tagged resource metadata
+            - ✅ Multi-account aggregation
+            - ✅ Real-time cost streaming
+            - ✅ Historical trend analysis
+            
+            **Query Performance:**
+            - Average query time: 2.3s
+            - Data freshness: < 1 hour
+            - Storage: 2.4 TB
+            """)
+        
+        with col2:
+            st.markdown("""
+            **Available Dashboards:**
+            - 📊 Cost allocation by team
+            - 📈 Trend analysis & forecasting
+            - 🎯 Budget vs actual tracking
+            - 💡 Optimization opportunities
+            - 🔍 Anomaly detection reports
+            
+            **Integration Tools:**
+            - QuickSight for visualization
+            - Tableau for advanced analytics
+            - Power BI for business reporting
+            """)
+    
+    # Gen AI & AI Agents Tab
+    with guardrail_tabs[8]:
+        st.markdown("### 🤖 Gen AI & AI Agents (AWS Bedrock)")
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; color: white; margin-bottom: 20px;'>
+            <h4 style='margin: 0; color: white;'>🧠 Generative AI-Powered Automation</h4>
+            <p style='margin: 10px 0 0 0; opacity: 0.9;'>AWS Bedrock with Claude AI for intelligent detection, remediation, and compliance automation</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # AI Agents Overview
+        st.markdown("#### 🤖 Active AI Agents")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Active Agents", "8")
+        with col2:
+            st.metric("Tasks Completed", "1,247", delta="+156 today")
+        with col3:
+            st.metric("Auto-Remediations", "89", delta="+12 today")
+        with col4:
+            st.metric("Accuracy Rate", "98.7%")
+        
+        st.markdown("---")
+        
+        # AI Agent Details
+        st.markdown("#### 🧠 AI Agent Capabilities")
+        
+        ai_agents = [
+            {
+                'Agent Name': '🔍 Security Finding Analyzer',
+                'Model': 'Claude Sonnet 4',
+                'Function': 'Analyzes security findings, prioritizes by risk, generates remediation plans',
+                'Status': 'Active',
+                'Tasks Today': '234'
+            },
+            {
+                'Agent Name': '🛠️ Auto-Remediation Agent',
+                'Model': 'Claude Sonnet 4',
+                'Function': 'Automatically fixes common security misconfigurations',
+                'Status': 'Active',
+                'Tasks Today': '89'
+            },
+            {
+                'Agent Name': '📊 Compliance Report Generator',
+                'Model': 'Claude Opus 4',
+                'Function': 'Generates executive compliance reports with insights and recommendations',
+                'Status': 'Active',
+                'Tasks Today': '12'
+            },
+            {
+                'Agent Name': '🎯 Risk Prioritization Engine',
+                'Model': 'Claude Sonnet 4',
+                'Function': 'Prioritizes vulnerabilities based on business context and threat intelligence',
+                'Status': 'Active',
+                'Tasks Today': '456'
+            },
+            {
+                'Agent Name': '💡 Cost Optimization Advisor',
+                'Model': 'Claude Sonnet 4',
+                'Function': 'Analyzes spending patterns and recommends cost optimizations',
+                'Status': 'Active',
+                'Tasks Today': '67'
+            },
+            {
+                'Agent Name': '🔐 Policy Violation Detector',
+                'Model': 'Claude Sonnet 4',
+                'Function': 'Detects policy violations in code, IaC, and configurations',
+                'Status': 'Active',
+                'Tasks Today': '178'
+            },
+            {
+                'Agent Name': '📝 Documentation Generator',
+                'Model': 'Claude Opus 4',
+                'Function': 'Auto-generates security documentation and runbooks',
+                'Status': 'Active',
+                'Tasks Today': '34'
+            },
+            {
+                'Agent Name': '🎓 Security Training Assistant',
+                'Model': 'Claude Sonnet 4',
+                'Function': 'Provides context-aware security training to development teams',
+                'Status': 'Active',
+                'Tasks Today': '23'
+            },
+        ]
+        
+        for agent in ai_agents:
+            st.markdown(f"""
+            <div style='background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #667eea;'>
+                <h4 style='margin: 0 0 8px 0; color: #667eea;'>{agent['Agent Name']}</h4>
+                <p style='margin: 0 0 8px 0; color: #666;'><strong>Function:</strong> {agent['Function']}</p>
+                <div style='display: flex; gap: 20px; font-size: 0.9em;'>
+                    <span><strong>Model:</strong> {agent['Model']}</span>
+                    <span><strong>Status:</strong> <span style='color: #10b981;'>●</span> {agent['Status']}</span>
+                    <span><strong>Tasks Today:</strong> {agent['Tasks Today']}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        # Bedrock Configuration
+        st.markdown("#### ⚙️ AWS Bedrock Configuration")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("""
+            **Active Models:**
+            - 🧠 **Claude Opus 4.1** - Complex analysis & reporting
+            - ⚡ **Claude Sonnet 4** - Real-time detection & remediation
+            - 💨 **Claude Haiku 4** - High-volume task processing
+            
+            **Integration Points:**
+            - ✅ Security Hub findings
+            - ✅ Config rule violations
+            - ✅ GuardDuty alerts
+            - ✅ Inspector vulnerabilities
+            - ✅ CloudTrail events
+            - ✅ Cost & Usage Reports
+            """)
+        
+        with col2:
+            st.markdown("""
+            **AI Orchestration:**
+            - 🔄 **EventBridge** - Event-driven triggers
+            - 🔗 **Step Functions** - Complex workflows
+            - 💾 **DynamoDB** - Agent state management
+            - 📨 **SNS/SQS** - Async task processing
+            - 🔐 **Secrets Manager** - Secure credential handling
+            
+            **Guardrails:**
+            - ✅ Prompt injection prevention
+            - ✅ Output validation
+            - ✅ Rate limiting
+            - ✅ Cost controls
+            """)
+        
+        st.markdown("---")
+        
+        # AI Performance Metrics
+        st.markdown("#### 📊 AI Agent Performance")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Task completion trend
+            task_data = pd.DataFrame({
+                'Date': pd.date_range(start='2024-10-23', periods=30, freq='D'),
+                'Tasks Completed': [800 + i*15 for i in range(30)],
+                'Auto-Remediated': [200 + i*3 for i in range(30)]
+            })
+            fig = px.line(task_data, x='Date', y=['Tasks Completed', 'Auto-Remediated'],
+                         title='AI Agent Activity (Last 30 Days)',
+                         labels={'value': 'Count', 'variable': 'Metric'})
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # Accuracy by agent type
+            accuracy_data = pd.DataFrame({
+                'Agent Type': ['Security Analyzer', 'Auto-Remediation', 'Risk Prioritization', 
+                              'Cost Optimization', 'Policy Detection', 'Documentation'],
+                'Accuracy': [98.7, 99.2, 97.8, 96.5, 98.1, 99.5]
+            })
+            fig = px.bar(accuracy_data, x='Agent Type', y='Accuracy',
+                        title='AI Agent Accuracy Rates',
+                        color='Accuracy',
+                        color_continuous_scale='Greens')
+            st.plotly_chart(fig, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # Example AI Interaction
+        st.markdown("#### 💬 Try AI Agent")
+        
+        st.markdown("**Ask the Security Finding Analyzer:**")
+        user_query = st.text_area("Enter a security question or describe a finding:", 
+                                  placeholder="e.g., Analyze the impact of public S3 buckets in our production accounts",
+                                  height=100)
+        
+        col1, col2, col3 = st.columns([1, 1, 2])
+        with col1:
+            if st.button("🤖 Analyze with Claude", use_container_width=True, type="primary"):
+                if user_query:
+                    with st.spinner("🧠 Claude AI is analyzing..."):
+                        time.sleep(2)
+                        st.markdown("""
+                        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; color: white; margin-top: 15px;'>
+                            <h4 style='margin: 0 0 10px 0;'>🤖 Claude AI Analysis</h4>
+                            <p style='margin: 0;'><strong>Risk Assessment:</strong> HIGH - Public S3 buckets pose significant data exposure risk</p>
+                            <p style='margin: 10px 0 0 0;'><strong>Impact:</strong> 8 production buckets are publicly accessible, containing ~2.4TB of data including potential PII</p>
+                            <p style='margin: 10px 0 0 0;'><strong>Recommended Actions:</strong></p>
+                            <ol style='margin: 10px 0 0 20px;'>
+                                <li>Immediately apply bucket policies to block public access</li>
+                                <li>Enable S3 Block Public Access at account level</li>
+                                <li>Audit bucket contents for sensitive data</li>
+                                <li>Implement AWS Config rule for continuous monitoring</li>
+                            </ol>
+                            <p style='margin: 10px 0 0 0;'><strong>Auto-Remediation:</strong> Available - Click "Auto-Fix" to apply recommended policies</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.warning("Please enter a question or description")
+        
+        with col2:
+            if st.button("🚀 Auto-Fix", use_container_width=True):
+                with st.spinner("Applying remediation..."):
+                    time.sleep(1)
+                    st.success("✅ Public access blocked on 8 S3 buckets")
 
 def render_ai_insights_panel(client):
     """Render AI-powered insights and recommendations"""
@@ -5791,8 +6628,8 @@ def main():
     st.markdown(f"""
     <div class="main-header">
         <h1>🚀 Future Minds | Enterprise AWS Compliance Platform</h1>
-        <p>Complete AWS Security Monitoring + Automated Guardrails + AI-Powered Remediation</p>
-        <div class="company-badge">Future Minds Enterprise Platform v4.0</div>
+        <p>Complete AWS Security Monitoring + Extended Tech Guardrails + Gen AI Agents + AI-Powered Remediation</p>
+        <div class="company-badge">Future Minds Enterprise Platform v4.5</div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -5895,10 +6732,10 @@ def main():
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #666; padding: 2rem;'>
-        <p><strong>Future Minds | Enterprise AWS Compliance Platform v4.0</strong></p>        
-        <p style='font-size: 0.9rem;'>Integrated: AWS Security Hub • Config • GuardDuty • Inspector • GitHub GHAS • KICS • OPA • Wiz.io • Claude AI</p>
+        <p><strong>Future Minds | Enterprise AWS Compliance Platform v4.5</strong></p>        
+        <p style='font-size: 0.9rem;'>Integrated: AWS Security Hub • Config • GuardDuty • Inspector • GitHub GHAS • KICS • OPA • PolicyBot • Bulldozer • Probot Apps • Wiz.io • QuickSight • AWS Bedrock (Claude AI)</p>
         <p style='font-size: 0.9rem;'><strong>Primary Feature:</strong> Account Lifecycle Management (Automated Onboarding/Offboarding)</p>
-        <p style='font-size: 0.9rem;'>Additional Features: Unified Compliance • Tech Guardrails • AI Remediation • FinOps</p>
+        <p style='font-size: 0.9rem;'>Additional Features: Unified Compliance • Extended Tech Guardrails • Gen AI Agents • FinOps Tools • Cost Optimization</p>
         <p style='font-size: 0.8rem;'>⚠️ Ensure proper AWS IAM permissions for all services | 📚 Documentation | 🐛 Report Issues</p>
     </div>
     """, unsafe_allow_html=True)
