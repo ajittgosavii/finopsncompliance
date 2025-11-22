@@ -508,6 +508,57 @@ def initialize_session_state():
                 {'week': 'Week 7', 'migrated': 3900},
                 {'week': 'Week 8', 'migrated': 4300}
             ]
+        },
+        
+        # Compliance data
+        'compliance_data': {
+            'aws_security_hub': {
+                'compliance_score': 87.5,
+                'total_findings': 1247,
+                'critical': 12,
+                'high': 45,
+                'medium': 234,
+                'low': 956
+            },
+            'aws_config': {
+                'compliance_percentage': 92.3,
+                'total_rules': 156,
+                'compliant': 144,
+                'non_compliant': 12
+            },
+            'opa_policies': {
+                'total_policies': 85,
+                'passing': 78,
+                'failing': 7,
+                'compliance_percentage': 91.8,
+                'github_actions_policies': 42,
+                'iac_policies': 43
+            },
+            'kics_scans': {
+                'total_scans': 1547,
+                'files_scanned': 8923,
+                'compliance_score': 89.2,
+                'last_scan': '2025-11-21 14:30:00',
+                'high_severity': 23,
+                'medium_severity': 67,
+                'low_severity': 145,
+                'info': 289
+            },
+            'wiz_io': {
+                'posture_score': 88.7,
+                'resources_scanned': 15847,
+                'critical_issues': 8,
+                'high_issues': 34,
+                'medium_issues': 127,
+                'low_issues': 456
+            },
+            'github_advanced_security': {
+                'compliance_score': 94.2,
+                'repositories_scanned': 342,
+                'code_scanning_alerts': 67,
+                'secret_scanning_alerts': 12,
+                'dependency_alerts': 234
+            }
         }
     }
     
@@ -6199,8 +6250,7 @@ def main():
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #666; padding: 2rem;'>
-        <p><strong>Future Minds | Enterprise DevOps Migration & Compliance Platform v5.0</strong></p>
-        <p>🚀 Migration: 150K Jenkins + 2.6K Infra → 25K Consolidated Pipelines</p>
+        <p><strong>Future Minds | Enterprise DevOps Migration & Compliance Platform v5.0</strong></p>        
         <p style='font-size: 0.9rem;'>Integrated: AWS Security Hub • Config • GuardDuty • Inspector • GitHub GHAS • KICS • OPA • Wiz.io • Claude AI</p>
         <p style='font-size: 0.9rem;'>Features: Migration Tracking • SCM/CI/CD Guardrails • Infrastructure Guardrails • Unified Compliance • AI Remediation • FinOps</p>
         <p style='font-size: 0.8rem;'>⚠️ Ensure proper AWS IAM permissions for all services | 📚 Documentation | 🐛 Report Issues</p>
