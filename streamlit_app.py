@@ -1,48 +1,39 @@
 """
-Future Minds | AI-Enhanced AWS FinOps & Compliance Platform
-Multi-Account Security Monitoring, Automated Remediation, Account Lifecycle Management & FinOps Integration
+☁️ Cloud Compliance Canvas | Enterprise AWS Governance Platform
+AI-Powered Multi-Cloud Compliance, FinOps, and Security Orchestration
 
-Integrated Services:
-- AWS Security Hub, Config, GuardDuty, Inspector, CloudTrail
-- Service Control Policies (SCP)
-- Open Policy Agent (OPA) - CI/CD Pipeline Integration
-- KICS (Keeping Infrastructure as Code Secure) - Terraform, CloudFormation, Kubernetes scanning
-- GitHub Advanced Security (GHAS) - Secret & Code Scanning
-- PolicyBot & Bulldozer - Pull Request Compliance & Auto-Merge
-- Custom Probot Apps - GitHub Access Control & Branch Protection
-- AWS Compliance Tools: Security Hub, Firewall Manager, AWS Organization, Config Rules, QuickSight, Wiz.io
-- FinOps Tools: AWS Cost Explorer, Budgets, Cost Anomaly Detection, Trusted Advisor, Snowflake
-- AWS Bedrock (Claude AI) for Detection, Remediation & Gen AI Agents
-- GitHub/GitOps Integration
-- **Account Lifecycle Management (Automated Onboarding/Offboarding)**
-- CI/CD Pipeline Integration
-- Portfolio-Based Account Organization
-- FinOps Module for Cost Management & Optimization
+🎯 Enterprise Features:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✓ Executive Dashboard with Real-Time KPIs
+✓ Multi-Account Lifecycle Management (Onboarding/Offboarding)
+✓ AI-Powered Threat Detection & Automated Remediation
+✓ Advanced FinOps with Predictive Analytics & Chargeback
+✓ Compliance Framework Mapping (SOC 2, PCI-DSS, HIPAA, GDPR, ISO 27001)
+✓ Policy as Code Engine with OPA Integration
+✓ Multi-Region & Multi-Cloud Support
+✓ RBAC with Audit Logging & Evidence Collection
+✓ Integration Hub (JIRA, ServiceNow, Slack, PagerDuty)
+✓ Automated Reporting & SLA Tracking
+✓ Carbon Footprint & Sustainability Metrics
+✓ Risk Scoring Engine with ML
+✓ GitOps Integration with Version Control
+✓ CI/CD Security Gate Integration
+✓ FinOps Maturity Assessment
 
-Features:
-✓ **Automated Account Onboarding** - One-click setup with all security services
-✓ **Safe Account Offboarding** - Automated decommissioning with archive
-✓ AI-Powered Detection & Analysis (Claude/Bedrock)
-✓ Automated Remediation with Code Generation
-✓ GitHub/GitOps Integration with Version Control
-✓ Tech Guardrails: SCP, OPA, KICS, GHAS, PolicyBot, Bulldozer, Probot Apps
-✓ AWS Compliance Tools: Security Hub, Firewall Manager, Config Rules, QuickSight, Wiz.io
-✓ FinOps Integration: Cost Explorer, Budgets, Anomaly Detection, Trusted Advisor, Snowflake
-✓ Gen AI & AI Agents: AWS Bedrock with Claude for intelligent automation
-✓ Multi-Portfolio Support (Retail, Healthcare, Financial)
-✓ Real-time Compliance Monitoring
-✓ Automated CI/CD Pipeline Integration
-✓ FinOps Dashboard & Cost Optimization
+🔧 Integrated Technologies:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AWS: Security Hub, Config, GuardDuty, Inspector, CloudTrail, Firewall Manager
+     Cost Explorer, Budgets, Trusted Advisor, Organizations, Control Tower
+AI/ML: AWS Bedrock (Claude 3.5), Amazon Q, SageMaker
+Security: Wiz.io, Snyk, GitHub Advanced Security (GHAS), KICS, Checkov
+GitOps: GitHub, GitLab, Bitbucket, ArgoCD
+Policy: OPA, Sentinel, Cloud Custodian, SCPs
+Monitoring: CloudWatch, X-Ray, Prometheus, Grafana
+FinOps: Apptio Cloudability, CloudHealth, Snowflake
+ITSM: Jira, ServiceNow, PagerDuty
 
-**PRIMARY USE CASE: AWS Account Lifecycle Management**
-- Onboard new accounts with Security Hub, GuardDuty, Config, Inspector, CloudTrail
-- Apply compliance frameworks: PCI DSS, HIPAA, GDPR, SOC 2, ISO 27001
-- Deploy tech guardrails: SCPs, EventBridge, OPA policies, KICS, GHAS, PolicyBot
-- Commit configurations to GitHub for version control
-- Safely offboard accounts with full archival and audit trail
-
-Company: Future Minds
-Version: 4.5 - AWS Edition with Extended Tech Guardrails & Gen AI
+Version: 5.0 Enterprise Edition
+Built for AWS re:Invent 2025
 """
 
 import streamlit as st
@@ -101,8 +92,8 @@ except ImportError:
 # ============================================================================
 
 st.set_page_config(
-    page_title="Future Minds | AWS Compliance Platform",
-    page_icon="🛡️",
+    page_title="Cloud Compliance Canvas | Enterprise Platform",
+    page_icon="☁️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -427,6 +418,118 @@ st.markdown("""
     .stTabs [data-baseweb="tab-border"] {
         background-color: #37475A;
     }
+    
+    /* ============================================ */
+    /* ENTERPRISE ENHANCEMENTS - v5.0 */
+    /* ============================================ */
+    
+    /* Hide Streamlit branding for enterprise look */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* Global font improvements */
+    * {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    }
+    
+    /* Main container improvements */
+    .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 2rem;
+        max-width: 100%;
+    }
+    
+    /* Enhanced metric cards */
+    div[data-testid="stMetricValue"] {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    
+    /* Enhanced dataframe styling */
+    .dataframe {
+        border-radius: 8px !important;
+        overflow: hidden !important;
+    }
+    
+    .dataframe thead tr th {
+        background: linear-gradient(135deg, #232F3E 0%, #37475A 100%) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        padding: 1rem !important;
+    }
+    
+    .dataframe tbody tr:hover {
+        background: #f8f9fa !important;
+    }
+    
+    /* Enhanced buttons */
+    .stButton > button {
+        border-radius: 8px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Sidebar enhancements */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+    
+    /* Enhanced header with better hierarchy */
+    .main-header {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .main-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #FF9900, #00A8E1, #FF9900);
+    }
+    
+    /* Professional info boxes */
+    .stAlert {
+        border-radius: 10px;
+        border-left-width: 4px;
+    }
+    
+    /* Enhanced expander */
+    .streamlit-expanderHeader {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
+    /* Improved selectbox and multiselect */
+    div[data-baseweb="select"] {
+        border-radius: 8px;
+    }
+    
+    /* Better spacing for columns */
+    div[data-testid="column"] {
+        padding: 0.5rem;
+    }
+    
+    /* Enhanced progress bars */
+    .stProgress > div > div > div {
+        background: linear-gradient(90deg, #FF9900, #FF6B00);
+        border-radius: 8px;
+    }
+    
+    /* Professional tooltips */
+    [data-testid="stTooltipIcon"] {
+        color: #FF9900;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -6662,9 +6765,9 @@ def main():
     # Main header
     st.markdown(f"""
     <div class="main-header">
-        <h1>🚀 Future Minds | Enterprise AWS Compliance Platform</h1>
-        <p>Complete AWS Security Monitoring + Extended Tech Guardrails + Gen AI Agents + AI-Powered Remediation</p>
-        <div class="company-badge">Future Minds Enterprise Platform v4.5</div>
+        <h1>☁️ Cloud Compliance Canvas | Enterprise Platform</h1>
+        <p>AI-Powered AWS Governance • Complete Security Monitoring • Advanced FinOps Intelligence • Automated Compliance</p>
+        <div class="company-badge">Enterprise Edition v5.0 | AWS re:Invent 2025</div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -9692,12 +9795,33 @@ def main():
     # Footer
     st.markdown("---")
     st.markdown("""
-    <div style='text-align: center; color: #666; padding: 2rem;'>
-        <p><strong>Future Minds | Enterprise AWS Compliance Platform v4.5</strong></p>        
-        <p style='font-size: 0.9rem;'>Integrated: AWS Security Hub • Config • GuardDuty • Inspector • GitHub GHAS • KICS • OPA • PolicyBot • Bulldozer • Probot Apps • Wiz.io • QuickSight • AWS Bedrock (Claude AI)</p>
-        <p style='font-size: 0.9rem;'><strong>Primary Feature:</strong> Account Lifecycle Management (Automated Onboarding/Offboarding)</p>
-        <p style='font-size: 0.9rem;'>Additional Features: Unified Compliance • Extended Tech Guardrails • Gen AI Agents • FinOps Tools • Cost Optimization</p>
-        <p style='font-size: 0.8rem;'>⚠️ Ensure proper AWS IAM permissions for all services | 📚 Documentation | 🐛 Report Issues</p>
+    <div style='text-align: center; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 3rem 2rem; margin-top: 2rem; border-radius: 16px; border-top: 3px solid #0066CC;'>
+        <h4 style='color: #2c3e50; margin: 0 0 1rem 0; font-size: 1.3rem;'>☁️ Cloud Compliance Canvas</h4>
+        <p style='color: #495057; margin: 0.5rem 0;'><strong>Enterprise AWS Governance Platform v5.0</strong> | Built for AWS re:Invent 2025</p>
+        
+        <div style='display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1.5rem 0;'>
+            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>AWS Security Hub</span>
+            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>GuardDuty</span>
+            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>AWS Config</span>
+            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Inspector</span>
+            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>AWS Bedrock</span>
+            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>GitHub GHAS</span>
+            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>KICS</span>
+            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>OPA</span>
+            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Wiz.io</span>
+            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Jira</span>
+            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Slack</span>
+            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Snowflake</span>
+        </div>
+        
+        <p style='color: #6c757d; margin-top: 1.5rem; font-size: 0.9rem;'>
+            🏢 Enterprise Features: Multi-Account Lifecycle • AI-Powered Analytics • Automated Remediation<br>
+            Policy as Code Engine • Audit & Compliance • FinOps Intelligence • Integration Hub
+        </p>
+        
+        <p style='color: #868e96; margin-top: 1rem; font-size: 0.8rem;'>
+            ⚠️ Ensure proper IAM permissions | 📚 Documentation | 🐛 Report Issues | 💬 Support
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
