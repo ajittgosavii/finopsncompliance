@@ -289,13 +289,7 @@ def render_enterprise_sidebar():
         
         st.markdown("---")
 
-def render_cfo_dashboard():
-    """CFO Executive Dashboard"""
-    if not EnterpriseAuth.check_permission(st.session_state.user, 'dashboard:cfo:tenant'):
-        st.error("❌ You don't have permission to view CFO Dashboard")
-        return
-    
-    st.title("💰 CFO Dashboard - Financial Overview")
+
     
     cost_data = st.session_state.cost_monitor.get_current_hourly_cost()
     budget_data = st.session_state.cost_monitor.get_budget_status()
@@ -315,13 +309,7 @@ def render_cfo_dashboard():
     chargeback = st.session_state.cost_monitor.get_chargeback_data()
     st.dataframe(pd.DataFrame(chargeback), use_container_width=True, hide_index=True)
 
-def render_control_tower():
-    """Control Tower Management Dashboard"""
-    if not EnterpriseAuth.check_permission(st.session_state.user, 'controltower:read:tenant'):
-        st.error("❌ You don't have permission to view Control Tower")
-        return
-    
-    st.title("🏗️ AWS Control Tower Management")
+
     
     ct = st.session_state.ct_manager
     lz = ct.get_landing_zone_status()
@@ -367,13 +355,7 @@ def render_control_tower():
                 st.success(f"✅ **SUCCESS!** Account {result['account_id']} provisioned in {elapsed:.1f} seconds!")
                 st.info(f"**Services Enabled:** {', '.join(result['services_enabled'])}")
 
-def render_realtime_costs():
-    """Real-Time Cost Operations Dashboard"""
-    if not EnterpriseAuth.check_permission(st.session_state.user, 'finops:read:tenant'):
-        st.error("❌ You don't have permission to view Real-Time Costs")
-        return
-    
-    st.title("💸 Real-Time Cost Operations")
+
     
     cost_data = st.session_state.cost_monitor.get_current_hourly_cost()
     anomalies = st.session_state.cost_monitor.detect_anomalies()
