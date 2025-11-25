@@ -1,3 +1,67 @@
+"""
+Future Minds | AI-Enhanced AWS FinOps & Compliance Platform
+Multi-Account Security Monitoring, Automated Remediation, Account Lifecycle Management & FinOps Integration
+
+Integrated Services:
+- AWS Security Hub, Config, GuardDuty, Inspector, CloudTrail
+- Service Control Policies (SCP)
+- Open Policy Agent (OPA) - CI/CD Pipeline Integration
+- KICS (Keeping Infrastructure as Code Secure) - Terraform, CloudFormation, Kubernetes scanning
+- GitHub Advanced Security (GHAS) - Secret & Code Scanning
+- PolicyBot & Bulldozer - Pull Request Compliance & Auto-Merge
+- Custom Probot Apps - GitHub Access Control & Branch Protection
+- AWS Compliance Tools: Security Hub, Firewall Manager, AWS Organization, Config Rules, QuickSight, Wiz.io
+- FinOps Tools: AWS Cost Explorer, Budgets, Cost Anomaly Detection, Trusted Advisor, Snowflake
+- AWS Bedrock (Claude AI) for Detection, Remediation & Gen AI Agents
+- GitHub/GitOps Integration
+- **Account Lifecycle Management (Automated Onboarding/Offboarding)**
+- CI/CD Pipeline Integration
+- Portfolio-Based Account Organization
+- FinOps Module for Cost Management & Optimization
+
+Features:
+✓ **Automated Account Onboarding** - One-click setup with all security services
+✓ **Safe Account Offboarding** - Automated decommissioning with archive
+✓ AI-Powered Detection & Analysis (Claude/Bedrock)
+✓ Automated Remediation with Code Generation
+✓ GitHub/GitOps Integration with Version Control
+✓ Tech Guardrails: SCP, OPA, KICS, GHAS, PolicyBot, Bulldozer, Probot Apps
+✓ AWS Compliance Tools: Security Hub, Firewall Manager, Config Rules, QuickSight, Wiz.io
+✓ FinOps Integration: Cost Explorer, Budgets, Anomaly Detection, Trusted Advisor, Snowflake
+✓ Gen AI & AI Agents: AWS Bedrock with Claude for intelligent automation
+✓ Multi-Portfolio Support (Retail, Healthcare, Financial)
+✓ Real-time Compliance Monitoring
+✓ Automated CI/CD Pipeline Integration
+✓ FinOps Dashboard & Cost Optimization
+
+**PRIMARY USE CASE: AWS Account Lifecycle Management**
+- Onboard new accounts with Security Hub, GuardDuty, Config, Inspector, CloudTrail
+- Apply compliance frameworks: PCI DSS, HIPAA, GDPR, SOC 2, ISO 27001
+- Deploy tech guardrails: SCPs, EventBridge, OPA policies, KICS, GHAS, PolicyBot
+- Commit configurations to GitHub for version control
+- Safely offboard accounts with full archival and audit trail
+
+Company: Future Minds
+Version: 4.5 - AWS Edition with Extended Tech Guardrails & Gen AI
+"""
+
+import streamlit as st
+import boto3
+from botocore.exceptions import ClientError, NoCredentialsError
+import anthropic
+import json
+import pandas as pd
+import numpy as np
+import random
+from datetime import datetime, timedelta
+import plotly.express as px
+import plotly.graph_objects as go
+from typing import Dict, List, Any, Optional, Tuple
+import time
+import hashlib
+import base64
+from pipeline_simulator import render_pipeline_simulator
+
 # Import FinOps module (optional - now using built-in FinOps section)
 # WITH this import:
 # Import AI-Enhanced FinOps module
@@ -17,7 +81,13 @@ except ImportError:
     print("Note: External FinOps module not available, using built-in FinOps section")
     
 
+# Note: Uncomment these imports when deploying with required packages
+# from github import Github, GithubException
+# import yaml
 
+# ============================================================================
+# PAGE CONFIGURATION
+# ============================================================================
 
 st.set_page_config(
     page_title="Future Minds | AWS Compliance Platform",
@@ -4968,7 +5038,10 @@ def render_remediation_dashboard():
 # SIDEBAR
 # ============================================================================
 
-
+def render_sidebar():
+    """Render sidebar with configuration and quick actions"""
+    with st.sidebar:
+        st.markdown("## ⚙️ Configuration")
         
         # 🆕 DEMO/LIVE TOGGLE - PROMINENT PLACEMENT
         st.markdown("### 🎮 Data Mode")
@@ -5673,7 +5746,15 @@ def render_github_gitops_tab():
         st.warning("⚠️ Configure GitHub token in sidebar to enable GitOps features")
         return
     
-
+    st.markdown("""
+    <div class='github-section'>
+        <h3>📦 Policy as Code Repository</h3>
+        <p>Automated Detection, Remediation, and Deployment through GitOps Workflow</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Main tabs for Detection, Remediation, and Status
+    gitops_tabs = st.tabs(["📊 Status", "🔍 Detection", "🔧 Remediation", "📝 Policy Update"])
     
     # ==================== STATUS TAB ====================
     with gitops_tabs[0]:
@@ -6537,7 +6618,15 @@ def render_mode_banner():
             </div>
             """, unsafe_allow_html=True)
 
+# ============================================================================
+# MAIN APPLICATION
+# ============================================================================
 
+# ============================================================================
+# ============================================================================
+
+def main():
+    """Main application entry point - Comprehensive Enterprise Platform"""
     initialize_session_state()
     
     # Render sidebar
