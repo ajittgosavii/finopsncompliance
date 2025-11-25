@@ -1,6 +1,6 @@
 """
 Enterprise Features Module for Future Minds Platform v5.0
-This module adds authentication, RBAC, and executive dashboards
+Clean, working version with proper navigation
 """
 
 import streamlit as st
@@ -21,22 +21,18 @@ class EnterpriseAuth:
         'global_admin': {
             'name': 'Global Administrator',
             'permissions': ['*:*:*'],
-            'description': 'Complete system access'
         },
         'cfo': {
             'name': 'CFO / FinOps Admin',
             'permissions': ['accounts:read:tenant', 'finops:*:tenant', 'reports:*:tenant', 'dashboard:cfo:tenant'],
-            'description': 'Financial operations and cost management'
         },
         'ciso': {
             'name': 'CISO / Security Admin',
             'permissions': ['accounts:read:tenant', 'security:*:tenant', 'compliance:*:tenant', 'reports:*:tenant', 'dashboard:ciso:tenant'],
-            'description': 'Security and compliance management'
         },
         'cto': {
             'name': 'CTO / Technology Lead',
             'permissions': ['accounts:*:tenant', 'controltower:*:tenant', 'reports:read:tenant', 'dashboard:cto:tenant'],
-            'description': 'Technology operations and infrastructure'
         },
     }
     
@@ -103,10 +99,6 @@ class EnterpriseAuth:
                 return True
         return False
 
-# ============================================================================
-# CONTROL TOWER MANAGER
-# ============================================================================
-
 class ControlTowerManager:
     """AWS Control Tower Integration"""
     
@@ -135,12 +127,8 @@ class ControlTowerManager:
             'services_enabled': ['SecurityHub', 'GuardDuty', 'Config', 'CloudTrail']
         }
 
-# ============================================================================
-# REAL-TIME COST MONITOR
-# ============================================================================
-
 class RealTimeCostMonitor:
-    """Real-time cost monitoring and streaming"""
+    """Real-time cost monitoring"""
     
     def get_current_hourly_cost(self):
         return {
@@ -201,7 +189,7 @@ def init_enterprise_session():
         st.session_state.cost_monitor = RealTimeCostMonitor()
 
 def render_enterprise_login():
-    """Enterprise login page with SSO"""
+    """Enterprise login page"""
     st.markdown("""
     <div class='main-header'>
         <h1>🛡️ Future Minds Enterprise Platform v5.0</h1>
@@ -258,38 +246,48 @@ def render_enterprise_header():
             st.rerun()
 
 def render_enterprise_sidebar():
-    """Render enterprise navigation menu in sidebar"""
-    if st.session_state.get('authenticated'):
-        st.markdown("## 🎯 Executive Dashboards")
-        
-        user = st.session_state.user
-        
-        # CFO Dashboard
-        if EnterpriseAuth.check_permission(user, 'dashboard:cfo:tenant'):
-            if st.button("💰 CFO Dashboard", use_container_width=True, key="nav_cfo"):
-                st.session_state.enterprise_page = 'cfo'
-                st.rerun()
-        
-        # Control Tower
-        if EnterpriseAuth.check_permission(user, 'controltower:read:tenant'):
-            if st.button("🏗️ Control Tower", use_container_width=True, key="nav_ct"):
-                st.session_state.enterprise_page = 'controltower'
-                st.rerun()
-        
-        # Real-Time Costs
-        if EnterpriseAuth.check_permission(user, 'finops:read:tenant'):
-            if st.button("💸 Real-Time Costs", use_container_width=True, key="nav_rtc"):
-                st.session_state.enterprise_page = 'realtime_costs'
-                st.rerun()
-        
-        # Main Dashboard
-        if st.button("🏠 Main Dashboard", use_container_width=True, key="nav_main"):
-            st.session_state.enterprise_page = None
+    """Render enterprise navigation menu"""
+    st.markdown("## 🎯 Executive Dashboards")
+    
+    user = st.session_state.user
+    
+    # CFO Dashboard
+    if EnterpriseAuth.check_permission(user, 'dashboard:cfo:tenant'):
+        if st.button("💰 CFO Dashboard", use_container_width=True, key="nav_cfo"):
+            st.session_state.enterprise_page = 'cfo'
             st.rerun()
-        
-        st.markdown("---")
+    
+    # Control Tower
+    if EnterpriseAuth.check_permission(user, 'controltower:read:tenant'):
+        if st.button("🏗️ Control Tower", use_container_width=True, key="nav_ct"):
+            st.session_state.enterprise_page = 'controltower'
+            st.rerun()
+    
+    # Real-Time Costs
+    if EnterpriseAuth.check_permission(user, 'finops:read:tenant'):
+        if st.button("💸 Real-Time Costs", use_container_width=True, key="nav_rtc"):
+            st.session_state.enterprise_page = 'realtime_costs'
+            st.rerun()
+    
+    # Main Dashboard
+    if st.button("🏠 Main Dashboard", use_container_width=True, key="nav_main"):
+        st.session_state.enterprise_page = None
+        st.rerun()
+    
+    st.markdown("---")
 
-
+def render_cfo_dashboard():
+    """CFO Executive Dashboard"""
+    if not EnterpriseAuth.check_permission(st.session_state.user, 'dashboard:cfo:tenant'):
+        st.error("❌ Access Denied")
+        return
+    
+    # Back button
+    if st.button("⬅️ Back to Main Dashboard", key="cfo_back"):
+        st.session_state.enterprise_page = None
+        st.rerun()
+    
+    st.title("💰 CFO Dashboard - Financial Overview")
     
     cost_data = st.session_state.cost_monitor.get_current_hourly_cost()
     budget_data = st.session_state.cost_monitor.get_budget_status()
@@ -309,7 +307,18 @@ def render_enterprise_sidebar():
     chargeback = st.session_state.cost_monitor.get_chargeback_data()
     st.dataframe(pd.DataFrame(chargeback), use_container_width=True, hide_index=True)
 
-
+def render_control_tower():
+    """Control Tower Management Dashboard"""
+    if not EnterpriseAuth.check_permission(st.session_state.user, 'controltower:read:tenant'):
+        st.error("❌ Access Denied")
+        return
+    
+    # Back button
+    if st.button("⬅️ Back to Main Dashboard", key="ct_back"):
+        st.session_state.enterprise_page = None
+        st.rerun()
+    
+    st.title("🏗️ AWS Control Tower Management")
     
     ct = st.session_state.ct_manager
     lz = ct.get_landing_zone_status()
@@ -343,10 +352,9 @@ def render_enterprise_sidebar():
             start_time = time.time()
             with st.spinner("Provisioning via Account Factory..."):
                 progress = st.progress(0)
-                steps = 20
-                for i in range(steps + 1):
+                for i in range(21):
                     progress.progress(i * 5)
-                    time.sleep(0.05)  # Total ~1 second for demo
+                    time.sleep(0.05)
                 
                 result = ct.provision_account(name, email, ou, sso)
                 elapsed = time.time() - start_time
@@ -355,7 +363,18 @@ def render_enterprise_sidebar():
                 st.success(f"✅ **SUCCESS!** Account {result['account_id']} provisioned in {elapsed:.1f} seconds!")
                 st.info(f"**Services Enabled:** {', '.join(result['services_enabled'])}")
 
-
+def render_realtime_costs():
+    """Real-Time Cost Operations Dashboard"""
+    if not EnterpriseAuth.check_permission(st.session_state.user, 'finops:read:tenant'):
+        st.error("❌ Access Denied")
+        return
+    
+    # Back button
+    if st.button("⬅️ Back to Main Dashboard", key="rtc_back"):
+        st.session_state.enterprise_page = None
+        st.rerun()
+    
+    st.title("💸 Real-Time Cost Operations")
     
     cost_data = st.session_state.cost_monitor.get_current_hourly_cost()
     anomalies = st.session_state.cost_monitor.detect_anomalies()
