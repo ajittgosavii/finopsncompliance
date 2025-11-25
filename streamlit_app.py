@@ -61,6 +61,17 @@ import time
 import hashlib
 import base64
 from pipeline_simulator import render_pipeline_simulator
+# Import Enterprise Features (v5.0)
+try:
+    from enterprise_module import (
+        init_enterprise_session, render_enterprise_login,
+        render_enterprise_header, render_enterprise_sidebar,
+        check_enterprise_routing
+    )
+    ENTERPRISE_FEATURES_AVAILABLE = True
+except ImportError:
+    ENTERPRISE_FEATURES_AVAILABLE = False
+
 
 # Import FinOps module (optional - now using built-in FinOps section)
 # WITH this import:
@@ -5041,6 +5052,11 @@ def render_remediation_dashboard():
 def render_sidebar():
     """Render sidebar with configuration and quick actions"""
     with st.sidebar:
+        # Enterprise menu (if available)
+        if 'ENTERPRISE_FEATURES_AVAILABLE' in globals() and ENTERPRISE_FEATURES_AVAILABLE:
+            if st.session_state.get('authenticated'):
+                render_enterprise_sidebar()
+        
         st.markdown("## ⚙️ Configuration")
         
         # 🆕 DEMO/LIVE TOGGLE - PROMINENT PLACEMENT
@@ -6627,6 +6643,17 @@ def render_mode_banner():
 
 def main():
     """Main application entry point - Comprehensive Enterprise Platform"""
+    
+    # Enterprise features (if available)
+    if 'ENTERPRISE_FEATURES_AVAILABLE' in globals() and ENTERPRISE_FEATURES_AVAILABLE:
+        init_enterprise_session()
+        if not st.session_state.get('authenticated', False):
+            render_enterprise_login()
+            return
+        render_enterprise_header()
+        if check_enterprise_routing():
+            return
+    
     initialize_session_state()
     
     # Render sidebar
