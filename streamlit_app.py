@@ -51,6 +51,8 @@ from botocore.exceptions import ClientError, NoCredentialsError
 import anthropic
 import json
 import pandas as pd
+import numpy as np
+import random
 from datetime import datetime, timedelta
 import plotly.express as px
 import plotly.graph_objects as go
@@ -59,18 +61,24 @@ import time
 import hashlib
 import base64
 from pipeline_simulator import render_pipeline_simulator
-# Import FinOps module
+
+# Import FinOps module (optional - now using built-in FinOps section)
 # WITH this import:
 # Import AI-Enhanced FinOps module
-from finops_module_enhanced_complete import (
-    render_enhanced_finops_dashboard,
-    render_finops_dashboard,  # Keep for backward compatibility
-    fetch_cost_data,
-    fetch_tag_compliance,
-    fetch_resource_inventory,
-    fetch_cost_optimization_recommendations,
-    get_anthropic_client
-)
+try:
+    from finops_module_enhanced_complete import (
+        render_enhanced_finops_dashboard,
+        render_finops_dashboard,  # Keep for backward compatibility
+        fetch_cost_data,
+        fetch_tag_compliance,
+        fetch_resource_inventory,
+        fetch_cost_optimization_recommendations,
+        get_anthropic_client
+    )
+    EXTERNAL_FINOPS_AVAILABLE = True
+except ImportError:
+    EXTERNAL_FINOPS_AVAILABLE = False
+    print("Note: External FinOps module not available, using built-in FinOps section")
     
 
 # Note: Uncomment these imports when deploying with required packages
@@ -6718,16 +6726,2942 @@ def main():
                 st.info("No security findings available. Connect to AWS to fetch findings.")
     
     with tabs[8]:
-        view_mode = st.selectbox(
-            "Dashboard View",
-            ["🤖 AI-Enhanced", "📊 Traditional"],
-            help="AI mode uses Anthropic Claude for intelligent insights"
-        )
-        if view_mode == "🤖 AI-Enhanced":
-            render_enhanced_finops_dashboard()
-        else:
-            render_finops_dashboard()
+        st.header("💰 FinOps Intelligence & Cost Optimization")
     
+                # Create sub-tabs for FinOps
+        finops_tab1, finops_tab2, finops_tab3, finops_tab4, finops_tab5, finops_tab6, finops_tab7, finops_tab8, finops_tab9, finops_tab10, finops_tab11 = st.tabs([
+        "💵 Cost Overview",
+        "🤖 AI/ML Costs",
+        "⚠️ Anomalies",
+        "📊 Optimization",
+        "📈 Budget & Forecast",
+        "🗑️ Waste Detection",
+        "💳 Chargeback",
+        "📉 Unit Economics",
+        "🌱 Sustainability",
+        "🔧 Data Pipelines",
+        "🧠 Optimization Engine"
+        ])
+    
+        with finops_tab1:
+                st.subheader("Cost Distribution & Trends")
+        
+                    # Cost breakdown
+                col1, col2 = st.columns(2)
+        
+                with col1:
+                    st.markdown("### Cost Distribution by Service")
+            
+                    services = ['EC2', 'RDS', 'S3', 'SageMaker', 'Lambda', 'Bedrock', 'EKS', 'Data Transfer', 'Other']
+                    costs = [850000, 420000, 280000, 340000, 180000, 125000, 350000, 290000, 165000]
+            
+                    fig = go.Figure(data=[go.Pie(
+                        labels=services,
+                        values=costs,
+                        hole=0.4,
+                        marker_colors=['#A3BE8C', '#88C0D0', '#EBCB8B', '#B48EAD', '#5E81AC', '#D08770', '#81A1C1', '#BF616A', '#4C566A'],
+                        textinfo='percent',
+                        textfont=dict(color='#FFFFFF', size=11),
+                        insidetextfont=dict(color='#FFFFFF'),
+                        outsidetextfont=dict(color='#FFFFFF')
+                    )])
+                    fig.update_layout(
+                        template='plotly_dark', 
+                        height=350,
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        legend=dict(font=dict(color='#FFFFFF', size=11)),
+                        font=dict(color='#FFFFFF')
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                with col2:
+                    st.markdown("### Monthly Spend Breakdown")
+            
+                    st.metric("Total Monthly Spend", "$2.8M", "+12% vs last month")
+            
+                    spend_breakdown = [
+                        ("Compute (EC2, EKS)", "$1.2M", "43%"),
+                        ("AI/ML (SageMaker, Bedrock)", "$465K", "17%"),
+                        ("Database (RDS, DynamoDB)", "$420K", "15%"),
+                        ("Storage (S3, EBS, EFS)", "$350K", "13%"),
+                        ("Networking", "$290K", "10%"),
+                        ("Other Services", "$75K", "2%")
+                    ]
+            
+                    for category, cost, pct in spend_breakdown:
+                        st.markdown(f"""
+                        <div style='background: #2E3440; padding: 0.6rem; border-radius: 5px; margin: 0.3rem 0;'>
+                            <div style='display: flex; justify-content: space-between;'>
+                                <span><strong>{category}</strong></span>
+                                <span style='color: #A3BE8C;'>{cost}</span>
+                            </div>
+                            <small style='color: #88C0D0;'>{pct} of total spend</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+        
+                st.markdown("---")
+        
+                    # Commitment analysis
+                st.subheader("📊 Commitment Utilization & Recommendations")
+        
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Current RI Coverage", "45%", "-5% (expiring soon)")
+                with col2:
+                    st.metric("Savings Plan Coverage", "28%", "+8% this month")
+                with col3:
+                    st.metric("On-Demand Spend", "$1.2M/month", "-$180K vs last month")
+        
+                    # Utilization chart
+                dates = pd.date_range(end=datetime.now(), periods=30, freq='D')
+                ri_util = np.random.normal(85, 5, 30)
+                sp_util = np.random.normal(92, 3, 30)
+        
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=dates, y=ri_util, name='RI Utilization', line=dict(color='#88C0D0')))
+                fig.add_trace(go.Scatter(x=dates, y=sp_util, name='Savings Plan Utilization', line=dict(color='#A3BE8C')))
+                fig.add_hline(y=90, line_dash="dash", line_color="#EBCB8B", annotation_text="Target: 90%")
+                fig.update_layout(
+                    template='plotly_dark',
+                    height=300,
+                    yaxis_title='Utilization %',
+                    yaxis_range=[70, 100],
+                    hovermode='x unified'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+    
+        with finops_tab2:
+                st.subheader("🤖 AI/ML Workload Cost Analysis")
+        
+                st.markdown("""
+                **Comprehensive cost tracking for AI/ML workloads** including SageMaker, Bedrock, GPU instances, 
+                and data processing pipelines.
+                """)
+        
+                    # AI/ML cost metrics
+                col1, col2, col3, col4 = st.columns(4)
+        
+                with col1:
+                    st.metric("Total AI/ML Spend", "$465K/month", "+24% MoM")
+                with col2:
+                    st.metric("SageMaker", "$340K", "+18%")
+                with col3:
+                    st.metric("Bedrock (Claude 4)", "$125K", "+45%")
+                with col4:
+                    st.metric("GPU Instances", "$89K", "+12%")
+        
+                st.markdown("---")
+        
+                    # AI/ML Service Breakdown
+                col1, col2 = st.columns([2, 1])
+        
+                with col1:
+                    st.markdown("### AI/ML Spend by Service")
+            
+                    dates = pd.date_range(end=datetime.now(), periods=90, freq='D')
+                    sagemaker_cost = 280000 + np.cumsum(np.random.normal(800, 200, 90))
+                    bedrock_cost = 65000 + np.cumsum(np.random.normal(700, 150, 90))
+                    gpu_cost = 75000 + np.cumsum(np.random.normal(200, 100, 90))
+            
+                    fig = go.Figure()
+            
+                    fig.add_trace(go.Scatter(
+                        x=dates, y=sagemaker_cost,
+                        name='SageMaker',
+                        line=dict(color='#B48EAD', width=2),
+                        stackgroup='one'
+                    ))
+            
+                    fig.add_trace(go.Scatter(
+                        x=dates, y=bedrock_cost,
+                        name='Bedrock',
+                        line=dict(color='#88C0D0', width=2),
+                        stackgroup='one'
+                    ))
+            
+                    fig.add_trace(go.Scatter(
+                        x=dates, y=gpu_cost,
+                        name='GPU Instances',
+                        line=dict(color='#EBCB8B', width=2),
+                        stackgroup='one'
+                    ))
+            
+                    fig.update_layout(
+                        template='plotly_dark',
+                        height=350,
+                        yaxis_title='Cumulative Cost ($)',
+                        xaxis_title='Date',
+                        hovermode='x unified'
+                    )
+            
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                with col2:
+                    st.markdown("### Cost Drivers")
+            
+                    st.warning("""
+                    **⚠️ Rapid Growth Areas:**
+            
+                    **Bedrock (+45% MoM)**
+                    - Claude 4 API usage: +67%
+                    - New AI agents deployed: 6
+                    - Avg daily cost: $4,167
+            
+                    **SageMaker (+18% MoM)**
+                    - Training jobs: +23%
+                    - ml.p4d.24xlarge hours: +34%
+                    - Inference endpoints: +12%
+            
+                    **GPU Instances (+12% MoM)**
+                    - p3.8xlarge: 234 hours/day
+                    - g5.12xlarge: 189 hours/day
+                    - Mostly dev/test workloads
+                    """)
+        
+                st.markdown("---")
+        
+                    # SageMaker Detailed Breakdown
+                st.markdown("### 🧠 SageMaker Cost Breakdown")
+        
+                col1, col2, col3 = st.columns(3)
+        
+                with col1:
+                    st.markdown("#### Training Jobs")
+                    st.metric("Monthly Cost", "$198K", "+23%")
+            
+                    training_data = pd.DataFrame({
+                        'Instance Type': ['ml.p4d.24xlarge', 'ml.p3.16xlarge', 'ml.g5.12xlarge', 'ml.g4dn.12xlarge'],
+                        'Hours/Month': [1245, 892, 567, 423],
+                        'Cost': [67890, 48234, 32145, 18234],
+                        'Jobs': [145, 234, 345, 456]
+                    })
+            
+                    st.dataframe(training_data, use_container_width=True, hide_index=True)
+        
+                with col2:
+                    st.markdown("#### Inference Endpoints")
+                    st.metric("Monthly Cost", "$89K", "+15%")
+            
+                    st.markdown("""
+                    **Active Endpoints: 45**
+            
+                    - Production: 28 endpoints
+                    - Staging: 12 endpoints
+                    - Dev: 5 endpoints
+            
+                    **Instance Types:**
+                    - ml.m5.xlarge: 18 endpoints
+                    - ml.c5.2xlarge: 15 endpoints
+                    - ml.g4dn.xlarge: 12 endpoints
+            
+                    **Auto-scaling:** 67% enabled
+                    """)
+        
+                with col3:
+                    st.markdown("#### Data Processing")
+                    st.metric("Monthly Cost", "$53K", "+12%")
+            
+                    st.markdown("""
+                    **Processing Jobs: 1,247**
+            
+                    - Feature engineering: 589 jobs
+                    - Data validation: 423 jobs
+                    - Model evaluation: 235 jobs
+            
+                    **Storage:**
+                    - S3 training data: 45TB
+                    - Model artifacts: 12TB
+                    - Feature store: 8TB
+                    """)
+        
+                st.markdown("---")
+        
+                    # Bedrock Usage
+                st.markdown("### 🤖 AWS Bedrock Usage & Costs")
+        
+                col1, col2 = st.columns([3, 2])
+        
+                with col1:
+                        # Bedrock usage trend
+                    dates = pd.date_range(end=datetime.now(), periods=30, freq='D')
+                    input_tokens = np.random.normal(45000000, 5000000, 30)
+                    output_tokens = np.random.normal(12000000, 2000000, 30)
+            
+                    fig = go.Figure()
+            
+                    fig.add_trace(go.Bar(
+                        x=dates, y=input_tokens/1000000,
+                        name='Input Tokens (M)',
+                        marker_color='#88C0D0'
+                    ))
+            
+                    fig.add_trace(go.Bar(
+                        x=dates, y=output_tokens/1000000,
+                        name='Output Tokens (M)',
+                        marker_color='#A3BE8C'
+                    ))
+            
+                    fig.update_layout(
+                        template='plotly_dark',
+                        height=300,
+                        title='Bedrock Token Usage (Daily)',
+                        yaxis_title='Tokens (Millions)',
+                        barmode='group',
+                        hovermode='x unified'
+                    )
+            
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                with col2:
+                    st.markdown("### Bedrock Details")
+            
+                    st.info("""
+                    **Claude 4 Sonnet Usage**
+            
+                    **Daily Metrics:**
+                    - API calls: 1.2M requests
+                    - Input tokens: 45M tokens
+                    - Output tokens: 12M tokens
+                    - Avg cost/day: $4,167
+            
+                    **Use Cases:**
+                    - Cost optimization agent
+                    - Security analysis
+                    - Anomaly detection
+                    - Report generation
+                    - Natural language queries
+            
+                    **Model Configuration:**
+                    - Provisioned throughput: 10K TPS
+                    - On-demand overflow: Yes
+                    """)
+        
+                st.markdown("---")
+        
+                    # GPU Instance Analysis
+                st.markdown("### 🎮 GPU Instance Cost Analysis")
+        
+                gpu_data = pd.DataFrame({
+                    'Instance Type': ['p4d.24xlarge', 'p3.16xlarge', 'p3.8xlarge', 'g5.12xlarge', 'g4dn.12xlarge'],
+                    'Hourly_Cost': [32.77, 24.48, 12.24, 5.67, 3.91],
+                    'Hours_Month': [234, 345, 567, 423, 678],
+                    'Monthly_Cost': [7668, 8446, 6940, 2398, 2651],
+                    'Utilization': [89, 76, 82, 65, 71]
+                })
+        
+                col1, col2 = st.columns([2, 1])
+        
+                with col1:
+                    st.dataframe(
+                        gpu_data,
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "Hourly_Cost": st.column_config.NumberColumn("$/Hour", format="$%.2f"),
+                            "Hours_Month": st.column_config.NumberColumn("Hours/Month"),
+                            "Monthly_Cost": st.column_config.NumberColumn("Monthly Cost", format="$%d"),
+                            "Utilization": st.column_config.ProgressColumn("Utilization %", min_value=0, max_value=100)
+                        }
+                    )
+        
+                with col2:
+                    st.success("""
+                    **💡 Optimization Opportunity**
+            
+                    **Right-sizing GPU Instances:**
+                    - p3.16xlarge at 76% util
+                    - Recommend: p3.8xlarge
+                    - Savings: $2,234/month
+            
+                    **Spot Instances:**
+                    - ML training suitable
+                    - Potential savings: 70%
+                    - Estimated: $18K/month
+            
+                    **Total AI/ML Savings:**
+                    **$20.2K/month identified**
+                    """)
+        
+                st.markdown("---")
+        
+                    # AI-generated ML cost insights
+                st.subheader("🤖 Claude-Generated ML Cost Insights")
+        
+                st.info("""
+                **AI/ML Workload Cost Analysis** (Generated by Claude 4)
+        
+                Based on 90 days of usage analysis across AI/ML services:
+        
+                1. **SageMaker Training Optimization**:
+                   - Your ml.p4d.24xlarge instances run 1,245 hours/month at $32.77/hour
+                   - GPU utilization shows average 89% (good), but jobs often complete early
+                   - **Recommendation**: Implement automatic job termination when training plateaus
+                   - **Expected savings**: $12K/month
+        
+                2. **Bedrock Cost Trajectory**:
+                   - 45% month-over-month growth is unsustainable without optimization
+                   - Current trajectory: $180K/month by Q1 2025
+                   - Most tokens consumed by report generation (can be optimized)
+                   - **Recommendation**: Implement response caching for repeated queries
+                   - **Expected savings**: $35K/month at current scale
+        
+                3. **GPU Instance Strategy**:
+                   - 67% of GPU hours are for dev/test workloads
+                   - These workloads can tolerate interruptions
+                   - **Recommendation**: Migrate dev/test to Spot Instances
+                   - **Expected savings**: $18K/month (70% discount)
+        
+                4. **SageMaker Inference**:
+                   - Only 67% of endpoints have auto-scaling enabled
+                   - During off-peak hours, instances idle at 15-20% utilization
+                   - **Recommendation**: Enable auto-scaling on all prod endpoints
+                   - **Expected savings**: $8K/month
+        
+                5. **Data Storage**:
+                   - 45TB of training data in S3 Standard
+                   - Access patterns show 80% of data not accessed in 90 days
+                   - **Recommendation**: Implement lifecycle policy to Intelligent-Tiering
+                   - **Expected savings**: $5K/month
+        
+                **Total AI/ML Optimization Potential: $78K/month**
+        
+                **Confidence Level**: 92% | **Implementation Priority**: High
+                """)
+    
+        with finops_tab3:
+                st.subheader("⚠️ AI-Powered Cost Anomaly Detection")
+        
+                st.markdown("""
+                **Real-time anomaly detection** using machine learning to identify unusual spending patterns, 
+                budget overruns, and unexpected cost spikes across all AWS services.
+                """)
+        
+                    # Anomaly metrics
+                col1, col2, col3, col4 = st.columns(4)
+        
+                with col1:
+                    st.metric("Active Anomalies", "8", "-4 resolved")
+                with col2:
+                    st.metric("Total Cost Impact", "$87K", "Last 7 days")
+                with col3:
+                    st.metric("Auto-Resolved", "23", "This week")
+                with col4:
+                    st.metric("Detection Accuracy", "96.8%", "+1.2%")
+        
+                st.markdown("---")
+        
+                    # Current Anomalies
+                col1, col2 = st.columns([2, 1])
+        
+                with col1:
+                    st.markdown("### 🔴 Active Cost Anomalies")
+            
+                    active_anomalies = [
+                        ("CRITICAL", "SageMaker Training Spike", "prod-ml-training-087", "$28.4K/day", "+787%", "3 days", 
+                         "ml.p4d.24xlarge instance running 24/7, typically batch jobs run 4-8 hours"),
+                        ("HIGH", "Bedrock Token Surge", "ai-agents-production", "$8.2K/day", "+245%", "2 days",
+                         "Unusual token consumption from anomaly detection agent, possible infinite loop"),
+                        ("HIGH", "Data Transfer Spike", "prod-data-pipeline-042", "$4.8K/day", "+420%", "1 day",
+                         "Cross-region data transfer to eu-west-1 from backup job misconfiguration"),
+                        ("MEDIUM", "EC2 Unexpected Usage", "dev-sandbox-156", "$2.1K/day", "+180%", "5 days",
+                         "Developer left 15x c5.9xlarge instances running over weekend"),
+                        ("MEDIUM", "RDS Storage Growth", "analytics-db-021", "$1.9K/day", "+95%", "7 days",
+                         "Database size doubled, logs not being rotated properly")
+                    ]
+            
+                    for severity, title, account, cost, increase, duration, detail in active_anomalies:
+                        if severity == "CRITICAL":
+                            color = "#BF616A"
+                        elif severity == "HIGH":
+                            color = "#D08770"
+                        else:
+                            color = "#EBCB8B"
+                
+                        st.markdown(f"""
+                        <div style='background: #2E3440; padding: 1rem; border-radius: 5px; margin: 0.5rem 0; border-left: 5px solid {color};'>
+                            <div style='display: flex; justify-content: space-between; align-items: center;'>
+                                <div>
+                                    <strong style='color: {color}; font-size: 1.1rem;'>{severity}</strong>
+                                    <strong style='font-size: 1.1rem;'> | {title}</strong>
+                                </div>
+                                <div style='text-align: right;'>
+                                    <span style='color: #A3BE8C; font-size: 1.3rem; font-weight: bold;'>{cost}</span><br/>
+                                    <span style='color: {color};'>{increase} increase</span>
+                                </div>
+                            </div>
+                            <div style='margin-top: 0.5rem;'>
+                                <small><strong>Account:</strong> {account}</small><br/>
+                                <small><strong>Duration:</strong> {duration}</small><br/>
+                                <small style='color: #D8DEE9;'>{detail}</small>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+        
+                with col2:
+                    st.markdown("### 🎯 Detection Model")
+            
+                    st.success("""
+                    **AI Anomaly Detection**
+            
+                    **Model Architecture:**
+                    - LSTM neural network
+                    - 90-day training window
+                    - Hourly predictions
+                    - 96.8% accuracy
+            
+                    **Features Used:**
+                    - Historical spend patterns
+                    - Day of week/hour trends
+                    - Service-specific behavior
+                    - Account activity level
+                    - Regional patterns
+            
+                    **Detection Criteria:**
+                    - >3 std deviations
+                    - Sustained for >2 hours
+                    - Context-aware thresholds
+                    - Business calendar aware
+            
+                    **Actions:**
+                    - Auto-alert DevOps team
+                    - Create ServiceNow ticket
+                    - Suggest remediation
+                    - Auto-stop if criteria met
+                    """)
+        
+                st.markdown("---")
+        
+                    # Anomaly visualization
+                st.markdown("### 📊 Cost Anomaly Timeline")
+        
+                    # Generate anomaly data
+                dates = pd.date_range(end=datetime.now(), periods=168, freq='H')  # 7 days hourly
+                baseline = np.random.normal(120000, 5000, 168)
+                actual = baseline.copy()
+        
+                    # Add anomalies
+                actual[60:84] = baseline[60:84] * 4.2  # SageMaker spike
+                actual[120:144] = baseline[120:144] * 2.8  # Bedrock surge
+                actual[150:156] = baseline[150:156] * 3.5  # Data transfer
+        
+                fig = go.Figure()
+        
+                    # Expected baseline
+                fig.add_trace(go.Scatter(
+                    x=dates, y=baseline,
+                    name='Expected (Baseline)',
+                    line=dict(color='#88C0D0', width=1, dash='dash'),
+                    opacity=0.7
+                ))
+        
+                    # Actual spend
+                fig.add_trace(go.Scatter(
+                    x=dates, y=actual,
+                    name='Actual Spend',
+                    line=dict(color='#A3BE8C', width=2),
+                    fill='tonexty',
+                    fillcolor='rgba(163, 190, 140, 0.1)'
+                ))
+        
+                    # Highlight anomalies
+                anomaly_mask = actual > baseline * 2
+                fig.add_trace(go.Scatter(
+                    x=dates[anomaly_mask],
+                    y=actual[anomaly_mask],
+                    mode='markers',
+                    name='Anomalies Detected',
+                    marker=dict(color='#BF616A', size=10, symbol='x')
+                ))
+        
+                fig.update_layout(
+                    template='plotly_dark',
+                    height=350,
+                    yaxis_title='Hourly Cost ($)',
+                    xaxis_title='Date/Time',
+                    hovermode='x unified',
+                    legend=dict(orientation='h', yanchor='bottom', y=1.02)
+                )
+        
+                st.plotly_chart(fig, use_container_width=True)
+        
+                st.markdown("---")
+        
+                    # AI Reasoning Example
+                st.markdown("### 🤖 Claude Anomaly Analysis Example")
+        
+                with st.expander("View Detailed AI Reasoning for SageMaker Anomaly", expanded=False):
+                    st.markdown("""
+                    **Anomaly ID:** ANO-2024-11-23-00142  
+                    **Detection Time:** 2024-11-23 18:34:12 UTC  
+                    **Severity:** CRITICAL  
+            
+                    ---
+            
+                    **Claude 4 Analysis:**
+            
+                    **Event Details:**
+                    - Account: prod-ml-training-087
+                    - Service: SageMaker
+                    - Normal daily spend: $3,200
+                    - Current daily spend: $28,400 (+787%)
+                    - Duration: 3 days
+                    - Total excess cost: $75,600
+            
+                    **Root Cause Analysis:**
+            
+                    I've identified an ml.p4d.24xlarge training instance (job ID: sm-train-20241120-1534) that has been 
+                    running continuously for 72 hours. Based on historical patterns, this team's training jobs typically 
+                    complete in 4-8 hours.
+            
+                    **Evidence:**
+                    1. CloudWatch metrics show flat GPU utilization at 23% (unusually low)
+                    2. Training loss hasn't improved in 48 hours (plateaued)
+                    3. No corresponding ServiceNow ticket for extended training
+                    4. Instance launched on Friday 6:34 PM (after business hours)
+                    5. Similar pattern occurred 3 months ago (ANO-2024-08-15-00087)
+            
+                    **Probable Cause:**
+                    The training script likely hit an edge case and is stuck in a loop, or the developer forgot to set 
+                    early stopping criteria. The Friday evening launch time suggests this was started before the weekend 
+                    and left running unattended.
+            
+                    **Business Impact:**
+                    - Cost impact: $75,600 (and growing at $28,400/day)
+                    - Wastes 72 hours of GPU capacity ($2,360/hour)
+                    - Blocks other teams from GPU access
+                    - Risk: Will continue until manually stopped
+            
+                    **Recommended Actions:**
+            
+                    **Immediate (Within 1 hour):**
+                    1. ✅ Alert data science team lead via Slack (sent 18:34 UTC)
+                    2. ✅ Create HIGH priority ServiceNow incident (INC0089234)
+                    3. ⏳ If no response in 30 minutes: Auto-stop training job
+                    4. ⏳ Send summary to FinOps team and account owner
+            
+                    **Preventive Measures:**
+                    1. Implement mandatory max_runtime parameter (suggest: 12 hours for this team)
+                    2. Add CloudWatch alarm for >8 hour training jobs
+                    3. Enable SageMaker automatic job termination on plateau
+                    4. Require approval for p4d instances (>$30/hour)
+            
+                    **Expected Outcome:**
+                    - Immediate: Stop runaway job, prevent additional $28K/day spend
+                    - Long-term: Prevent 90% of similar anomalies (based on historical data)
+            
+                    **Confidence Level:** 98% - High certainty this requires immediate intervention
+            
+                    **Compliance Note:**
+                    This incident demonstrates need for preventive controls per FinOps best practices. 
+                    Recommend implementing AWS Budgets with automatic actions for similar scenarios.
+            
+                    ---
+            
+                    **Action Timeline:**
+                    - 18:34 UTC: Anomaly detected by AI
+                    - 18:34 UTC: Slack alert sent to #ml-training channel
+                    - 18:35 UTC: ServiceNow incident INC0089234 created
+                    - 18:42 UTC: Data science lead acknowledged
+                    - 18:47 UTC: Training job stopped manually
+                    - 18:50 UTC: Post-mortem scheduled for Monday
+            
+                    **Status:** ✅ RESOLVED - Manual intervention completed
+                    """)
+        
+                st.markdown("---")
+        
+                    # Anomaly statistics
+                col1, col2, col3 = st.columns(3)
+        
+                with col1:
+                    st.markdown("### 📈 Detection Stats (30 Days)")
+                    st.metric("Anomalies Detected", "247")
+                    st.metric("Auto-Resolved", "189", "76.5%")
+                    st.metric("Required Human Review", "58", "23.5%")
+                    st.metric("False Positives", "9", "3.6%")
+        
+                with col2:
+                    st.markdown("### 💰 Cost Impact Prevented")
+                    st.metric("Total Excess Cost Detected", "$1.2M")
+                    st.metric("Cost Prevented", "$987K", "82%")
+                    st.metric("Avg Time to Detection", "1.8 hours")
+                    st.metric("Avg Time to Resolution", "4.2 hours")
+        
+                with col3:
+                    st.markdown("### 🎯 Top Anomaly Types")
+            
+                    anomaly_types = [
+                        ("ML Training Overruns", 89, "36%"),
+                        ("Forgotten Resources", 67, "27%"),
+                        ("Misconfigured Auto-Scaling", 45, "18%"),
+                        ("Data Transfer Spikes", 28, "11%"),
+                        ("Other", 18, "8%")
+                    ]
+            
+                    for atype, count, pct in anomaly_types:
+                        st.markdown(f"""
+                        <div style='background: #2E3440; padding: 0.4rem; border-radius: 3px; margin: 0.2rem 0;'>
+                            <strong>{atype}</strong>: {count} ({pct})
+                        </div>
+                        """, unsafe_allow_html=True)
+    
+        with finops_tab4:
+                st.subheader("📊 Optimization Opportunities")
+        
+                opportunities = [
+                    ("Right-sizing EC2 Instances", "$124K/month", "🟢 High Confidence", "687 instances identified"),
+                    ("ML Training Job Optimization", "$78K/month", "🟢 High Confidence", "SageMaker + GPU instances"),
+                    ("Reserved Instance Coverage", "$89K/month", "🟢 High Confidence", "Stable workload coverage"),
+                    ("Idle Resource Cleanup", "$67K/month", "🟢 High Confidence", "1,247 idle resources"),
+                    ("S3 Lifecycle Policies", "$43K/month", "🟡 Medium Confidence", "45TB candidate data"),
+                    ("Bedrock Response Caching", "$35K/month", "🟢 High Confidence", "Repeated queries"),
+                    ("EBS Volume Optimization", "$28K/month", "🟡 Medium Confidence", "Oversized volumes"),
+                    ("Spot Instance Migration", "$18K/month", "🟢 High Confidence", "Dev/test GPU workloads")
+                ]
+        
+                st.markdown("### 💡 Top Optimization Recommendations")
+        
+                total_savings = sum([int(opp[1].replace('$','').replace('K/month','')) for opp in opportunities])
+                st.success(f"**Total Monthly Savings Potential: ${total_savings}K** ({total_savings*12}K annually)")
+        
+                for opp, savings, confidence, detail in opportunities:
+                    confidence_color = "#A3BE8C" if "High" in confidence else "#EBCB8B"
+                    st.markdown(f"""
+                    <div style='background: #2E3440; padding: 1rem; border-radius: 5px; margin: 0.5rem 0; border-left: 4px solid {confidence_color};'>
+                        <div style='display: flex; justify-content: space-between; align-items: center;'>
+                            <div>
+                                <strong style='font-size: 1.1rem;'>{opp}</strong><br/>
+                                <small style='color: #D8DEE9;'>{detail}</small>
+                            </div>
+                            <div style='text-align: right;'>
+                                <span style='color: #A3BE8C; font-size: 1.4rem; font-weight: bold;'>{savings}</span><br/>
+                                <span style='font-size: 0.85rem;'>{confidence}</span>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+                st.markdown("---")
+        
+                    # AI-generated recommendations
+                st.subheader("🤖 Claude-Generated Recommendations")
+                st.info("""
+                **Commitment Strategy Analysis** (Generated by Claude 4)
+        
+                Based on 90 days of usage analysis across 640 accounts:
+        
+                1. **Immediate Action**: Your Reserved Instances are expiring in 45 days. Current analysis suggests purchasing a 3-year Compute Savings Plan at $95K/month commitment will provide:
+                   - 54% discount vs on-demand
+                   - $296K annual savings
+                   - Flexible coverage across EC2, Fargate, Lambda
+        
+                2. **Forecasted Growth**: Your data science portfolio shows 12% month-over-month growth. Recommend split strategy:
+                   - 70% committed (Savings Plans)
+                   - 30% on-demand for burst capacity
+        
+                3. **Regional Optimization**: 85% of your compute runs in us-east-1. Consider zonal Reserved Instances for additional 5% savings.
+        
+                4. **ML Workload Optimization**: SageMaker and GPU instances represent $465K/month with high optimization potential:
+                   - Spot instances for training: $78K/month savings
+                   - Endpoint auto-scaling: $8K/month savings
+                   - Storage lifecycle policies: $5K/month savings
+        
+                **Confidence Level**: 94% | **Recommended Action**: Finance approval required (>$200K commitment)
+                """)
+        
+                opportunities = [
+                    ("Right-sizing EC2 Instances", "$124K/month", "🟢 High Confidence"),
+                    ("Reserved Instance Coverage", "$89K/month", "🟢 High Confidence"),
+                    ("S3 Lifecycle Policies", "$43K/month", "🟡 Medium Confidence"),
+                    ("Idle Resource Cleanup", "$67K/month", "🟢 High Confidence"),
+                    ("EBS Volume Optimization", "$28K/month", "🟡 Medium Confidence")
+                ]
+        
+                for opp, savings, confidence in opportunities:
+                    st.markdown(f"""
+                    <div style='background: #2E3440; padding: 1rem; border-radius: 5px; margin: 0.5rem 0; border-left: 4px solid #A3BE8C;'>
+                        <strong>{opp}</strong><br/>
+                        <span style='color: #A3BE8C; font-size: 1.2rem;'>{savings}</span> | {confidence}
+                    </div>
+                    """, unsafe_allow_html=True)
+    
+                    # ==================== FINOPS TAB 5: BUDGET & FORECASTING ====================
+        with finops_tab5:
+                st.subheader("📈 Budget Management & Forecasting")
+        
+                st.markdown("""
+                **AI-powered budget tracking and spend forecasting** with variance analysis, 
+                alerts, and predictive modeling across all portfolios and accounts.
+                """)
+        
+                    # Budget metrics
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Monthly Budget", "$3.2M", "FY2024-Q4")
+                with col2:
+                    st.metric("Current Spend", "$2.8M", "87.5% utilized")
+                with col3:
+                    st.metric("Forecasted EOY", "$3.1M", "-$100K under budget")
+                with col4:
+                    st.metric("Budget Alerts", "3 Active", "2 Warning, 1 Critical")
+        
+                st.markdown("---")
+        
+                    # Budget vs Actual by Portfolio
+                col1, col2 = st.columns([2, 1])
+        
+                with col1:
+                    st.markdown("### 📊 Budget vs Actual by Portfolio")
+            
+                    portfolios = ['Digital Banking', 'Insurance', 'Payments', 'Capital Markets', 'Wealth Management', 'Data Platform']
+                    budget = [850000, 620000, 480000, 520000, 380000, 350000]
+                    actual = [820000, 680000, 450000, 490000, 410000, 330000]
+            
+                    fig = go.Figure()
+            
+                    fig.add_trace(go.Bar(
+                        name='Budget',
+                        x=portfolios,
+                        y=budget,
+                        marker_color='#5E81AC',
+                        text=[f'${b/1000:.0f}K' for b in budget],
+                        textposition='outside',
+                        textfont=dict(color='#FFFFFF')
+                    ))
+            
+                    fig.add_trace(go.Bar(
+                        name='Actual',
+                        x=portfolios,
+                        y=actual,
+                        marker_color='#A3BE8C',
+                        text=[f'${a/1000:.0f}K' for a in actual],
+                        textposition='outside',
+                        textfont=dict(color='#FFFFFF')
+                    ))
+            
+                        # Add variance indicators
+                    for i, (b, a) in enumerate(zip(budget, actual)):
+                        variance = ((a - b) / b) * 100
+                        color = '#BF616A' if variance > 5 else '#A3BE8C' if variance < -5 else '#EBCB8B'
+            
+                    fig.update_layout(
+                        template='plotly_dark',
+                        height=400,
+                        barmode='group',
+                        yaxis_title='Monthly Spend ($)',
+                        legend=dict(orientation='h', yanchor='bottom', y=1.02),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)'
+                    )
+            
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                with col2:
+                    st.markdown("### 🚨 Budget Alerts")
+            
+                    alerts = [
+                        ("🔴 CRITICAL", "Insurance Portfolio", "+9.7% over budget", "$680K vs $620K"),
+                        ("🟡 WARNING", "Wealth Management", "+7.9% over budget", "$410K vs $380K"),
+                        ("🟡 WARNING", "SageMaker Spend", "Approaching limit", "92% of ML budget"),
+                    ]
+            
+                    for severity, area, issue, detail in alerts:
+                        color = "#BF616A" if "CRITICAL" in severity else "#EBCB8B"
+                        st.markdown(f"""
+                        <div style='background: #2E3440; padding: 0.8rem; border-radius: 5px; margin: 0.5rem 0; border-left: 4px solid {color};'>
+                            <strong style='color: {color};'>{severity}</strong><br/>
+                            <strong>{area}</strong><br/>
+                            <small>{issue}</small><br/>
+                            <small style='color: #88C0D0;'>{detail}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+                    st.markdown("---")
+            
+                    st.markdown("### ✅ On Track")
+                    on_track = [
+                        ("Digital Banking", "-3.5%"),
+                        ("Payments", "-6.3%"),
+                        ("Capital Markets", "-5.8%"),
+                        ("Data Platform", "-5.7%")
+                    ]
+                    for portfolio, variance in on_track:
+                        st.success(f"**{portfolio}**: {variance} under budget")
+        
+                st.markdown("---")
+        
+                    # Forecasting Section
+                st.markdown("### 🔮 AI-Powered Spend Forecasting")
+        
+                col1, col2 = st.columns([3, 1])
+        
+                with col1:
+                        # Generate historical and forecast data
+                    historical_dates = pd.date_range(end=datetime.now(), periods=90, freq='D')
+                    forecast_dates = pd.date_range(start=datetime.now() + timedelta(days=1), periods=90, freq='D')
+            
+                        # Historical spend with trend
+                    base_spend = 93000
+                    historical_spend = base_spend + np.cumsum(np.random.normal(100, 500, 90))
+            
+                        # Forecast with confidence intervals
+                    forecast_base = historical_spend[-1]
+                    forecast_spend = forecast_base + np.cumsum(np.random.normal(150, 300, 90))
+                    forecast_upper = forecast_spend + np.linspace(5000, 25000, 90)
+                    forecast_lower = forecast_spend - np.linspace(5000, 25000, 90)
+            
+                    fig = go.Figure()
+            
+                        # Historical
+                    fig.add_trace(go.Scatter(
+                        x=historical_dates, y=historical_spend,
+                        name='Historical Spend',
+                        line=dict(color='#A3BE8C', width=2)
+                    ))
+            
+                        # Forecast
+                    fig.add_trace(go.Scatter(
+                        x=forecast_dates, y=forecast_spend,
+                        name='Forecasted Spend',
+                        line=dict(color='#88C0D0', width=2, dash='dash')
+                    ))
+            
+                        # Confidence interval
+                    fig.add_trace(go.Scatter(
+                        x=list(forecast_dates) + list(forecast_dates[::-1]),
+                        y=list(forecast_upper) + list(forecast_lower[::-1]),
+                        fill='toself',
+                        fillcolor='rgba(136, 192, 208, 0.2)',
+                        line=dict(color='rgba(255,255,255,0)'),
+                        name='95% Confidence Interval'
+                    ))
+            
+                        # Budget line
+                    budget_line = [105000] * len(historical_dates) + [105000] * len(forecast_dates)
+                    fig.add_trace(go.Scatter(
+                        x=list(historical_dates) + list(forecast_dates),
+                        y=budget_line,
+                        name='Monthly Budget',
+                        line=dict(color='#EBCB8B', width=2, dash='dot')
+                    ))
+            
+                    fig.update_layout(
+                        template='plotly_dark',
+                        height=400,
+                        yaxis_title='Daily Spend ($)',
+                        xaxis_title='Date',
+                        hovermode='x unified',
+                        legend=dict(orientation='h', yanchor='bottom', y=1.02),
+                        paper_bgcolor='rgba(0,0,0,0)'
+                    )
+            
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                with col2:
+                    st.markdown("### 📊 Forecast Summary")
+            
+                    st.info("""
+                    **Model**: ARIMA + ML Ensemble
+                    **Accuracy**: 94.2%
+                    **Last Updated**: 2 hours ago
+                    """)
+            
+                    st.metric("30-Day Forecast", "$3.05M", "+8.9% MoM")
+                    st.metric("60-Day Forecast", "$3.18M", "+4.3% MoM")
+                    st.metric("90-Day Forecast", "$3.24M", "+1.9% MoM")
+            
+                    st.markdown("---")
+            
+                    st.markdown("**Key Drivers:**")
+                    st.markdown("""
+                    - 📈 ML workload growth (+12%)
+                    - 📈 New Bedrock agents (+3)
+                    - 📉 RI expiration offset
+                    - 📉 Optimization savings
+                    """)
+        
+                st.markdown("---")
+        
+                    # Variance Analysis
+                st.markdown("### 📉 Variance Analysis - Current Month")
+        
+                variance_data = pd.DataFrame({
+                    'Category': ['EC2 Compute', 'RDS Database', 'SageMaker', 'Bedrock', 'S3 Storage', 'Data Transfer', 'Lambda', 'EKS'],
+                    'Budget': [900000, 450000, 320000, 100000, 280000, 250000, 180000, 320000],
+                    'Actual': [850000, 420000, 340000, 125000, 280000, 290000, 175000, 350000],
+                    'Variance': [-50000, -30000, 20000, 25000, 0, 40000, -5000, 30000],
+                    'Variance %': ['-5.6%', '-6.7%', '+6.3%', '+25.0%', '0.0%', '+16.0%', '-2.8%', '+9.4%']
+                })
+        
+                st.dataframe(
+                    variance_data,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        'Budget': st.column_config.NumberColumn('Budget', format='$%d'),
+                        'Actual': st.column_config.NumberColumn('Actual', format='$%d'),
+                        'Variance': st.column_config.NumberColumn('Variance', format='$%d')
+                    }
+                )
+    
+                    # ==================== FINOPS TAB 6: WASTE DETECTION ====================
+        with finops_tab6:
+                st.subheader("🗑️ Waste Detection & Idle Resources")
+        
+                st.markdown("""
+                **Automated identification of cloud waste** including idle resources, orphaned assets, 
+                and optimization opportunities across 640+ AWS accounts.
+                """)
+        
+                    # Waste summary metrics
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Total Waste Identified", "$187K/month", "↓ $23K from last week")
+                with col2:
+                    st.metric("Idle Resources", "1,847", "Ready for cleanup")
+                with col3:
+                    st.metric("Auto-Cleaned", "342", "This week")
+                with col4:
+                    st.metric("Waste Score", "7.2%", "Target: <5%")
+        
+                st.markdown("---")
+        
+                    # Waste breakdown
+                col1, col2 = st.columns([2, 1])
+        
+                with col1:
+                    st.markdown("### 📊 Waste by Category")
+            
+                    waste_categories = ['Idle EC2', 'Unattached EBS', 'Old Snapshots', 'Unused EIPs', 'Idle RDS', 
+                                      'Orphaned LBs', 'Stale AMIs', 'Unused NAT GW']
+                    waste_amounts = [67000, 38000, 28000, 12000, 22000, 8000, 7000, 5000]
+                    waste_counts = [234, 567, 1245, 89, 45, 23, 156, 12]
+            
+                    fig = go.Figure()
+            
+                    fig.add_trace(go.Bar(
+                        x=waste_categories,
+                        y=waste_amounts,
+                        marker_color=['#BF616A', '#D08770', '#EBCB8B', '#A3BE8C', '#88C0D0', '#5E81AC', '#B48EAD', '#81A1C1'],
+                        text=[f'${w/1000:.0f}K' for w in waste_amounts],
+                        textposition='outside',
+                        textfont=dict(color='#FFFFFF')
+                    ))
+            
+                    fig.update_layout(
+                        template='plotly_dark',
+                        height=350,
+                        yaxis_title='Monthly Waste ($)',
+                        paper_bgcolor='rgba(0,0,0,0)'
+                    )
+            
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                with col2:
+                    st.markdown("### 🎯 Quick Actions")
+            
+                    if st.button("🧹 Clean Unattached EBS", use_container_width=True, type="primary"):
+                        st.success("✅ Initiated cleanup of 567 unattached EBS volumes")
+            
+                    if st.button("🗑️ Delete Old Snapshots", use_container_width=True):
+                        st.success("✅ Queued 1,245 snapshots for deletion")
+            
+                    if st.button("🔌 Release Unused EIPs", use_container_width=True):
+                        st.success("✅ Released 89 unused Elastic IPs")
+            
+                    if st.button("⏹️ Stop Idle EC2", use_container_width=True):
+                        st.info("⚠️ Review required: 234 instances flagged")
+            
+                    st.markdown("---")
+            
+                    st.markdown("### 📅 Cleanup Schedule")
+                    st.markdown("""
+                    - **Daily**: EIP release, snapshot cleanup
+                    - **Weekly**: Idle EC2 review
+                    - **Monthly**: Full waste audit
+                    """)
+        
+                st.markdown("---")
+        
+                    # Detailed waste table
+                st.markdown("### 📋 Idle Resources Detail")
+        
+                idle_tab1, idle_tab2, idle_tab3, idle_tab4 = st.tabs([
+                    "💻 Idle EC2", "💾 Unattached EBS", "📸 Old Snapshots", "🔗 Other"
+                ])
+        
+                with idle_tab1:
+                    idle_ec2 = []
+                    instance_types = ['t3.xlarge', 'm5.2xlarge', 'c5.4xlarge', 'r5.2xlarge', 't3.2xlarge']
+                    for i in range(15):
+                        idle_ec2.append({
+                            'Instance ID': f'i-{random.randint(10000000, 99999999):08x}',
+                            'Type': random.choice(instance_types),
+                            'Account': f'prod-{random.choice(["banking", "payments", "insurance", "data"])}-{random.randint(1,99):03d}',
+                            'Idle Days': random.randint(7, 90),
+                            'CPU Avg': f'{random.uniform(0.5, 5):.1f}%',
+                            'Monthly Cost': f'${random.randint(50, 800)}',
+                            'Owner': random.choice(['dev-team', 'data-science', 'platform', 'unknown'])
+                        })
+            
+                    st.dataframe(pd.DataFrame(idle_ec2), use_container_width=True, hide_index=True)
+            
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Total Idle EC2", "234 instances")
+                    with col2:
+                        st.metric("Monthly Waste", "$67,000")
+                    with col3:
+                        st.metric("Avg Idle Time", "34 days")
+        
+                with idle_tab2:
+                    unattached_ebs = []
+                    for i in range(15):
+                        unattached_ebs.append({
+                            'Volume ID': f'vol-{random.randint(10000000, 99999999):08x}',
+                            'Size': f'{random.choice([100, 200, 500, 1000, 2000])} GB',
+                            'Type': random.choice(['gp3', 'gp2', 'io1', 'st1']),
+                            'Account': f'prod-{random.choice(["banking", "payments", "insurance"])}-{random.randint(1,99):03d}',
+                            'Unattached Days': random.randint(14, 180),
+                            'Monthly Cost': f'${random.randint(10, 200)}',
+                            'Last Attached To': f'i-{random.randint(10000000, 99999999):08x}'
+                        })
+            
+                    st.dataframe(pd.DataFrame(unattached_ebs), use_container_width=True, hide_index=True)
+            
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Unattached Volumes", "567 volumes")
+                    with col2:
+                        st.metric("Total Size", "245 TB")
+                    with col3:
+                        st.metric("Monthly Waste", "$38,000")
+        
+                with idle_tab3:
+                    old_snapshots = []
+                    for i in range(15):
+                        old_snapshots.append({
+                            'Snapshot ID': f'snap-{random.randint(10000000, 99999999):08x}',
+                            'Size': f'{random.choice([50, 100, 200, 500])} GB',
+                            'Age': f'{random.randint(90, 365)} days',
+                            'Account': f'prod-{random.choice(["banking", "payments", "insurance"])}-{random.randint(1,99):03d}',
+                            'Description': random.choice(['Auto backup', 'Manual snapshot', 'Pre-migration', 'Unknown']),
+                            'Monthly Cost': f'${random.randint(2, 25)}'
+                        })
+            
+                    st.dataframe(pd.DataFrame(old_snapshots), use_container_width=True, hide_index=True)
+            
+                    st.warning("""
+                    **⚠️ Recommendation**: Implement lifecycle policy to auto-delete snapshots older than 90 days 
+                    (excluding compliance-required backups). Expected savings: $28K/month.
+                    """)
+        
+                with idle_tab4:
+                    st.markdown("#### Other Waste Categories")
+            
+                    other_waste = [
+                        ("Unused Elastic IPs", "89 IPs", "$12,000/month", "EIPs not attached to running instances"),
+                        ("Idle RDS Instances", "45 instances", "$22,000/month", "DB instances with <5% connections"),
+                        ("Orphaned Load Balancers", "23 ALBs/NLBs", "$8,000/month", "LBs with no healthy targets"),
+                        ("Stale AMIs", "156 AMIs", "$7,000/month", "AMIs not used in 180+ days"),
+                        ("Unused NAT Gateways", "12 NAT GWs", "$5,000/month", "NAT GWs with zero data processed")
+                    ]
+            
+                    for resource, count, cost, description in other_waste:
+                        st.markdown(f"""
+                        <div style='background: #2E3440; padding: 1rem; border-radius: 5px; margin: 0.5rem 0;'>
+                            <div style='display: flex; justify-content: space-between;'>
+                                <strong>{resource}</strong>
+                                <span style='color: #A3BE8C;'>{cost}</span>
+                            </div>
+                            <small>{count} | {description}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+        
+                st.markdown("---")
+        
+                    # Claude Analysis
+                st.markdown("### 🤖 Claude Waste Analysis")
+        
+                with st.expander("View AI-Generated Waste Report", expanded=False):
+                    st.markdown("""
+            **Weekly Waste Analysis Report** - Generated by Claude 4
+
+            **Executive Summary:**
+            Total identifiable waste: $187K/month across 1,847 resources. This represents 7.2% of total spend, 
+            above our 5% target. Week-over-week improvement of $23K due to automated cleanup actions.
+
+            **Top Findings:**
+
+            1. **Idle EC2 Instances ($67K/month)**
+            - 234 instances averaging <5% CPU utilization
+            - 67% are in development accounts (expected for weekends)
+            - 33% in production accounts require investigation
+            - **Recommendation**: Implement scheduled scaling for dev environments
+            - **Confidence**: 94%
+
+            2. **Unattached EBS Volumes ($38K/month)**
+            - 567 volumes totaling 245TB unattached storage
+            - Average unattached duration: 45 days
+            - 78% were created during instance terminations
+            - **Recommendation**: Enable "Delete on Termination" by default
+            - **Confidence**: 98%
+
+            3. **Snapshot Sprawl ($28K/month)**
+            - 1,245 snapshots older than 90 days
+            - No lifecycle policy in 45% of accounts
+            - Many are pre-migration snapshots from 2023
+            - **Recommendation**: Deploy organization-wide lifecycle policy
+            - **Confidence**: 96%
+
+            **Automated Actions Taken This Week:**
+            - Released 89 unused Elastic IPs (saving $4K/month)
+            - Deleted 342 snapshots >180 days old (saving $8K/month)
+            - Stopped 23 dev instances over weekend (saving $2K)
+
+            **Projected Savings if All Recommendations Implemented:** $142K/month (76% of identified waste)
+                    """)
+    
+                    # ==================== FINOPS TAB 7: SHOWBACK/CHARGEBACK ====================
+        with finops_tab7:
+                st.subheader("💳 Showback & Chargeback")
+        
+                st.markdown("""
+                **Cost allocation and internal billing** - Track cloud spending by business unit, 
+                application, team, and cost center with automated chargeback reports.
+                """)
+        
+                    # Chargeback metrics
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Total Allocated", "$2.65M", "94.6% of spend")
+                with col2:
+                    st.metric("Unallocated", "$150K", "5.4% - needs tagging")
+                with col3:
+                    st.metric("Cost Centers", "47", "Active this month")
+                with col4:
+                    st.metric("Chargeback Accuracy", "96.2%", "+1.8% improvement")
+        
+                st.markdown("---")
+        
+                    # Cost allocation by business unit
+                col1, col2 = st.columns([2, 1])
+        
+                with col1:
+                    st.markdown("### 📊 Cost Allocation by Business Unit")
+            
+                    business_units = ['Digital Banking', 'Insurance', 'Payments', 'Capital Markets', 
+                                    'Wealth Management', 'Data Platform', 'Shared Services', 'Unallocated']
+                    bu_costs = [720000, 580000, 420000, 380000, 290000, 310000, 150000, 150000]
+                    bu_colors = ['#A3BE8C', '#88C0D0', '#EBCB8B', '#B48EAD', '#5E81AC', '#D08770', '#81A1C1', '#4C566A']
+            
+                    fig = go.Figure(data=[go.Pie(
+                        labels=business_units,
+                        values=bu_costs,
+                        hole=0.4,
+                        marker_colors=bu_colors,
+                        textinfo='label+percent',
+                        textfont=dict(color='#FFFFFF', size=11),
+                        insidetextfont=dict(color='#FFFFFF'),
+                        outsidetextfont=dict(color='#FFFFFF')
+                    )])
+            
+                    fig.update_layout(
+                        template='plotly_dark',
+                        height=400,
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        legend=dict(font=dict(color='#FFFFFF'))
+                    )
+            
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                with col2:
+                    st.markdown("### 📋 Allocation Summary")
+            
+                    for bu, cost in zip(business_units, bu_costs):
+                        pct = (cost / sum(bu_costs)) * 100
+                        color = "#BF616A" if bu == "Unallocated" else "#A3BE8C"
+                        st.markdown(f"""
+                        <div style='background: #2E3440; padding: 0.5rem; border-radius: 5px; margin: 0.3rem 0;'>
+                            <div style='display: flex; justify-content: space-between;'>
+                                <span>{bu}</span>
+                                <span style='color: {color};'>${cost/1000:.0f}K</span>
+                            </div>
+                            <small style='color: #88C0D0;'>{pct:.1f}% of total</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+        
+                st.markdown("---")
+        
+                    # Detailed chargeback table
+                st.markdown("### 📋 Monthly Chargeback Report")
+        
+                chargeback_period = st.selectbox(
+                    "Select Period",
+                    ["November 2024", "October 2024", "September 2024", "Q3 2024"],
+                    key="chargeback_period"
+                )
+        
+                chargeback_data = []
+                cost_centers = ['CC-1001', 'CC-1002', 'CC-1003', 'CC-2001', 'CC-2002', 'CC-3001', 'CC-3002', 'CC-4001']
+                teams = ['Core Banking', 'Mobile App', 'API Platform', 'Claims Processing', 'Underwriting', 
+                        'Payment Gateway', 'Fraud Detection', 'Trading Platform']
+        
+                for cc, team in zip(cost_centers, teams):
+                    chargeback_data.append({
+                        'Cost Center': cc,
+                        'Team': team,
+                        'Business Unit': random.choice(['Digital Banking', 'Insurance', 'Payments', 'Capital Markets']),
+                        'EC2': random.randint(50000, 200000),
+                        'RDS': random.randint(20000, 80000),
+                        'S3': random.randint(10000, 50000),
+                        'Other': random.randint(10000, 40000),
+                        'Total': 0
+                    })
+        
+                for row in chargeback_data:
+                    row['Total'] = row['EC2'] + row['RDS'] + row['S3'] + row['Other']
+        
+                df_chargeback = pd.DataFrame(chargeback_data)
+        
+                st.dataframe(
+                    df_chargeback,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        'EC2': st.column_config.NumberColumn('EC2', format='$%d'),
+                        'RDS': st.column_config.NumberColumn('RDS', format='$%d'),
+                        'S3': st.column_config.NumberColumn('S3', format='$%d'),
+                        'Other': st.column_config.NumberColumn('Other', format='$%d'),
+                        'Total': st.column_config.NumberColumn('Total', format='$%d')
+                    }
+                )
+        
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    if st.button("📧 Email Report", use_container_width=True):
+                        st.success("✅ Report sent to finance@company.com")
+                with col2:
+                    if st.button("📥 Export CSV", use_container_width=True):
+                        st.success("✅ Downloaded chargeback_nov2024.csv")
+                with col3:
+                    if st.button("📊 Export to SAP", use_container_width=True):
+                        st.success("✅ Exported to SAP FICO module")
+        
+                st.markdown("---")
+        
+                    # Unallocated costs
+                st.markdown("### ⚠️ Unallocated Costs - Action Required")
+        
+                unallocated = [
+                    ("i-0abc123def456", "EC2", "$4,200", "Missing 'CostCenter' tag", "prod-unknown-087"),
+                    ("arn:aws:rds:...", "RDS", "$2,800", "Missing 'Team' tag", "dev-sandbox-023"),
+                    ("prod-logs-bucket", "S3", "$1,500", "Missing 'BusinessUnit' tag", "logging-central"),
+                ]
+        
+                for resource, service, cost, issue, account in unallocated:
+                    st.warning(f"""
+                    **{service}**: {resource}  
+                    Cost: {cost}/month | Issue: {issue} | Account: {account}
+                    """)
+        
+                st.info("""
+                **💡 Tip**: Enable AWS Tag Policies in Organizations to enforce mandatory cost allocation tags 
+                (CostCenter, Team, BusinessUnit, Environment) on all new resources.
+                """)
+    
+                    # ==================== FINOPS TAB 8: UNIT ECONOMICS ====================
+        with finops_tab8:
+                st.subheader("📉 Unit Economics & Efficiency Metrics")
+        
+                st.markdown("""
+                **Track cost efficiency at the unit level** - cost per transaction, API call, user, 
+                and business metric to understand true operational economics.
+                """)
+        
+                    # Unit economics metrics
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Cost per Transaction", "$0.0023", "-12% MoM")
+                with col2:
+                    st.metric("Cost per API Call", "$0.00004", "-8% MoM")
+                with col3:
+                    st.metric("Cost per Active User", "$0.42", "-5% MoM")
+                with col4:
+                    st.metric("Efficiency Score", "94.2%", "+2.3%")
+        
+                st.markdown("---")
+        
+                    # Unit cost trends
+                col1, col2 = st.columns(2)
+        
+                with col1:
+                    st.markdown("### 📈 Cost per Transaction Trend")
+            
+                    dates = pd.date_range(end=datetime.now(), periods=90, freq='D')
+                    cpt = 0.0032 - np.cumsum(np.random.normal(0.00003, 0.00005, 90))
+                    cpt = np.maximum(cpt, 0.0020)  # Floor value
+            
+                    fig = go.Figure()
+            
+                    fig.add_trace(go.Scatter(
+                        x=dates, y=cpt * 1000,  # Convert to millicents for readability
+                        name='Cost per Transaction (millicents)',
+                        line=dict(color='#A3BE8C', width=2),
+                        fill='tozeroy',
+                        fillcolor='rgba(163, 190, 140, 0.2)'
+                    ))
+            
+                    fig.add_hline(y=2.0, line_dash="dash", line_color="#EBCB8B", 
+                                 annotation_text="Target: $0.002")
+            
+                    fig.update_layout(
+                        template='plotly_dark',
+                        height=300,
+                        yaxis_title='Cost (millicents)',
+                        paper_bgcolor='rgba(0,0,0,0)'
+                    )
+            
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                with col2:
+                    st.markdown("### 📈 Cost per Active User Trend")
+            
+                    dates = pd.date_range(end=datetime.now(), periods=90, freq='D')
+                    cpu = 0.55 - np.cumsum(np.random.normal(0.001, 0.002, 90))
+                    cpu = np.maximum(cpu, 0.35)
+            
+                    fig = go.Figure()
+            
+                    fig.add_trace(go.Scatter(
+                        x=dates, y=cpu,
+                        name='Cost per User',
+                        line=dict(color='#88C0D0', width=2),
+                        fill='tozeroy',
+                        fillcolor='rgba(136, 192, 208, 0.2)'
+                    ))
+            
+                    fig.add_hline(y=0.40, line_dash="dash", line_color="#EBCB8B", 
+                                 annotation_text="Target: $0.40")
+            
+                    fig.update_layout(
+                        template='plotly_dark',
+                        height=300,
+                        yaxis_title='Cost per User ($)',
+                        paper_bgcolor='rgba(0,0,0,0)'
+                    )
+            
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                st.markdown("---")
+        
+                    # Unit economics by service
+                st.markdown("### 📊 Unit Economics by Application")
+        
+                app_economics = pd.DataFrame({
+                    'Application': ['Mobile Banking', 'Payment Gateway', 'Fraud Detection', 'Trading Platform', 
+                                  'Customer Portal', 'API Gateway', 'Data Pipeline', 'ML Inference'],
+                    'Monthly Cost': [180000, 145000, 98000, 220000, 67000, 89000, 156000, 125000],
+                    'Transactions (M)': [89.2, 234.5, 67.8, 12.4, 45.6, 567.8, 23.4, 34.5],
+                    'Cost/Transaction': ['$0.0020', '$0.0006', '$0.0014', '$0.0177', '$0.0015', '$0.0002', '$0.0067', '$0.0036'],
+                    'MoM Change': ['-8%', '-12%', '-5%', '+3%', '-15%', '-18%', '-2%', '-9%'],
+                    'Efficiency': ['🟢 Good', '🟢 Excellent', '🟢 Good', '🟡 Fair', '🟢 Excellent', '🟢 Excellent', '🟡 Fair', '🟢 Good']
+                })
+        
+                st.dataframe(
+                    app_economics,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        'Monthly Cost': st.column_config.NumberColumn('Monthly Cost', format='$%d'),
+                        'Transactions (M)': st.column_config.NumberColumn('Transactions (M)', format='%.1f')
+                    }
+                )
+        
+                st.markdown("---")
+        
+                    # Efficiency breakdown
+                col1, col2 = st.columns(2)
+        
+                with col1:
+                    st.markdown("### 🎯 Efficiency Leaders")
+            
+                    leaders = [
+                        ("API Gateway", "$0.0002/call", "High cache hit rate (94%)"),
+                        ("Payment Gateway", "$0.0006/txn", "Optimized Lambda concurrency"),
+                        ("Customer Portal", "$0.0015/session", "CDN optimization effective")
+                    ]
+            
+                    for app, metric, reason in leaders:
+                        st.success(f"""
+                        **{app}**: {metric}  
+                        _{reason}_
+                        """)
+        
+                with col2:
+                    st.markdown("### ⚠️ Optimization Opportunities")
+            
+                    opportunities = [
+                        ("Trading Platform", "$0.0177/txn", "Over-provisioned RDS instances"),
+                        ("Data Pipeline", "$0.0067/record", "Inefficient Spark jobs"),
+                        ("ML Inference", "$0.0036/prediction", "Consider SageMaker Serverless")
+                    ]
+            
+                    for app, metric, reason in opportunities:
+                        st.warning(f"""
+                        **{app}**: {metric}  
+                        _{reason}_
+                        """)
+        
+                st.markdown("---")
+        
+                    # Business metrics correlation
+                st.markdown("### 📊 Cost vs Business Metrics")
+        
+                months = ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov']
+                revenue = [12.4, 13.1, 13.8, 14.2, 14.9, 15.6]
+                cloud_cost = [2.4, 2.5, 2.6, 2.7, 2.75, 2.8]
+                cost_ratio = [c/r*100 for c, r in zip(cloud_cost, revenue)]
+        
+                fig = go.Figure()
+        
+                fig.add_trace(go.Bar(
+                    x=months, y=revenue,
+                    name='Revenue ($M)',
+                    marker_color='#A3BE8C',
+                    yaxis='y'
+                ))
+        
+                fig.add_trace(go.Scatter(
+                    x=months, y=cost_ratio,
+                    name='Cloud Cost Ratio (%)',
+                    line=dict(color='#BF616A', width=3),
+                    yaxis='y2'
+                ))
+        
+                fig.update_layout(
+                    template='plotly_dark',
+                    height=350,
+                    yaxis=dict(title='Revenue ($M)', side='left'),
+                    yaxis2=dict(title='Cloud Cost as % of Revenue', side='right', overlaying='y'),
+                    legend=dict(orientation='h', yanchor='bottom', y=1.02),
+                    paper_bgcolor='rgba(0,0,0,0)'
+                )
+        
+                st.plotly_chart(fig, use_container_width=True)
+        
+                st.success("""
+                **📈 Key Insight**: Cloud cost ratio improved from 19.4% to 17.9% over 6 months, 
+                demonstrating increasing efficiency as revenue grows faster than infrastructure costs.
+                """)
+    
+                    # ==================== FINOPS TAB 9: SUSTAINABILITY ====================
+        with finops_tab9:
+                st.subheader("🌱 Sustainability & Carbon Footprint")
+        
+                st.markdown("""
+                **Track and reduce your cloud carbon footprint** - Monitor CO2 emissions, 
+                optimize for sustainability, and support ESG reporting requirements.
+                """)
+        
+                    # Sustainability metrics
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Monthly CO2e", "847 tons", "-12% MoM")
+                with col2:
+                    st.metric("Carbon Intensity", "0.32 kg/$ ", "-8% improved")
+                with col3:
+                    st.metric("Renewable Energy", "67%", "+5% (AWS regions)")
+                with col4:
+                    st.metric("Sustainability Score", "B+", "↑ from B")
+        
+                st.markdown("---")
+        
+                    # Carbon emissions trend
+                col1, col2 = st.columns([2, 1])
+        
+                with col1:
+                    st.markdown("### 📊 Carbon Emissions Trend")
+            
+                    dates = pd.date_range(end=datetime.now(), periods=12, freq='M')
+                    emissions = [1050, 1020, 980, 960, 940, 920, 900, 880, 870, 860, 850, 847]
+            
+                    fig = go.Figure()
+            
+                    fig.add_trace(go.Scatter(
+                        x=dates, y=emissions,
+                        name='CO2e Emissions (tons)',
+                        line=dict(color='#A3BE8C', width=3),
+                        fill='tozeroy',
+                        fillcolor='rgba(163, 190, 140, 0.3)'
+                    ))
+            
+                    fig.add_hline(y=750, line_dash="dash", line_color="#88C0D0", 
+                                 annotation_text="2025 Target: 750 tons")
+            
+                    fig.update_layout(
+                        template='plotly_dark',
+                        height=350,
+                        yaxis_title='CO2e (metric tons)',
+                        paper_bgcolor='rgba(0,0,0,0)'
+                    )
+            
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                with col2:
+                    st.markdown("### 🎯 2025 Goals")
+            
+                    goals = [
+                        ("Reduce emissions 25%", "847 → 750 tons", "67%"),
+                        ("100% renewable regions", "67% → 100%", "67%"),
+                        ("Carbon neutral by 2026", "In progress", "45%")
+                    ]
+            
+                    for goal, detail, progress in goals:
+                        st.markdown(f"""
+                        <div style='background: #2E3440; padding: 0.8rem; border-radius: 5px; margin: 0.5rem 0;'>
+                            <strong>{goal}</strong><br/>
+                            <small>{detail}</small>
+                            <div style='background: #4C566A; border-radius: 3px; height: 8px; margin-top: 5px;'>
+                                <div style='background: #A3BE8C; width: {progress}; height: 100%; border-radius: 3px;'></div>
+                            </div>
+                            <small style='color: #88C0D0;'>{progress} complete</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+        
+                st.markdown("---")
+        
+                    # Emissions by service
+                col1, col2 = st.columns(2)
+        
+                with col1:
+                    st.markdown("### 📊 Emissions by Service")
+            
+                    services = ['EC2', 'RDS', 'S3', 'SageMaker', 'Data Transfer', 'Other']
+                    service_emissions = [380, 180, 85, 120, 52, 30]
+            
+                    fig = go.Figure(data=[go.Pie(
+                        labels=services,
+                        values=service_emissions,
+                        hole=0.4,
+                        marker_colors=['#BF616A', '#D08770', '#EBCB8B', '#A3BE8C', '#88C0D0', '#5E81AC'],
+                        textinfo='label+percent',
+                        textfont=dict(color='#FFFFFF')
+                    )])
+            
+                    fig.update_layout(
+                        template='plotly_dark',
+                        height=300,
+                        paper_bgcolor='rgba(0,0,0,0)'
+                    )
+            
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                with col2:
+                    st.markdown("### 📊 Emissions by Region")
+            
+                    regions = ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-southeast-1']
+                    region_emissions = [420, 210, 140, 77]
+                    renewable_pct = [52, 85, 78, 45]
+            
+                    fig = go.Figure()
+            
+                    fig.add_trace(go.Bar(
+                        x=regions, y=region_emissions,
+                        name='CO2e (tons)',
+                        marker_color=['#D08770', '#A3BE8C', '#88C0D0', '#EBCB8B'],
+                        text=[f'{e} tons' for e in region_emissions],
+                        textposition='outside',
+                        textfont=dict(color='#FFFFFF')
+                    ))
+            
+                    fig.update_layout(
+                        template='plotly_dark',
+                        height=300,
+                        yaxis_title='CO2e (tons)',
+                        paper_bgcolor='rgba(0,0,0,0)'
+                    )
+            
+                    st.plotly_chart(fig, use_container_width=True)
+        
+                st.markdown("---")
+        
+                    # Green optimization recommendations
+                st.markdown("### 🌿 Green Optimization Recommendations")
+        
+                green_recommendations = [
+                    ("Migrate us-east-1 workloads to us-west-2", "-85 tons/month", "🟢 High Impact",
+                     "us-west-2 has 85% renewable energy vs 52% in us-east-1"),
+                    ("Right-size over-provisioned EC2", "-42 tons/month", "🟢 High Impact",
+                     "Reduce compute waste and associated emissions"),
+                    ("Enable S3 Intelligent-Tiering", "-12 tons/month", "🟡 Medium Impact",
+                     "Reduce storage footprint and energy consumption"),
+                    ("Optimize SageMaker training jobs", "-28 tons/month", "🟢 High Impact",
+                     "Use Spot instances and efficient instance types"),
+                    ("Consolidate data transfer paths", "-8 tons/month", "🟡 Medium Impact",
+                     "Reduce cross-region data movement")
+                ]
+        
+                for rec, impact, priority, detail in green_recommendations:
+                    color = "#A3BE8C" if "High" in priority else "#EBCB8B"
+                    st.markdown(f"""
+                    <div style='background: #2E3440; padding: 1rem; border-radius: 5px; margin: 0.5rem 0; border-left: 4px solid {color};'>
+                        <div style='display: flex; justify-content: space-between;'>
+                            <strong>{rec}</strong>
+                            <span style='color: #A3BE8C;'>{impact}</span>
+                        </div>
+                        <small>{priority} | {detail}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+                st.success("""
+                **🌍 Total Potential Reduction: 175 tons/month (21% of current emissions)**
+        
+                Implementing all recommendations would put you on track for 2025 sustainability goals.
+                """)
+        
+                st.markdown("---")
+        
+                    # ESG Report Export
+                st.markdown("### 📄 ESG Reporting")
+        
+                col1, col2, col3 = st.columns(3)
+        
+                with col1:
+                    if st.button("📊 Generate ESG Report", use_container_width=True, type="primary"):
+                        st.success("✅ ESG report generated for Q4 2024")
+        
+                with col2:
+                    if st.button("📥 Export Carbon Data", use_container_width=True):
+                        st.success("✅ Downloaded carbon_footprint_2024.csv")
+        
+                with col3:
+                    if st.button("📧 Send to Sustainability Team", use_container_width=True):
+                        st.success("✅ Report sent to sustainability@company.com")
+    
+                    # ==================== FINOPS TAB 10: DATA PIPELINES ====================
+        with finops_tab10:
+                st.subheader("🔧 FinOps Data Pipelines & Automation")
+        
+                st.markdown("""
+                **Enterprise-grade data engineering infrastructure** powering real-time cost visibility, 
+                automated optimization detection, and intelligent insights across 640+ AWS accounts.
+                """)
+        
+                    # Pipeline health metrics
+                col1, col2, col3, col4, col5, col6 = st.columns(6)
+                with col1:
+                    st.metric("Active Pipelines", "24", "All healthy")
+                with col2:
+                    st.metric("Data Sources", "18", "AWS + 3rd party")
+                with col3:
+                    st.metric("Daily Records", "847M", "+12% volume")
+                with col4:
+                    st.metric("Data Freshness", "< 5 min", "Real-time")
+                with col5:
+                    st.metric("Pipeline Uptime", "99.97%", "Last 30 days")
+                with col6:
+                    st.metric("Avg Latency", "2.3 sec", "-0.5 sec improved")
+        
+                st.markdown("---")
+        
+                    # Pipeline sub-tabs
+                pipe_tab1, pipe_tab2, pipe_tab3, pipe_tab4, pipe_tab5 = st.tabs([
+                    "📊 Pipeline Overview",
+                    "🔌 Data Sources",
+                    "⚙️ ETL Workflows",
+                    "📈 Dashboards & Reports",
+                    "🔔 Alerts & Scheduling"
+                ])
+        
+                with pipe_tab1:
+                    st.markdown("### 📊 Data Pipeline Architecture")
+            
+                        # Architecture diagram using markdown
+                    st.markdown("""
+                    ```
+                    ┌─────────────────────────────────────────────────────────────────────────────────────────┐
+                    │                           FINOPS DATA PIPELINE ARCHITECTURE                              │
+                    ├─────────────────────────────────────────────────────────────────────────────────────────┤
+                    │                                                                                          │
+                    │  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐                   │
+                    │  │   DATA SOURCES   │    │   INGESTION      │    │   PROCESSING     │                   │
+                    │  ├──────────────────┤    ├──────────────────┤    ├──────────────────┤                   │
+                    │  │ • Cost Explorer  │───▶│ • EventBridge    │───▶│ • AWS Glue       │                   │
+                    │  │ • CloudWatch     │    │ • Kinesis Stream │    │ • Spark ETL      │                   │
+                    │  │ • Trusted Advisor│    │ • S3 Events      │    │ • Lambda         │                   │
+                    │  │ • Compute Optim. │    │ • API Gateway    │    │ • Step Functions │                   │
+                    │  │ • S3 Inventory   │    │                  │    │                  │                   │
+                    │  │ • CUR Reports    │    │                  │    │                  │                   │
+                    │  └──────────────────┘    └──────────────────┘    └──────────────────┘                   │
+                    │           │                      │                        │                              │
+                    │           ▼                      ▼                        ▼                              │
+                    │  ┌──────────────────────────────────────────────────────────────────────┐               │
+                    │  │                        DATA LAKE (S3 + Iceberg)                       │               │
+                    │  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐    │               │
+                    │  │  │ Raw     │  │ Cleansed│  │ Enriched│  │ Curated │  │ Serving │    │               │
+                    │  │  │ Zone    │─▶│ Zone    │─▶│ Zone    │─▶│ Zone    │─▶│ Layer   │    │               │
+                    │  │  └─────────┘  └─────────┘  └─────────┘  └─────────┘  └─────────┘    │               │
+                    │  └──────────────────────────────────────────────────────────────────────┘               │
+                    │                                      │                                                   │
+                    │                                      ▼                                                   │
+                    │  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐                   │
+                    │  │   ANALYTICS      │    │   ML/AI ENGINE   │    │   CONSUMPTION    │                   │
+                    │  ├──────────────────┤    ├──────────────────┤    ├──────────────────┤                   │
+                    │  │ • Athena         │    │ • SageMaker      │    │ • QuickSight     │                   │
+                    │  │ • Redshift       │    │ • Bedrock Claude │    │ • Streamlit App  │                   │
+                    │  │ • OpenSearch     │    │ • Anomaly Detect │    │ • API Endpoints  │                   │
+                    │  │                  │    │ • Forecasting    │    │ • Slack/Teams    │                   │
+                    │  └──────────────────┘    └──────────────────┘    └──────────────────┘                   │
+                    │                                                                                          │
+                    └─────────────────────────────────────────────────────────────────────────────────────────┘
+                    ```
+                    """)
+            
+                    st.markdown("---")
+            
+                        # Pipeline status grid
+                    st.markdown("### 🚦 Pipeline Status Dashboard")
+            
+                    col1, col2 = st.columns(2)
+            
+                    with col1:
+                        st.markdown("#### Ingestion Pipelines")
+                
+                        ingestion_pipelines = [
+                            ("CUR Data Ingestion", "✅ Running", "5 min ago", "847M records/day", "S3 → Glue"),
+                            ("Cost Explorer Sync", "✅ Running", "2 min ago", "640 accounts", "API → Lambda"),
+                            ("CloudWatch Metrics", "✅ Running", "Real-time", "12M metrics/hr", "Kinesis"),
+                            ("Trusted Advisor", "✅ Running", "1 hr ago", "640 accounts", "API → S3"),
+                            ("Compute Optimizer", "✅ Running", "30 min ago", "156K resources", "API → S3"),
+                            ("S3 Inventory", "✅ Running", "Daily", "2.3PB scanned", "S3 → Athena"),
+                        ]
+                
+                        for pipeline, status, last_run, volume, method in ingestion_pipelines:
+                            st.markdown(f"""
+                            <div style='background: #2E3440; padding: 0.6rem 1rem; border-radius: 5px; margin: 0.3rem 0; border-left: 3px solid #A3BE8C;'>
+                                <div style='display: flex; justify-content: space-between;'>
+                                    <strong>{pipeline}</strong>
+                                    <span style='color: #A3BE8C;'>{status}</span>
+                                </div>
+                                <small style='color: #88C0D0;'>Last: {last_run} | Volume: {volume} | Method: {method}</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+            
+                    with col2:
+                        st.markdown("#### Processing Pipelines")
+                
+                        processing_pipelines = [
+                            ("Cost Aggregation", "✅ Running", "Hourly", "Glue Spark", "2.3 min avg"),
+                            ("Anomaly Detection", "✅ Running", "15 min", "SageMaker", "45 sec avg"),
+                            ("Rightsizing Analysis", "✅ Running", "Daily", "Lambda + Athena", "12 min avg"),
+                            ("Forecast Generation", "✅ Running", "6 hours", "SageMaker", "8 min avg"),
+                            ("Tag Enrichment", "✅ Running", "Real-time", "Lambda", "< 1 sec"),
+                            ("Report Generation", "✅ Running", "Daily", "Step Functions", "15 min avg"),
+                        ]
+                
+                        for pipeline, status, frequency, engine, duration in processing_pipelines:
+                            st.markdown(f"""
+                            <div style='background: #2E3440; padding: 0.6rem 1rem; border-radius: 5px; margin: 0.3rem 0; border-left: 3px solid #88C0D0;'>
+                                <div style='display: flex; justify-content: space-between;'>
+                                    <strong>{pipeline}</strong>
+                                    <span style='color: #A3BE8C;'>{status}</span>
+                                </div>
+                                <small style='color: #88C0D0;'>Frequency: {frequency} | Engine: {engine} | Duration: {duration}</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+            
+                    st.markdown("---")
+            
+                        # Data volume chart
+                    st.markdown("### 📈 Data Volume & Processing Metrics")
+            
+                    col1, col2 = st.columns(2)
+            
+                    with col1:
+                        dates = pd.date_range(end=datetime.now(), periods=30, freq='D')
+                        records = np.random.normal(847, 50, 30) * 1000000
+                
+                        fig = go.Figure()
+                        fig.add_trace(go.Scatter(
+                            x=dates, y=records/1000000,
+                            mode='lines+markers',
+                            line=dict(color='#A3BE8C', width=2),
+                            fill='tozeroy',
+                            fillcolor='rgba(163, 190, 140, 0.2)',
+                            name='Records (Millions)'
+                        ))
+                
+                        fig.update_layout(
+                            template='plotly_dark',
+                            height=300,
+                            title='Daily Records Processed',
+                            yaxis_title='Records (Millions)',
+                            paper_bgcolor='rgba(0,0,0,0)'
+                        )
+                
+                        st.plotly_chart(fig, use_container_width=True)
+            
+                    with col2:
+                        hours = pd.date_range(end=datetime.now(), periods=24, freq='H')
+                        latency = np.random.normal(2.3, 0.5, 24)
+                
+                        fig = go.Figure()
+                        fig.add_trace(go.Scatter(
+                            x=hours, y=latency,
+                            mode='lines+markers',
+                            line=dict(color='#88C0D0', width=2),
+                            name='Latency (sec)'
+                        ))
+                
+                        fig.add_hline(y=5, line_dash="dash", line_color="#BF616A", annotation_text="SLA: 5 sec")
+                
+                        fig.update_layout(
+                            template='plotly_dark',
+                            height=300,
+                            title='Pipeline Latency (24 hours)',
+                            yaxis_title='Latency (seconds)',
+                            paper_bgcolor='rgba(0,0,0,0)'
+                        )
+                
+                        st.plotly_chart(fig, use_container_width=True)
+        
+                with pipe_tab2:
+                    st.markdown("### 🔌 Data Sources & Connectors")
+            
+                    st.markdown("""
+                    **18 integrated data sources** providing comprehensive cost and usage visibility 
+                    across your AWS environment and third-party tools.
+                    """)
+            
+                    col1, col2 = st.columns(2)
+            
+                    with col1:
+                        st.markdown("#### AWS Native Sources")
+                
+                        aws_sources = [
+                            ("AWS Cost & Usage Report (CUR)", "✅ Connected", "Hourly", "Primary billing data", "2.3TB/month"),
+                            ("AWS Cost Explorer API", "✅ Connected", "5 min", "Real-time costs", "640 accounts"),
+                            ("AWS CloudWatch Metrics", "✅ Connected", "1 min", "Resource utilization", "12M metrics/hr"),
+                            ("AWS Trusted Advisor", "✅ Connected", "1 hour", "Optimization checks", "5 categories"),
+                            ("AWS Compute Optimizer", "✅ Connected", "Daily", "Rightsizing recs", "156K resources"),
+                            ("AWS S3 Inventory", "✅ Connected", "Daily", "Storage analysis", "2.3PB data"),
+                            ("AWS Organizations", "✅ Connected", "Real-time", "Account metadata", "640 accounts"),
+                            ("AWS Resource Groups", "✅ Connected", "15 min", "Tag & resource data", "156K resources"),
+                            ("AWS Savings Plans API", "✅ Connected", "Hourly", "Commitment tracking", "Coverage data"),
+                            ("AWS Budgets API", "✅ Connected", "Real-time", "Budget alerts", "89 budgets"),
+                        ]
+                
+                        for source, status, freq, purpose, volume in aws_sources:
+                            st.markdown(f"""
+                            <div style='background: #2E3440; padding: 0.7rem 1rem; border-radius: 5px; margin: 0.4rem 0;'>
+                                <div style='display: flex; justify-content: space-between;'>
+                                    <strong style='color: #EBCB8B;'>{source}</strong>
+                                    <span style='color: #A3BE8C;'>{status}</span>
+                                </div>
+                                <small style='color: #88C0D0;'>Frequency: {freq} | {purpose} | {volume}</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+            
+                    with col2:
+                        st.markdown("#### Third-Party Integrations")
+                
+                        third_party = [
+                            ("ServiceNow CMDB", "✅ Connected", "15 min", "Asset metadata", "Bi-directional"),
+                            ("Jira", "✅ Connected", "Real-time", "Cost tickets", "Webhooks"),
+                            ("Slack", "✅ Connected", "Real-time", "Alerts & reports", "5 channels"),
+                            ("PagerDuty", "✅ Connected", "Real-time", "Incident alerts", "Cost anomalies"),
+                            ("Datadog", "✅ Connected", "5 min", "APM metrics", "Cost correlation"),
+                            ("Terraform Cloud", "✅ Connected", "On-deploy", "IaC costs", "Pre-deployment"),
+                            ("GitHub Actions", "✅ Connected", "On-deploy", "Pipeline costs", "CI/CD tracking"),
+                            ("SAP FICO", "✅ Connected", "Daily", "Chargeback export", "Finance system"),
+                        ]
+                
+                        for source, status, freq, purpose, integration_type in third_party:
+                            st.markdown(f"""
+                            <div style='background: #2E3440; padding: 0.7rem 1rem; border-radius: 5px; margin: 0.4rem 0;'>
+                                <div style='display: flex; justify-content: space-between;'>
+                                    <strong style='color: #B48EAD;'>{source}</strong>
+                                    <span style='color: #A3BE8C;'>{status}</span>
+                                </div>
+                                <small style='color: #88C0D0;'>Frequency: {freq} | {purpose} | {integration_type}</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+                
+                        st.markdown("---")
+                
+                        st.markdown("#### ➕ Add New Data Source")
+                
+                        new_source = st.selectbox("Select Source Type", 
+                            ["AWS Service", "Third-Party API", "Database", "File Upload", "Custom Webhook"])
+                
+                        if st.button("🔌 Configure New Source", use_container_width=True):
+                            st.info("📝 Opening data source configuration wizard...")
+        
+                with pipe_tab3:
+                    st.markdown("### ⚙️ ETL Workflows & Jobs")
+            
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Active Workflows", "24", "Running")
+                    with col2:
+                        st.metric("Jobs Today", "1,247", "+156 vs yesterday")
+                    with col3:
+                        st.metric("Success Rate", "99.8%", "+0.1%")
+                    with col4:
+                        st.metric("Avg Duration", "3.2 min", "-0.4 min")
+            
+                    st.markdown("---")
+            
+                        # Workflow details
+                    st.markdown("#### 📋 ETL Workflow Inventory")
+            
+                    workflows = [
+                        {
+                            "name": "CUR_Daily_Processing",
+                            "type": "Glue Spark",
+                            "schedule": "Daily 2:00 AM UTC",
+                            "last_run": "Today 2:00 AM",
+                            "duration": "12 min",
+                            "status": "✅ Success",
+                            "records": "847M",
+                            "description": "Process daily Cost & Usage Report"
+                        },
+                        {
+                            "name": "RealTime_Cost_Aggregation",
+                            "type": "Kinesis + Lambda",
+                            "schedule": "Continuous",
+                            "last_run": "Running",
+                            "duration": "< 1 sec/event",
+                            "status": "✅ Running",
+                            "records": "12K/min",
+                            "description": "Real-time cost event processing"
+                        },
+                        {
+                            "name": "Rightsizing_Analysis",
+                            "type": "Step Functions",
+                            "schedule": "Daily 4:00 AM UTC",
+                            "last_run": "Today 4:00 AM",
+                            "duration": "25 min",
+                            "status": "✅ Success",
+                            "records": "156K resources",
+                            "description": "Analyze EC2/RDS for rightsizing"
+                        },
+                        {
+                            "name": "Anomaly_Detection_Batch",
+                            "type": "SageMaker Pipeline",
+                            "schedule": "Every 15 min",
+                            "last_run": "5 min ago",
+                            "duration": "45 sec",
+                            "status": "✅ Success",
+                            "records": "640 accounts",
+                            "description": "ML-based anomaly detection"
+                        },
+                        {
+                            "name": "Forecast_Generation",
+                            "type": "SageMaker + Athena",
+                            "schedule": "Every 6 hours",
+                            "last_run": "2 hours ago",
+                            "duration": "8 min",
+                            "status": "✅ Success",
+                            "records": "90-day forecast",
+                            "description": "Generate cost forecasts"
+                        },
+                        {
+                            "name": "Tag_Compliance_Check",
+                            "type": "Lambda + DynamoDB",
+                            "schedule": "Hourly",
+                            "last_run": "30 min ago",
+                            "duration": "3 min",
+                            "status": "✅ Success",
+                            "records": "156K resources",
+                            "description": "Check and remediate tags"
+                        },
+                        {
+                            "name": "Chargeback_Report_Gen",
+                            "type": "Step Functions",
+                            "schedule": "Daily 6:00 AM UTC",
+                            "last_run": "Today 6:00 AM",
+                            "duration": "15 min",
+                            "status": "✅ Success",
+                            "records": "47 cost centers",
+                            "description": "Generate chargeback reports"
+                        },
+                        {
+                            "name": "Waste_Detection_Scan",
+                            "type": "Lambda + Athena",
+                            "schedule": "Every 4 hours",
+                            "last_run": "1 hour ago",
+                            "duration": "18 min",
+                            "status": "✅ Success",
+                            "records": "1.8K findings",
+                            "description": "Detect idle/unused resources"
+                        },
+                    ]
+            
+                    for wf in workflows:
+                        status_color = "#A3BE8C" if "Success" in wf['status'] or "Running" in wf['status'] else "#BF616A"
+                        st.markdown(f"""
+                        <div style='background: #2E3440; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; border-left: 4px solid {status_color};'>
+                            <div style='display: flex; justify-content: space-between; align-items: center;'>
+                                <div>
+                                    <strong style='font-size: 1.1rem;'>{wf['name']}</strong>
+                                    <span style='background: #4C566A; padding: 2px 8px; border-radius: 10px; margin-left: 10px; font-size: 0.8rem;'>{wf['type']}</span>
+                                </div>
+                                <span style='color: {status_color};'>{wf['status']}</span>
+                            </div>
+                            <p style='margin: 0.5rem 0; color: #D8DEE9;'>{wf['description']}</p>
+                            <small style='color: #88C0D0;'>
+                                Schedule: {wf['schedule']} | Last Run: {wf['last_run']} | Duration: {wf['duration']} | Volume: {wf['records']}
+                            </small>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+                    st.markdown("---")
+            
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        if st.button("▶️ Run All Pipelines", type="primary", use_container_width=True):
+                            st.success("✅ Triggered manual run for all pipelines")
+                    with col2:
+                        if st.button("📊 View Execution History", use_container_width=True):
+                            st.info("📜 Opening execution history...")
+                    with col3:
+                        if st.button("➕ Create New Workflow", use_container_width=True):
+                            st.info("📝 Opening workflow designer...")
+        
+                with pipe_tab4:
+                    st.markdown("### 📈 Automated Dashboards & Reports")
+            
+                    st.markdown("""
+                    **Self-service BI infrastructure** with automated report generation, 
+                    scheduled distribution, and customizable dashboards.
+                    """)
+            
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Active Dashboards", "45", "QuickSight + Streamlit")
+                    with col2:
+                        st.metric("Scheduled Reports", "89", "Daily/Weekly/Monthly")
+                    with col3:
+                        st.metric("Report Recipients", "234", "Stakeholders")
+                    with col4:
+                        st.metric("Avg Generation Time", "2.3 min", "Per report")
+            
+                    st.markdown("---")
+            
+                    col1, col2 = st.columns(2)
+            
+                    with col1:
+                        st.markdown("#### 📊 Dashboard Catalog")
+                
+                        dashboards = [
+                            ("Executive Cost Summary", "QuickSight", "Real-time", "C-Level", "12 viewers"),
+                            ("Portfolio Cost Breakdown", "QuickSight", "Hourly", "VPs", "23 viewers"),
+                            ("Account-Level Details", "Streamlit", "Real-time", "Account Owners", "156 viewers"),
+                            ("Anomaly Detection", "Streamlit", "15 min", "FinOps Team", "8 viewers"),
+                            ("Optimization Opportunities", "QuickSight", "Daily", "Engineers", "45 viewers"),
+                            ("Chargeback Dashboard", "QuickSight", "Daily", "Finance", "12 viewers"),
+                            ("Sustainability Metrics", "QuickSight", "Weekly", "ESG Team", "6 viewers"),
+                            ("Tag Compliance", "Streamlit", "Hourly", "Platform Team", "15 viewers"),
+                        ]
+                
+                        for dash, platform, refresh, audience, viewers in dashboards:
+                            st.markdown(f"""
+                            <div style='background: #2E3440; padding: 0.6rem 1rem; border-radius: 5px; margin: 0.3rem 0;'>
+                                <div style='display: flex; justify-content: space-between;'>
+                                    <strong>{dash}</strong>
+                                    <span style='color: #88C0D0;'>{platform}</span>
+                                </div>
+                                <small style='color: #A3BE8C;'>Refresh: {refresh} | Audience: {audience} | {viewers}</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+            
+                    with col2:
+                        st.markdown("#### 📧 Scheduled Reports")
+                
+                        reports = [
+                            ("Daily Cost Summary", "Daily 8:00 AM", "Email", "45 recipients", "✅ Active"),
+                            ("Weekly Executive Brief", "Monday 9:00 AM", "Email + Slack", "12 recipients", "✅ Active"),
+                            ("Monthly Chargeback", "1st of month", "Email + SAP", "Finance DL", "✅ Active"),
+                            ("Anomaly Alerts", "Real-time", "Slack + PagerDuty", "FinOps Team", "✅ Active"),
+                            ("Optimization Weekly", "Friday 4:00 PM", "Email", "Tech Leads", "✅ Active"),
+                            ("Quarterly Business Review", "Quarterly", "PDF + PPT", "Leadership", "✅ Active"),
+                            ("Sustainability Report", "Monthly", "Email", "ESG Team", "✅ Active"),
+                            ("Budget Variance", "Weekly", "Email + Jira", "Product Owners", "✅ Active"),
+                        ]
+                
+                        for report, schedule, channel, recipients, status in reports:
+                            st.markdown(f"""
+                            <div style='background: #2E3440; padding: 0.6rem 1rem; border-radius: 5px; margin: 0.3rem 0;'>
+                                <div style='display: flex; justify-content: space-between;'>
+                                    <strong>{report}</strong>
+                                    <span style='color: #A3BE8C;'>{status}</span>
+                                </div>
+                                <small style='color: #88C0D0;'>{schedule} | {channel} | {recipients}</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+            
+                    st.markdown("---")
+            
+                    st.markdown("#### 🛠️ Report Builder")
+            
+                    col1, col2, col3 = st.columns(3)
+            
+                    with col1:
+                        report_name = st.text_input("Report Name", placeholder="My Custom Report")
+                        report_type = st.selectbox("Report Type", ["Cost Summary", "Optimization", "Chargeback", "Custom Query"])
+            
+                    with col2:
+                        schedule = st.selectbox("Schedule", ["One-time", "Daily", "Weekly", "Monthly", "Quarterly"])
+                        format_type = st.selectbox("Format", ["PDF", "Excel", "CSV", "PowerPoint"])
+            
+                    with col3:
+                        recipients = st.text_input("Recipients", placeholder="email@company.com")
+                        delivery = st.multiselect("Delivery Channel", ["Email", "Slack", "S3", "SFTP"])
+            
+                    if st.button("📊 Create Report", type="primary", use_container_width=True):
+                        st.success("✅ Report created and scheduled successfully!")
+        
+                with pipe_tab5:
+                    st.markdown("### 🔔 Alerts, Monitoring & Scheduling")
+            
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Active Alerts", "23", "Configured")
+                    with col2:
+                        st.metric("Triggered Today", "5", "3 resolved")
+                    with col3:
+                        st.metric("Scheduled Jobs", "89", "Next 24 hours")
+                    with col4:
+                        st.metric("Alert Response", "4.2 min", "Avg time to ack")
+            
+                    st.markdown("---")
+            
+                    col1, col2 = st.columns(2)
+            
+                    with col1:
+                        st.markdown("#### 🚨 Active Alert Rules")
+                
+                        alerts = [
+                            ("Cost Anomaly > $5K", "🔴 Critical", "Real-time", "Slack + PagerDuty", "3 triggered"),
+                            ("Budget > 90%", "🟠 High", "Hourly", "Email + Slack", "2 triggered"),
+                            ("Pipeline Failure", "🔴 Critical", "Real-time", "PagerDuty", "0 triggered"),
+                            ("Data Freshness > 1hr", "🟠 High", "15 min", "Slack", "0 triggered"),
+                            ("Unused Resources > $1K", "🟡 Medium", "Daily", "Email", "5 triggered"),
+                            ("Tag Compliance < 90%", "🟡 Medium", "Hourly", "Slack", "1 triggered"),
+                            ("Forecast Variance > 15%", "🟠 High", "Daily", "Email", "0 triggered"),
+                            ("RI Utilization < 80%", "🟡 Medium", "Daily", "Email", "2 triggered"),
+                        ]
+                
+                        for alert, severity, check_freq, channel, triggered in alerts:
+                            sev_color = "#BF616A" if "Critical" in severity else "#D08770" if "High" in severity else "#EBCB8B"
+                            st.markdown(f"""
+                            <div style='background: #2E3440; padding: 0.6rem 1rem; border-radius: 5px; margin: 0.3rem 0; border-left: 3px solid {sev_color};'>
+                                <div style='display: flex; justify-content: space-between;'>
+                                    <strong>{alert}</strong>
+                                    <span style='color: {sev_color};'>{severity}</span>
+                                </div>
+                                <small style='color: #88C0D0;'>Check: {check_freq} | Channel: {channel} | {triggered}</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+            
+                    with col2:
+                        st.markdown("#### 📅 Job Schedule (Next 24 Hours)")
+                
+                        scheduled_jobs = [
+                            ("02:00 AM", "CUR_Daily_Processing", "Glue", "⏳ Scheduled"),
+                            ("04:00 AM", "Rightsizing_Analysis", "Step Functions", "⏳ Scheduled"),
+                            ("06:00 AM", "Chargeback_Report_Gen", "Step Functions", "⏳ Scheduled"),
+                            ("08:00 AM", "Daily_Cost_Email", "Lambda", "⏳ Scheduled"),
+                            ("12:00 PM", "Forecast_Update", "SageMaker", "⏳ Scheduled"),
+                            ("04:00 PM", "Waste_Detection_Scan", "Lambda", "⏳ Scheduled"),
+                            ("06:00 PM", "Tag_Remediation", "Lambda", "⏳ Scheduled"),
+                            ("10:00 PM", "Data_Quality_Check", "Glue", "⏳ Scheduled"),
+                        ]
+                
+                        for time_slot, job, engine, status in scheduled_jobs:
+                            st.markdown(f"""
+                            <div style='background: #2E3440; padding: 0.5rem 1rem; border-radius: 5px; margin: 0.3rem 0;'>
+                                <div style='display: flex; justify-content: space-between;'>
+                                    <span style='color: #EBCB8B;'>{time_slot}</span>
+                                    <strong>{job}</strong>
+                                </div>
+                                <small style='color: #88C0D0;'>Engine: {engine} | {status}</small>
+                            </div>
+                            """, unsafe_allow_html=True)
+            
+                    st.markdown("---")
+            
+                    st.markdown("#### ➕ Create New Alert")
+            
+                    col1, col2, col3 = st.columns(3)
+            
+                    with col1:
+                        alert_name = st.text_input("Alert Name", placeholder="My Custom Alert")
+                        metric = st.selectbox("Metric", ["Daily Cost", "Anomaly Score", "Budget %", "Resource Count", "Custom Query"])
+            
+                    with col2:
+                        condition = st.selectbox("Condition", ["Greater than", "Less than", "Equals", "Changes by"])
+                        threshold = st.number_input("Threshold", value=1000)
+            
+                    with col3:
+                        severity_new = st.selectbox("Severity", ["Critical", "High", "Medium", "Low"])
+                        channels = st.multiselect("Notification Channels", ["Email", "Slack", "PagerDuty", "Teams", "SNS"])
+            
+                    if st.button("🔔 Create Alert", type="primary", use_container_width=True):
+                        st.success("✅ Alert rule created successfully!")
+    
+                    # ==================== FINOPS TAB 11: OPTIMIZATION ENGINE ====================
+        with finops_tab11:
+                st.subheader("🧠 Optimization Engine & AI Insights")
+        
+                st.markdown("""
+                **AI/ML-powered optimization detection** using Claude AI, custom ML models, 
+                and rule-based engines to continuously identify cost savings opportunities.
+                """)
+        
+                    # Engine metrics
+                col1, col2, col3, col4, col5, col6 = st.columns(6)
+                with col1:
+                    st.metric("Optimizations Found", "1,847", "This month")
+                with col2:
+                    st.metric("Potential Savings", "$482K/mo", "Identified")
+                with col3:
+                    st.metric("Auto-Implemented", "423", "22.9% of total")
+                with col4:
+                    st.metric("Pending Review", "156", "Awaiting approval")
+                with col5:
+                    st.metric("Model Accuracy", "94.2%", "+1.3% improved")
+                with col6:
+                    st.metric("Claude Analyses", "12,450", "This month")
+        
+                st.markdown("---")
+        
+                    # Optimization Engine sub-tabs
+                opt_tab1, opt_tab2, opt_tab3, opt_tab4, opt_tab5 = st.tabs([
+                    "🎯 Optimization Discovery",
+                    "🤖 ML Models",
+                    "🧠 Claude AI Analysis",
+                    "📊 Recommendation Pipeline",
+                    "⚡ Auto-Implementation"
+                ])
+        
+                with opt_tab1:
+                    st.markdown("### 🎯 Optimization Discovery Engine")
+            
+                    st.markdown("""
+                    **Multi-layered optimization detection** combining rule-based checks, 
+                    ML anomaly detection, and Claude AI reasoning.
+                    """)
+            
+                        # Discovery sources
+                    st.markdown("#### Discovery Sources & Methods")
+            
+                    col1, col2, col3 = st.columns(3)
+            
+                    with col1:
+                        st.markdown("##### 📋 Rule-Based Detection")
+                        st.markdown("""
+                        <div style='background: #2E3440; padding: 1rem; border-radius: 8px;'>
+                            <h4 style='color: #A3BE8C; margin-top: 0;'>156 Active Rules</h4>
+                    
+                            **Categories:**
+                            - Rightsizing (45 rules)
+                            - Idle Resources (32 rules)
+                            - Commitment Coverage (28 rules)
+                            - Storage Optimization (23 rules)
+                            - Network Efficiency (18 rules)
+                            - Reserved Capacity (10 rules)
+                    
+                            **Accuracy:** 98.5%
+                            **Findings/Day:** ~450
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+                    with col2:
+                        st.markdown("##### 🤖 ML Model Detection")
+                        st.markdown("""
+                        <div style='background: #2E3440; padding: 1rem; border-radius: 8px;'>
+                            <h4 style='color: #88C0D0; margin-top: 0;'>8 ML Models</h4>
+                    
+                            **Models:**
+                            - Anomaly Detection (LSTM)
+                            - Usage Forecasting (Prophet)
+                            - Rightsizing Predictor (XGBoost)
+                            - Commitment Optimizer (RL)
+                            - Waste Classifier (Random Forest)
+                            - Cost Attribution (Clustering)
+                            - Trend Analysis (ARIMA)
+                            - Pattern Recognition (CNN)
+                    
+                            **Accuracy:** 94.2%
+                            **Findings/Day:** ~280
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+                    with col3:
+                        st.markdown("##### 🧠 Claude AI Analysis")
+                        st.markdown("""
+                        <div style='background: #2E3440; padding: 1rem; border-radius: 8px;'>
+                            <h4 style='color: #B48EAD; margin-top: 0;'>Contextual Reasoning</h4>
+                    
+                            **Capabilities:**
+                            - Complex pattern analysis
+                            - Cross-service correlation
+                            - Business context understanding
+                            - Natural language insights
+                            - Recommendation generation
+                            - Risk assessment
+                            - Implementation planning
+                            - ROI calculation
+                    
+                            **Accuracy:** 92.8%
+                            **Analyses/Day:** ~150
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+                    st.markdown("---")
+            
+                        # Recent discoveries
+                    st.markdown("#### 🆕 Recent Optimization Discoveries")
+            
+                    discoveries = [
+                        {
+                            "id": "OPT-2024-8847",
+                            "type": "Rightsizing",
+                            "source": "ML Model",
+                            "resource": "234 EC2 instances across 45 accounts",
+                            "savings": "$67,000/month",
+                            "confidence": "96%",
+                            "status": "Pending Review",
+                            "description": "Over-provisioned instances with <25% CPU utilization"
+                        },
+                        {
+                            "id": "OPT-2024-8846",
+                            "type": "Commitment",
+                            "source": "Claude AI",
+                            "resource": "Compute Savings Plan opportunity",
+                            "savings": "$89,000/month",
+                            "confidence": "94%",
+                            "status": "CFO Approval",
+                            "description": "3-year Savings Plan recommendation based on stable workload"
+                        },
+                        {
+                            "id": "OPT-2024-8845",
+                            "type": "Idle Resource",
+                            "source": "Rule Engine",
+                            "resource": "567 unattached EBS volumes",
+                            "savings": "$38,000/month",
+                            "confidence": "99%",
+                            "status": "Auto-Approved",
+                            "description": "Volumes unattached for 30+ days with no snapshots"
+                        },
+                        {
+                            "id": "OPT-2024-8844",
+                            "type": "Storage",
+                            "source": "ML Model",
+                            "resource": "S3 lifecycle optimization",
+                            "savings": "$23,000/month",
+                            "confidence": "91%",
+                            "status": "Implementing",
+                            "description": "Move 45TB of cold data to Intelligent-Tiering"
+                        },
+                        {
+                            "id": "OPT-2024-8843",
+                            "type": "Network",
+                            "source": "Claude AI",
+                            "resource": "NAT Gateway consolidation",
+                            "savings": "$12,000/month",
+                            "confidence": "88%",
+                            "status": "Architecture Review",
+                            "description": "Consolidate 12 NAT Gateways to 3 shared services"
+                        },
+                    ]
+            
+                    for disc in discoveries:
+                        source_color = "#A3BE8C" if disc['source'] == "Rule Engine" else "#88C0D0" if disc['source'] == "ML Model" else "#B48EAD"
+                        st.markdown(f"""
+                        <div style='background: #2E3440; padding: 1rem; border-radius: 8px; margin: 0.5rem 0;'>
+                            <div style='display: flex; justify-content: space-between; align-items: center;'>
+                                <div>
+                                    <span style='color: #88C0D0;'>{disc['id']}</span>
+                                    <span style='background: {source_color}; color: #2E3440; padding: 2px 8px; border-radius: 10px; margin-left: 10px; font-size: 0.8rem;'>{disc['source']}</span>
+                                    <span style='background: #4C566A; padding: 2px 8px; border-radius: 10px; margin-left: 5px; font-size: 0.8rem;'>{disc['type']}</span>
+                                </div>
+                                <span style='color: #A3BE8C; font-size: 1.3rem; font-weight: bold;'>{disc['savings']}</span>
+                            </div>
+                            <p style='margin: 0.5rem 0; color: #D8DEE9;'><strong>{disc['resource']}</strong></p>
+                            <p style='margin: 0.3rem 0; color: #88C0D0;'>{disc['description']}</p>
+                            <small style='color: #EBCB8B;'>Confidence: {disc['confidence']} | Status: {disc['status']}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+        
+                with opt_tab2:
+                    st.markdown("### 🤖 Machine Learning Models")
+            
+                    st.markdown("""
+                    **8 specialized ML models** trained on your cost and usage data 
+                    to detect optimization opportunities with high accuracy.
+                    """)
+            
+                        # Model inventory
+                    models = [
+                        {
+                            "name": "Anomaly Detection",
+                            "type": "LSTM Neural Network",
+                            "accuracy": "96.8%",
+                            "training_data": "12 months hourly costs",
+                            "predictions_day": "640 accounts/15 min",
+                            "last_trained": "3 days ago",
+                            "status": "✅ Production",
+                            "description": "Detects unusual spending patterns and cost spikes"
+                        },
+                        {
+                            "name": "Usage Forecasting",
+                            "type": "Prophet + ARIMA Ensemble",
+                            "accuracy": "94.2%",
+                            "training_data": "24 months daily costs",
+                            "predictions_day": "90-day forecasts",
+                            "last_trained": "7 days ago",
+                            "status": "✅ Production",
+                            "description": "Predicts future costs for budgeting and planning"
+                        },
+                        {
+                            "name": "Rightsizing Predictor",
+                            "type": "XGBoost Classifier",
+                            "accuracy": "93.5%",
+                            "training_data": "CloudWatch metrics + billing",
+                            "predictions_day": "156K resources",
+                            "last_trained": "5 days ago",
+                            "status": "✅ Production",
+                            "description": "Identifies over-provisioned compute resources"
+                        },
+                        {
+                            "name": "Commitment Optimizer",
+                            "type": "Reinforcement Learning",
+                            "accuracy": "91.8%",
+                            "training_data": "RI/SP utilization history",
+                            "predictions_day": "Weekly recommendations",
+                            "last_trained": "14 days ago",
+                            "status": "✅ Production",
+                            "description": "Optimizes Reserved Instance and Savings Plan purchases"
+                        },
+                        {
+                            "name": "Waste Classifier",
+                            "type": "Random Forest",
+                            "accuracy": "97.2%",
+                            "training_data": "Resource utilization patterns",
+                            "predictions_day": "156K resources",
+                            "last_trained": "2 days ago",
+                            "status": "✅ Production",
+                            "description": "Classifies resources as idle, underutilized, or optimized"
+                        },
+                        {
+                            "name": "Cost Attribution",
+                            "type": "K-Means Clustering",
+                            "accuracy": "89.4%",
+                            "training_data": "Resource tags + usage",
+                            "predictions_day": "Untagged resources",
+                            "last_trained": "7 days ago",
+                            "status": "✅ Production",
+                            "description": "Infers cost center for untagged resources"
+                        },
+                    ]
+            
+                    for model in models:
+                        st.markdown(f"""
+                        <div style='background: #2E3440; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; border-left: 4px solid #A3BE8C;'>
+                            <div style='display: flex; justify-content: space-between; align-items: center;'>
+                                <div>
+                                    <strong style='font-size: 1.1rem;'>{model['name']}</strong>
+                                    <span style='background: #4C566A; padding: 2px 8px; border-radius: 10px; margin-left: 10px; font-size: 0.8rem;'>{model['type']}</span>
+                                </div>
+                                <div style='text-align: right;'>
+                                    <span style='color: #A3BE8C; font-size: 1.2rem; font-weight: bold;'>{model['accuracy']}</span>
+                                    <span style='color: #A3BE8C; margin-left: 10px;'>{model['status']}</span>
+                                </div>
+                            </div>
+                            <p style='margin: 0.5rem 0; color: #D8DEE9;'>{model['description']}</p>
+                            <small style='color: #88C0D0;'>
+                                Training Data: {model['training_data']} | Predictions: {model['predictions_day']} | Last Trained: {model['last_trained']}
+                            </small>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+                    st.markdown("---")
+            
+                        # Model performance
+                    st.markdown("#### 📈 Model Performance Metrics")
+            
+                    col1, col2 = st.columns(2)
+            
+                    with col1:
+                            # Accuracy trend
+                        months = ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov']
+                        accuracy = [89.5, 90.2, 91.8, 92.5, 93.4, 94.2]
+                
+                        fig = go.Figure()
+                        fig.add_trace(go.Scatter(
+                            x=months, y=accuracy,
+                            mode='lines+markers',
+                            line=dict(color='#A3BE8C', width=3),
+                            fill='tozeroy',
+                            fillcolor='rgba(163, 190, 140, 0.2)'
+                        ))
+                
+                        fig.add_hline(y=95, line_dash="dash", line_color="#EBCB8B", annotation_text="Target: 95%")
+                
+                        fig.update_layout(
+                            template='plotly_dark',
+                            height=300,
+                            title='Ensemble Model Accuracy Trend',
+                            yaxis_title='Accuracy %',
+                            yaxis_range=[85, 100],
+                            paper_bgcolor='rgba(0,0,0,0)'
+                        )
+                
+                        st.plotly_chart(fig, use_container_width=True)
+            
+                    with col2:
+                            # Predictions volume
+                        fig = go.Figure()
+                
+                        model_names = ['Anomaly', 'Forecast', 'Rightsize', 'Commit', 'Waste', 'Attrib']
+                        predictions = [42000, 2400, 156000, 52, 156000, 9024]
+                
+                        fig.add_trace(go.Bar(
+                            x=model_names,
+                            y=predictions,
+                            marker_color=['#BF616A', '#D08770', '#EBCB8B', '#A3BE8C', '#88C0D0', '#B48EAD'],
+                            text=[f'{p:,}' for p in predictions],
+                            textposition='outside',
+                            textfont=dict(color='#FFFFFF')
+                        ))
+                
+                        fig.update_layout(
+                            template='plotly_dark',
+                            height=300,
+                            title='Daily Predictions by Model',
+                            yaxis_title='Predictions',
+                            yaxis_type='log',
+                            paper_bgcolor='rgba(0,0,0,0)'
+                        )
+                
+                        st.plotly_chart(fig, use_container_width=True)
+            
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("🔄 Retrain All Models", type="primary", use_container_width=True):
+                            st.success("✅ Model retraining pipeline triggered")
+                    with col2:
+                        if st.button("📊 View Model Metrics", use_container_width=True):
+                            st.info("📈 Opening MLflow dashboard...")
+        
+                with opt_tab3:
+                    st.markdown("### 🧠 Claude AI Analysis Engine")
+            
+                    st.markdown("""
+                    **Claude-powered contextual analysis** for complex optimization scenarios 
+                    that require business understanding and cross-service correlation.
+                    """)
+            
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Analyses Today", "423", "Cost insights")
+                    with col2:
+                        st.metric("Avg Analysis Time", "3.2 sec", "Per request")
+                    with col3:
+                        st.metric("Tokens Used", "2.3M", "Today")
+                    with col4:
+                        st.metric("User Rating", "4.8/5", "Insight quality")
+            
+                    st.markdown("---")
+            
+                    st.markdown("#### 🔍 Claude Analysis Types")
+            
+                    analysis_types = [
+                        {
+                            "type": "Complex Rightsizing",
+                            "description": "Analyzes multi-dimensional resource optimization considering application architecture, peak loads, and dependencies",
+                            "trigger": "ML model uncertainty > 20%",
+                            "daily_volume": "~45 analyses"
+                        },
+                        {
+                            "type": "Commitment Strategy",
+                            "description": "Develops optimal RI/SP purchase recommendations considering growth forecasts, workload stability, and risk tolerance",
+                            "trigger": "Quarterly planning or >$50K opportunity",
+                            "daily_volume": "~12 analyses"
+                        },
+                        {
+                            "type": "Anomaly Root Cause",
+                            "description": "Deep-dives into cost anomalies to identify root cause, impact assessment, and remediation steps",
+                            "trigger": "Anomaly > $5K or recurring pattern",
+                            "daily_volume": "~25 analyses"
+                        },
+                        {
+                            "type": "Architecture Review",
+                            "description": "Evaluates infrastructure design for cost optimization opportunities in networking, compute, and storage",
+                            "trigger": "New account onboarding or review request",
+                            "daily_volume": "~8 analyses"
+                        },
+                        {
+                            "type": "Cross-Service Optimization",
+                            "description": "Identifies optimization opportunities that span multiple AWS services and require holistic view",
+                            "trigger": "Multi-service cost correlation detected",
+                            "daily_volume": "~18 analyses"
+                        },
+                    ]
+            
+                    for analysis in analysis_types:
+                        st.markdown(f"""
+                        <div style='background: #2E3440; padding: 1rem; border-radius: 8px; margin: 0.5rem 0;'>
+                            <strong style='font-size: 1.1rem; color: #B48EAD;'>{analysis['type']}</strong>
+                            <p style='margin: 0.5rem 0; color: #D8DEE9;'>{analysis['description']}</p>
+                            <small style='color: #88C0D0;'>Trigger: {analysis['trigger']} | Volume: {analysis['daily_volume']}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+                    st.markdown("---")
+            
+                        # Example Claude analysis
+                    st.markdown("#### 💬 Sample Claude Analysis Output")
+            
+                    with st.expander("View: Commitment Strategy Analysis for Q1 2025", expanded=True):
+                        st.markdown("""
+                        **🧠 Claude Analysis: Savings Plan Optimization**
+                
+                        ---
+                
+                        **Executive Summary:**
+                        Based on 12 months of usage data across 640 accounts, I recommend a tiered Savings Plan 
+                        strategy that balances commitment with flexibility.
+                
+                        **Analysis Context:**
+                        - Current on-demand spend: $1.2M/month
+                        - Existing commitments: 45% coverage (expiring in 60 days)
+                        - Workload stability: 85% baseline, 15% variable
+                        - Growth forecast: +12% YoY
+                
+                        **Recommendation:**
+                        ```
+                        ┌─────────────────────────────────────────────────────┐
+                        │  RECOMMENDED SAVINGS PLAN PORTFOLIO                  │
+                        ├─────────────────────────────────────────────────────┤
+                        │  Tier 1: 3-Year Compute SP    │  $650K/month  │ 54% │
+                        │  Tier 2: 1-Year Compute SP    │  $250K/month  │ 21% │
+                        │  Tier 3: On-Demand (flexible) │  $300K/month  │ 25% │
+                        └─────────────────────────────────────────────────────┘
+                        ```
+                
+                        **Financial Impact:**
+                        - Annual Savings: $1.42M (vs current trajectory)
+                        - Break-even: 4.2 months
+                        - 3-Year NPV: $3.8M
+                        - Risk-adjusted ROI: 287%
+                
+                        **Risk Assessment:**
+                        | Risk | Likelihood | Mitigation |
+                        |------|------------|------------|
+                        | Workload reduction | Low (15%) | 25% on-demand buffer |
+                        | Technology shift | Medium (25%) | Compute SP flexibility |
+                        | Growth exceeds forecast | Low (10%) | Quarterly review cycle |
+                
+                        **Implementation Timeline:**
+                        1. Week 1: Finance approval for $650K/month commitment
+                        2. Week 2: Purchase 3-year Compute Savings Plan
+                        3. Week 3: Monitor coverage and adjust
+                        4. Week 4: Purchase 1-year layer
+                        5. Monthly: Review and optimize
+                
+                        **Confidence Score:** 94.2%
+                
+                        ---
+                        *Analysis generated by Claude AI | Model: claude-3-opus | Tokens: 2,847*
+                        """)
+        
+                with opt_tab4:
+                    st.markdown("### 📊 Recommendation Pipeline")
+            
+                    st.markdown("""
+                    **End-to-end workflow** from optimization discovery to implementation, 
+                    with approval gates, risk assessment, and tracking.
+                    """)
+            
+                        # Pipeline visualization
+                    st.markdown("#### Pipeline Stages")
+            
+                    st.markdown("""
+                    ```
+                    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+                    │  DISCOVERY  │───▶│ VALIDATION  │───▶│   SCORING   │───▶│  APPROVAL   │───▶│IMPLEMENTATION───▶│  TRACKING   │
+                    │             │    │             │    │             │    │             │    │             │    │             │
+                    │ • ML Models │    │ • Data QA   │    │ • ROI Calc  │    │ • Auto/Manual    │ • Terraform │    │ • Savings   │
+                    │ • Rules     │    │ • Dedup     │    │ • Risk Score│    │ • Thresholds│    │ • Lambda    │    │ • Variance  │
+                    │ • Claude AI │    │ • Enrich    │    │ • Priority  │    │ • Workflows │    │ • SSM       │    │ • Feedback  │
+                    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+                          ↓                  ↓                  ↓                  ↓                  ↓                  ↓
+                       1,847              1,623              1,598              1,456                892              892
+                    discoveries        validated           scored            approved          implemented       tracked
+                    ```
+                    """)
+            
+                    st.markdown("---")
+            
+                        # Pipeline metrics by stage
+                    col1, col2, col3, col4, col5, col6 = st.columns(6)
+                    with col1:
+                        st.metric("Discovered", "1,847", "This month")
+                    with col2:
+                        st.metric("Validated", "1,623", "87.9% pass")
+                    with col3:
+                        st.metric("Scored", "1,598", "98.5% scored")
+                    with col4:
+                        st.metric("Approved", "1,456", "91.1% approved")
+                    with col5:
+                        st.metric("Implemented", "892", "61.3% complete")
+                    with col6:
+                        st.metric("Savings Verified", "$312K", "Tracked savings")
+            
+                    st.markdown("---")
+            
+                        # Current pipeline state
+                    st.markdown("#### 📋 Current Pipeline State")
+            
+                    pipeline_items = []
+                    stages = ['Discovery', 'Validation', 'Scoring', 'Approval', 'Implementation', 'Tracking']
+                    opt_types = ['Rightsizing', 'Idle Resource', 'Commitment', 'Storage', 'Network']
+            
+                    for i in range(15):
+                        pipeline_items.append({
+                            'ID': f'OPT-2024-{8800+i}',
+                            'Type': random.choice(opt_types),
+                            'Savings': f"${random.randint(1, 50)}K/mo",
+                            'Stage': random.choice(stages),
+                            'Days in Stage': random.randint(0, 7),
+                            'Next Action': random.choice(['Auto-proceed', 'Awaiting approval', 'Scheduled', 'Manual review']),
+                            'Owner': random.choice(['FinOps Team', 'Platform Team', 'Auto', 'Account Owner'])
+                        })
+            
+                    st.dataframe(pd.DataFrame(pipeline_items), use_container_width=True, hide_index=True, height=400)
+        
+                with opt_tab5:
+                    st.markdown("### ⚡ Auto-Implementation Engine")
+            
+                    st.markdown("""
+                    **Automated remediation** for low-risk, high-confidence optimizations 
+                    with built-in safety controls and rollback capabilities.
+                    """)
+            
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Auto-Eligible", "623", "This month")
+                    with col2:
+                        st.metric("Auto-Implemented", "423", "67.9% completion")
+                    with col3:
+                        st.metric("Success Rate", "99.2%", "3 rollbacks")
+                    with col4:
+                        st.metric("Savings Realized", "$187K", "Verified")
+            
+                    st.markdown("---")
+            
+                    st.markdown("#### 🛡️ Auto-Implementation Rules")
+            
+                    auto_rules = [
+                        {
+                            "action": "Delete unattached EBS volumes",
+                            "conditions": "Unattached > 30 days, no snapshots, < $100/mo",
+                            "approval": "Auto",
+                            "implemented": 234,
+                            "savings": "$38K/mo"
+                        },
+                        {
+                            "action": "Release unused Elastic IPs",
+                            "conditions": "Unattached > 7 days",
+                            "approval": "Auto",
+                            "implemented": 89,
+                            "savings": "$12K/mo"
+                        },
+                        {
+                            "action": "Delete old snapshots",
+                            "conditions": "> 180 days, no AMI, not compliance-tagged",
+                            "approval": "Auto",
+                            "implemented": 567,
+                            "savings": "$23K/mo"
+                        },
+                        {
+                            "action": "Stop idle dev instances",
+                            "conditions": "CPU < 5% for 7 days, Environment=dev/sandbox",
+                            "approval": "Auto with notification",
+                            "implemented": 123,
+                            "savings": "$45K/mo"
+                        },
+                        {
+                            "action": "Apply S3 lifecycle policies",
+                            "conditions": "No lifecycle policy, > 90% cold access pattern",
+                            "approval": "Auto",
+                            "implemented": 45,
+                            "savings": "$18K/mo"
+                        },
+                        {
+                            "action": "Rightsize RDS instances",
+                            "conditions": "CPU < 20% for 30 days, non-production",
+                            "approval": "Requires owner approval",
+                            "implemented": 23,
+                            "savings": "$34K/mo"
+                        },
+                    ]
+            
+                    for rule in auto_rules:
+                        approval_color = "#A3BE8C" if rule['approval'] == "Auto" else "#EBCB8B"
+                        st.markdown(f"""
+                        <div style='background: #2E3440; padding: 1rem; border-radius: 8px; margin: 0.5rem 0;'>
+                            <div style='display: flex; justify-content: space-between; align-items: center;'>
+                                <strong style='font-size: 1.05rem;'>{rule['action']}</strong>
+                                <span style='color: #A3BE8C; font-size: 1.2rem; font-weight: bold;'>{rule['savings']}</span>
+                            </div>
+                            <p style='margin: 0.5rem 0; color: #88C0D0;'><strong>Conditions:</strong> {rule['conditions']}</p>
+                            <div style='display: flex; justify-content: space-between;'>
+                                <small style='color: {approval_color};'><strong>Approval:</strong> {rule['approval']}</small>
+                                <small style='color: #D8DEE9;'>Implemented: {rule['implemented']} resources</small>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+                    st.markdown("---")
+            
+                    st.markdown("#### ⚙️ Auto-Implementation Settings")
+            
+                    col1, col2 = st.columns(2)
+            
+                    with col1:
+                        st.markdown("##### Safety Controls")
+                
+                        st.checkbox("Require dry-run before implementation", value=True)
+                        st.checkbox("Create snapshot before destructive actions", value=True)
+                        st.checkbox("Notify resource owner before action", value=True)
+                        st.checkbox("Rate limit: max 50 actions per hour", value=True)
+                        st.checkbox("Pause on 2+ failures in 1 hour", value=True)
+                        st.checkbox("Exclude production by default", value=True)
+            
+                    with col2:
+                        st.markdown("##### Thresholds")
+                
+                        st.slider("Minimum confidence for auto-approval", 0, 100, 95, format="%d%%")
+                        st.slider("Maximum savings for auto-approval", 0, 10000, 5000, format="$%d/mo")
+                        st.number_input("Minimum days idle before action", value=30)
+                        st.number_input("Rollback window (hours)", value=24)
+            
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("💾 Save Settings", type="primary", use_container_width=True):
+                            st.success("✅ Auto-implementation settings saved")
+                    with col2:
+                        if st.button("⏸️ Pause All Auto-Implementation", use_container_width=True):
+                            st.warning("⏸️ Auto-implementation paused")
+
+
     # Footer
     st.markdown("---")
     st.markdown("""
