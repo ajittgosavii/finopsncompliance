@@ -9719,8 +9719,7 @@ def main():
                     with col2:
                         if st.button("⏸️ Pause All Auto-Implementation", use_container_width=True):
                             st.warning("⏸️ Auto-implementation paused")
-    with tabs[9]:
-            render_enterprise_integration_scene()
+    
 
     # Footer
     st.markdown("---")
