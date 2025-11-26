@@ -9794,36 +9794,26 @@ def main():
 
     # Footer
     st.markdown("---")
-    st.markdown("""
-    <div style='text-align: center; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 3rem 2rem; margin-top: 2rem; border-radius: 16px; border-top: 3px solid #0066CC;'>
-        <h4 style='color: #2c3e50; margin: 0 0 1rem 0; font-size: 1.3rem;'>☁️ Cloud Compliance Canvas</h4>
-        <p style='color: #495057; margin: 0.5rem 0;'><strong>Enterprise AWS Governance Platform v5.0</strong></p>
-        
-        <div style='display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1.5rem 0;'>
-            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>AWS Security Hub</span>
-            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>GuardDuty</span>
-            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>AWS Config</span>
-            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Inspector</span>
-            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>AWS Bedrock</span>
-            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>GitHub GHAS</span>
-            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>KICS</span>
-            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>OPA</span>
-            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Wiz.io</span>
-            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Jira</span>
-            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Slack</span>
-            <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Snowflake</span>
-        </div>
-        
-        <p style='color: #6c757d; margin-top: 1.5rem; font-size: 0.9rem;'>
-            🏢 Enterprise Features: Multi-Account Lifecycle • AI-Powered Analytics • Automated Remediation<br>
-            Policy as Code Engine • Audit & Compliance • FinOps Intelligence • Integration Hub
-        </p>
-        
-        <p style='color: #868e96; margin-top: 1rem; font-size: 0.8rem;'>
-            ⚠️ Ensure proper IAM permissions | 📚 Documentation | 🐛 Report Issues | 💬 Support
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("""<div style='text-align: center; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 3rem 2rem; margin-top: 2rem; border-radius: 16px; border-top: 3px solid #0066CC;'>
+<h4 style='color: #2c3e50; margin: 0 0 1rem 0; font-size: 1.3rem;'>☁️ Cloud Compliance Canvas</h4>
+<p style='color: #495057; margin: 0.5rem 0;'><strong>Enterprise AWS Governance Platform v5.0</strong></p>
+<div style='display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1.5rem 0;'>
+<span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>AWS Security Hub</span>
+<span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>GuardDuty</span>
+<span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>AWS Config</span>
+<span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Inspector</span>
+<span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>AWS Bedrock</span>
+<span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>GitHub GHAS</span>
+<span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>KICS</span>
+<span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>OPA</span>
+<span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Wiz.io</span>
+<span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Jira</span>
+<span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Slack</span>
+<span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>Snowflake</span>
+</div>
+<p style='color: #6c757d; margin-top: 1.5rem; font-size: 0.9rem;'>🏢 Enterprise Features: Multi-Account Lifecycle • AI-Powered Analytics • Automated Remediation<br>Policy as Code Engine • Audit & Compliance • FinOps Intelligence • Integration Hub</p>
+<p style='color: #868e96; margin-top: 1rem; font-size: 0.8rem;'>⚠️ Ensure proper IAM permissions | 📚 Documentation | 🐛 Report Issues | 💬 Support</p>
+</div>""", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
