@@ -6686,7 +6686,7 @@ def main():
         "🔄 Account Lifecycle",            # Tab 6
         "🔍 Security Findings",            # Tab 7
         "💰 FinOps & Cost Management"      # Tab 8
-        "🔗Enterprise Integrations"  # NEW TAB
+        "🔗 Enterprise Integrations"  # NEW TAB
     ])
     
     # TABS
@@ -9720,7 +9720,7 @@ def main():
                         if st.button("⏸️ Pause All Auto-Implementation", use_container_width=True):
                             st.warning("⏸️ Auto-implementation paused")
     with tabs[9]:
-        render_enterprise_integration_scene()
+            render_enterprise_integration_scene()
 
     # Footer
     st.markdown("---")
