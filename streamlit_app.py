@@ -51,6 +51,7 @@ from typing import Dict, List, Any, Optional, Tuple
 import time
 import hashlib
 import base64
+from account_lifecycle_enhanced import render_enhanced_account_lifecycle
 from pipeline_simulator import render_pipeline_simulator
 # Import Enterprise Features (v5.0)
 try:
@@ -6824,7 +6825,7 @@ def main():
         render_github_gitops_tab()
     
     with tabs[6]:
-        render_account_lifecycle_tab()
+        render_enhanced_account_lifecycle()
     
     with tabs[7]:
         st.markdown("## 🔍 Security Findings Details")
