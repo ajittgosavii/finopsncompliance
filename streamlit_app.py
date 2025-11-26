@@ -6369,7 +6369,7 @@ def enforce_mfa(username):
             branch_name = st.text_input("Branch Name", "feature/new-policy")
             
             st.markdown("#### Policy Metadata")
-            policy_severity = st.selectbox("Severity", ["Critical", "High", "Medium", "Low"])
+            policy_severity = st.selectbox("Severity", ["Critical", "High", "Medium", "Low"], key="policy_severity")
             auto_deploy = st.checkbox("Auto-deploy after validation", value=False)
             
             if st.button("Create Pull Request", type="primary", use_container_width=True):
@@ -9137,7 +9137,7 @@ def main():
                         threshold = st.number_input("Threshold", value=1000)
             
                     with col3:
-                        severity_new = st.selectbox("Severity", ["Critical", "High", "Medium", "Low"])
+                        severity_new = st.selectbox("Severity", ["Critical", "High", "Medium", "Low"], key="alert_severity")
                         channels = st.multiselect("Notification Channels", ["Email", "Slack", "PagerDuty", "Teams", "SNS"])
             
                     if st.button("🔔 Create Alert", type="primary", use_container_width=True):
