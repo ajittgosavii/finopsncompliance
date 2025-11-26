@@ -58,6 +58,7 @@ from ai_configuration_assistant_complete import render_complete_ai_assistant_sce
 from scp_policy_engine import render_scp_policy_engine
 from scp_scene_5_complete import render_scp_policy_engine_scene
 from ai_threat_scene_6_complete import render_ai_threat_analysis_scene
+from finops_scene_7_complete import render_predictive_finops_scene
 # Import Enterprise Features (v5.0)
 try:
     from enterprise_module import (
@@ -625,7 +626,10 @@ def initialize_session_state():
         'validation_complete': False,
         'show_deploy_button': False,
         'deployment_started': False,
-    
+
+        # Predictive FinOps (Scene 7)
+        'finops_remediation_started': False,
+
         # Filters
         'selected_portfolio': ['Retail', 'Healthcare', 'Financial'],
         'selected_services': ['Security Hub', 'Config', 'GuardDuty', 'Inspector'],
@@ -6762,8 +6766,24 @@ def main():
             else:
                 st.info("No security findings available. Connect to AWS to fetch findings.")
     
-    with tabs[8]:
-        st.header("💰 FinOps Intelligence & Cost Optimization")
+    with tabs[8]:  # 💰 FinOps & Cost Management
+        st.markdown("## 💰 FinOps & Cost Management")
+        
+        # Create sub-tabs
+        finops_tabs = st.tabs([
+            "🔮 Predictive Analytics",  # NEW TAB
+            "Cost Dashboard",
+            "Budget Tracking",
+            "Optimization Recommendations"
+        ])
+        
+        with finops_tabs[0]:
+            # NEW: Predictive FinOps scene
+            render_predictive_finops_scene()
+        
+        with finops_tabs[1]:
+            # Your existing cost dashboard
+            pass
     
                 # Create sub-tabs for FinOps
         finops_tab1, finops_tab2, finops_tab3, finops_tab4, finops_tab5, finops_tab6, finops_tab7, finops_tab8, finops_tab9, finops_tab10, finops_tab11 = st.tabs([
