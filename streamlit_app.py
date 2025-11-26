@@ -59,6 +59,7 @@ from scp_policy_engine import render_scp_policy_engine
 from scp_scene_5_complete import render_scp_policy_engine_scene
 from ai_threat_scene_6_complete import render_ai_threat_analysis_scene
 from finops_scene_7_complete import render_predictive_finops_scene
+from integration_scene_8_complete import render_enterprise_integration_scene
 # Import Enterprise Features (v5.0)
 try:
     from enterprise_module import (
@@ -6685,6 +6686,7 @@ def main():
         "🔄 Account Lifecycle",            # Tab 6
         "🔍 Security Findings",            # Tab 7
         "💰 FinOps & Cost Management"      # Tab 8
+        "🔗Enterprise Integrations"  # NEW TAB
     ])
     
     # TABS
@@ -9717,7 +9719,8 @@ def main():
                     with col2:
                         if st.button("⏸️ Pause All Auto-Implementation", use_container_width=True):
                             st.warning("⏸️ Auto-implementation paused")
-
+    with tabs[9]:
+        render_enterprise_integration_scene()
 
     # Footer
     st.markdown("---")
