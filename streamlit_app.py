@@ -57,6 +57,7 @@ from pipeline_simulator import render_pipeline_simulator
 from ai_configuration_assistant_complete import render_complete_ai_assistant_scene
 from scp_policy_engine import render_scp_policy_engine
 from scp_scene_5_complete import render_scp_policy_engine_scene
+from ai_threat_scene_6_complete import render_ai_threat_analysis_scene
 # Import Enterprise Features (v5.0)
 try:
     from enterprise_module import (
@@ -551,6 +552,9 @@ def initialize_session_state():
         st.session_state.show_ai_panel = False
         st.session_state.validation_complete = False
         st.session_state.deployment_started = False
+        'ai_analysis_started': False,
+        'remediation_started': False,
+        'demo_threat_mode': False,
         
         # ✅ ADD THESE LINES
         if 'service_status' not in st.session_state:
@@ -6686,8 +6690,24 @@ def main():
     with guardrail_tabs[0]:
         render_scp_policy_engine_scene()
     
-    with tabs[4]:
-        render_ai_remediation_tab()
+    with tabs[4]:  # 🤖 AI Remediation tab
+        st.markdown("## 🤖 AI-Powered Remediation")
+        
+        # Create sub-tabs
+        ai_tabs = st.tabs([
+            "🔍 Threat Analysis",  # NEW TAB
+            "AI Insights",
+            "Code Generation",
+            "Batch Remediation"
+    ])
+    
+    with ai_tabs[0]:
+        # NEW: AI Threat Analysis scene
+        render_ai_threat_analysis_scene()
+    
+    with ai_tabs[1]:
+        # Your existing AI insights code
+        render_ai_insights_panel(st.session_state.claude_client)
     
     with tabs[5]:
         render_github_gitops_tab()
