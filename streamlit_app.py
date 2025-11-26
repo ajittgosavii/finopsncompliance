@@ -54,6 +54,7 @@ import base64
 from account_lifecycle_enhanced import render_enhanced_account_lifecycle
 from scp_policy_engine import render_scp_policy_engine
 from pipeline_simulator import render_pipeline_simulator
+from scp_policy_engine import render_scp_policy_engine
 # Import Enterprise Features (v5.0)
 try:
     from enterprise_module import (
@@ -3574,157 +3575,9 @@ def render_policy_guardrails():
         "Gen AI & AI Agents"
     ])
     
-    # SCP Tab
-    with guardrail_tabs[0]:
-        st.markdown("### 🔒 Service Control Policies (SCP)")
-        
-        scps = fetch_scp_policies(st.session_state.get('aws_clients', {}).get('organizations'))
-        
-        # Summary metrics
-        total_violations = sum(scp['Violations'] for scp in scps)
-        total_policies = len(scps)
-        active_policies = len([s for s in scps if s['Status'] == 'ENABLED'])
-        
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total Policies", total_policies)
-        with col2:
-            st.metric("Active Policies", active_policies)
-        with col3:
-            st.metric("Total Violations", total_violations, delta="-2 today" if total_violations > 0 else None, delta_color="inverse")
-        with col4:
-            st.metric("Compliance Rate", f"{((total_policies-len([s for s in scps if s['Violations'] > 0]))/total_policies*100):.1f}%" if total_policies > 0 else "100%")
-        
-        st.markdown("---")
-        
-        # Display each policy
-        for scp in scps:
-            status_icon = "✅" if scp['Violations'] == 0 else "⚠️"
-            status_class = "good" if scp['Violations'] == 0 else "warning"
-            
-            # Policy summary card
-            st.markdown(f"""
-            <div class='policy-card' style='border-left: 5px solid {"#4CAF50" if scp["Violations"] == 0 else "#FF9900"}'>
-                <h4>{status_icon} {scp['PolicyName']}</h4>
-                <p>{scp['Description']}</p>
-                <p><strong>Status:</strong> <span class='service-badge {status_class}'>{scp['Status']}</span> | 
-                   <strong>Violations:</strong> {scp['Violations']} |
-                   <small>Last Updated: {scp['LastUpdated'][:19]}</small></p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Show violations if any
-            if scp['Violations'] > 0 and scp.get('ViolationDetails'):
-                st.markdown(f"#### 🚨 Violation Details for {scp['PolicyName']}")
-                
-                for idx, violation in enumerate(scp['ViolationDetails']):
-                    severity_color = {
-                        'CRITICAL': '#ff4444',
-                        'HIGH': '#FF9900',
-                        'MEDIUM': '#ffbb33',
-                        'LOW': '#00C851'
-                    }.get(violation['Severity'], '#gray')
-                    
-                    with st.expander(f"🚨 [{violation['Severity']}] {violation['AccountName']} - {violation['Action']}"):
-                        col1, col2 = st.columns([2, 1])
-                        
-                        with col1:
-                            st.markdown(f"""
-                            **Account:** {violation['AccountName']} (`{violation['AccountId']}`)  
-                            **Severity:** <span style='color: {severity_color}; font-weight: bold;'>{violation['Severity']}</span>  
-                            **Action Attempted:** `{violation['Action']}`  
-                            **Resource:** `{violation['Resource']}`  
-                            **User/Role:** `{violation['User']}`  
-                            **Timestamp:** {violation['Timestamp'][:19]}  
-                            
-                            **Description:**  
-                            {violation['Description']}
-                            
-                            **Recommended Remediation:**  
-                            {violation['Remediation']}
-                            """, unsafe_allow_html=True)
-                        
-                        with col2:
-                            st.markdown("**Quick Actions:**")
-                            
-                            if st.button(f"🤖 AI Analysis", key=f"scp_ai_{scp['PolicyName']}_{idx}", use_container_width=True):
-                                with st.spinner("Analyzing with Claude AI..."):
-                                    time.sleep(1)
-                                    analysis = f"""
-**🤖 AI Analysis for SCP Violation**
-
-**Risk Assessment:**
-This {violation['Severity']}-severity violation indicates a policy bypass attempt that could compromise security posture.
-
-**Impact Analysis:**
-- **Account:** {violation['AccountName']} ({violation['AccountId']})
-- **Action:** {violation['Action']} was attempted but denied by SCP
-- **Business Risk:** {
-    'CRITICAL - Immediate action required' if violation['Severity'] == 'CRITICAL' else
-    'HIGH - Address within 24 hours' if violation['Severity'] == 'HIGH' else
-    'MEDIUM - Address within 1 week'
-}
-
-**Root Cause:**
-The user/service attempted to perform an action that violates organizational policy: {scp['Description']}
-
-**Recommended Actions:**
-1. **Investigate:** Review CloudTrail logs for this user/role
-2. **Educate:** Inform user about policy requirements
-3. **Remediate:** {violation['Remediation']}
-4. **Prevent:** Update IAM policies to align with SCP
-
-**Automation Available:** Yes - Can deploy preventive IAM policy
-**Estimated Time:** 15-30 minutes
-                                    """
-                                    st.session_state[f'scp_analysis_{scp["PolicyName"]}_{idx}'] = analysis
-                            
-                            if st.button(f"💻 Generate Fix", key=f"scp_script_{scp['PolicyName']}_{idx}", use_container_width=True):
-                                with st.spinner("Generating remediation script..."):
-                                    time.sleep(1)
-                                    script = f"""
-# AWS CLI Script to Remediate SCP Violation
-# Account: {violation['AccountId']} ({violation['AccountName']})
-# Policy: {scp['PolicyName']}
-
-# Step 1: Identify the user/role
-aws iam get-user --user-name $(echo '{violation['User']}' | awk -F'/' '{{print $NF}}')
-
-# Step 2: Review current permissions
-aws iam list-attached-user-policies --user-name $(echo '{violation['User']}' | awk -F'/' '{{print $NF}}')
-
-# Step 3: {violation['Remediation']}
-
-# Step 4: Verify compliance
-aws cloudtrail lookup-events --lookup-attributes AttributeKey=Username,AttributeValue=$(echo '{violation['User']}' | awk -F'/' '{{print $NF}}') --max-results 10
-
-# Step 5: Document in compliance log
-echo "Remediated SCP violation: {scp['PolicyName']} - {violation['AccountId']} at $(date)" >> /var/log/compliance.log
-
-# Optional: Send SNS notification
-aws sns publish --topic-arn arn:aws:sns:REGION:ACCOUNT:compliance-alerts \\
-  --message "SCP violation remediated: {scp['PolicyName']} in account {violation['AccountId']}"
-                                    """
-                                    st.session_state[f'scp_script_{scp["PolicyName"]}_{idx}'] = script
-                            
-                            if st.button(f"🚀 Auto-Remediate", key=f"scp_deploy_{scp['PolicyName']}_{idx}", use_container_width=True, type="primary"):
-                                with st.spinner("Applying remediation..."):
-                                    time.sleep(2)
-                                    st.success(f"✅ Remediation applied to account {violation['AccountId']}")
-                        
-                        # Show AI analysis if generated
-                        if f'scp_analysis_{scp["PolicyName"]}_{idx}' in st.session_state:
-                            st.markdown("---")
-                            st.markdown(st.session_state[f'scp_analysis_{scp["PolicyName"]}_{idx}'])
-                        
-                        # Show script if generated
-                        if f'scp_script_{scp["PolicyName"]}_{idx}' in st.session_state:
-                            st.markdown("---")
-                            st.markdown("**Generated Remediation Script:**")
-                            st.code(st.session_state[f'scp_script_{scp["PolicyName"]}_{idx}'], language='bash')
-                
-                st.markdown("---")
-    
+    # SCP Tab - Enhanced Policy Engine
+        with guardrail_tabs[0]:
+        render_scp_policy_engine()
     # OPA Tab
     with guardrail_tabs[1]:
         st.markdown("### 🎯 Open Policy Agent (OPA) Policies")
