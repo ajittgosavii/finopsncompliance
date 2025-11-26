@@ -6675,9 +6675,9 @@ def main():
         render_inspector_vulnerability_dashboard()
     
     with tabs[3]:  # Tech Guardrails
-    st.markdown("## 🚧 Tech Guardrails")
+        st.markdown("## 🚧 Tech Guardrails")
     
-    guardrail_tabs = st.tabs([
+        guardrail_tabs = st.tabs([
         "🛡️ Service Control Policies (SCP)",
         "📜 OPA Policies", 
         "🔍 KICS Scanning"
