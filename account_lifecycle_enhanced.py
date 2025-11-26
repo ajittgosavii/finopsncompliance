@@ -846,13 +846,13 @@ def render_create_account():
         st.markdown("#### 📝 Account Configuration")
         
         # Basic Info
-        account_name = st.text_input("Account Name *", placeholder="e.g., Production-FinServices-001")
+        account_name = st.text_input("Account Name *", placeholder="e.g., Production-FinServices-001", key="create_account_name")
         
         col_a, col_b = st.columns(2)
         with col_a:
-            portfolio = st.selectbox("Portfolio *", ["Financial Services", "Healthcare", "Retail", "Manufacturing", "Technology"])
+            portfolio = st.selectbox("Portfolio *", ["Financial Services", "Healthcare", "Retail", "Manufacturing", "Technology"], key="create_portfolio")
         with col_b:
-            environment = st.selectbox("Environment *", ["Production", "Staging", "Development", "Testing", "DR"])
+            environment = st.selectbox("Environment *", ["Production", "Staging", "Development", "Testing", "DR"], key="create_environment")
         
         col_c, col_d = st.columns(2)
         with col_c:
@@ -861,9 +861,9 @@ def render_create_account():
                 "us-west-2 (Oregon)", 
                 "eu-west-1 (Ireland)", 
                 "ap-southeast-1 (Singapore)"
-            ])
+            ], key="create_region")
         with col_d:
-            multi_region = st.checkbox("Multi-Region Deployment", value=False)
+            multi_region = st.checkbox("Multi-Region Deployment", value=False, key="create_multi_region")
         
         # Compliance Frameworks
         st.markdown("#### 📋 Compliance Frameworks")
@@ -902,27 +902,27 @@ def render_create_account():
         st.markdown("#### 🌐 Network Configuration")
         col_n1, col_n2, col_n3 = st.columns(3)
         with col_n1:
-            vpc_cidr = st.text_input("VPC CIDR", value="10.0.0.0/16")
+            vpc_cidr = st.text_input("VPC CIDR", value="10.0.0.0/16", key="create_vpc_cidr")
         with col_n2:
-            availability_zones = st.number_input("Availability Zones", min_value=1, max_value=6, value=3)
+            availability_zones = st.number_input("Availability Zones", min_value=1, max_value=6, value=3, key="create_azs")
         with col_n3:
-            nat_gateways = st.number_input("NAT Gateways", min_value=0, max_value=6, value=2)
+            nat_gateways = st.number_input("NAT Gateways", min_value=0, max_value=6, value=2, key="create_nat")
         
         # Budget
         st.markdown("#### 💰 Budget & Cost Controls")
         col_b1, col_b2 = st.columns(2)
         with col_b1:
-            budget = st.number_input("Monthly Budget ($)", min_value=0, value=50000, step=1000)
+            budget = st.number_input("Monthly Budget ($)", min_value=0, value=50000, step=1000, key="create_budget")
         with col_b2:
-            alert_threshold = st.slider("Alert Threshold (%)", min_value=50, max_value=100, value=80)
+            alert_threshold = st.slider("Alert Threshold (%)", min_value=50, max_value=100, value=80, key="create_alert")
         
         # Owner & Contact
         st.markdown("#### 👤 Account Owner")
         col_o1, col_o2 = st.columns(2)
         with col_o1:
-            owner_name = st.text_input("Owner Name", placeholder="John Smith")
+            owner_name = st.text_input("Owner Name", placeholder="John Smith", key="create_owner_name")
         with col_o2:
-            owner_email = st.text_input("Owner Email", placeholder="john.smith@company.com")
+            owner_email = st.text_input("Owner Email", placeholder="john.smith@company.com", key="create_owner_email")
         
     with col2:
         st.markdown("#### 💡 Configuration Summary")
@@ -987,7 +987,7 @@ def render_create_account():
     col_act1, col_act2, col_act3, col_act4 = st.columns([1, 1, 1, 2])
     
     with col_act1:
-        if st.button("🔍 Validate Configuration", type="secondary", use_container_width=True):
+        if st.button("🔍 Validate Configuration", type="secondary", use_container_width=True, key="create_validate_btn"):
             with st.spinner("Running validation checks..."):
                 time.sleep(2)
                 validation = run_readiness_validation({})
@@ -1009,11 +1009,11 @@ def render_create_account():
                                 st.warning(f"⚠️ {check['name']}: {check['message']}")
     
     with col_act2:
-        if st.button("💾 Save as Draft", type="secondary", use_container_width=True):
+        if st.button("💾 Save as Draft", type="secondary", use_container_width=True, key="create_save_draft_btn"):
             st.success("✅ Configuration saved as draft")
     
     with col_act3:
-        if st.button("🚀 Launch Onboarding", type="primary", use_container_width=True):
+        if st.button("🚀 Launch Onboarding", type="primary", use_container_width=True, key="create_launch_btn"):
             if not account_name:
                 st.error("❌ Please provide an account name")
             else:
@@ -1081,7 +1081,7 @@ def render_visual_workflow(account_name: str):
         - Status: Active and Compliant
         """)
         
-        if st.button("View Account Details"):
+        if st.button("View Account Details", key="workflow_view_details"):
             st.info("Redirecting to account dashboard...")
     else:
         st.info("⏳ Provisioning in progress. This typically takes 15-20 minutes.")
@@ -1093,10 +1093,10 @@ def render_template_marketplace():
     
     # Category filter
     categories = ["All"] + list(set([t["category"] for t in ACCOUNT_TEMPLATES.values()]))
-    selected_category = st.selectbox("Filter by Category", categories)
+    selected_category = st.selectbox("Filter by Category", categories, key="tmpl_category")
     
     # Search
-    search = st.text_input("🔍 Search templates", placeholder="e.g., HIPAA, production, analytics...")
+    search = st.text_input("🔍 Search templates", placeholder="e.g., HIPAA, production, analytics...", key="tmpl_search")
     
     # Display templates in grid
     templates_to_show = [
@@ -1283,7 +1283,7 @@ Staging-App-001,Financial Services,Staging,us-east-1,"SOC 2",15000"""
             # Validation
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("🔍 Validate All", type="secondary", use_container_width=True):
+                if st.button("🔍 Validate All", type="secondary", use_container_width=True, key="batch_validate"):
                     with st.spinner("Validating all accounts..."):
                         time.sleep(2)
                         st.success(f"✅ {len(df)-2} accounts valid, 2 errors found")
@@ -1292,7 +1292,7 @@ Staging-App-001,Financial Services,Staging,us-east-1,"SOC 2",15000"""
                         st.error("❌ Row 5: Budget exceeds portfolio allocation")
             
             with col2:
-                if st.button("🚀 Provision All", type="primary", use_container_width=True):
+                if st.button("🚀 Provision All", type="primary", use_container_width=True, key="batch_provision"):
                     st.success(f"✅ Started batch provisioning of {len(df)} accounts")
                     st.info("⏱️ Estimated completion: 25 minutes (parallel provisioning)")
     
@@ -1303,19 +1303,22 @@ Staging-App-001,Financial Services,Staging,us-east-1,"SOC 2",15000"""
         template_key = st.selectbox(
             "Select Base Template",
             list(ACCOUNT_TEMPLATES.keys()),
-            format_func=lambda x: ACCOUNT_TEMPLATES[x]["name"]
+            format_func=lambda x: ACCOUNT_TEMPLATES[x]["name"],
+            key="batch_template_select"
         )
         
-        count = st.number_input("Number of Accounts", min_value=1, max_value=100, value=5)
+        count = st.number_input("Number of Accounts", min_value=1, max_value=100, value=5, key="batch_count")
         
         naming_pattern = st.text_input("Naming Pattern", value="Production-App-{n:03d}", 
-                                       help="Use {n} for sequence number")
+                                       help="Use {n} for sequence number",
+                                       key="batch_naming")
         
         regions = st.multiselect("Deploy to Regions", 
                                 ["us-east-1", "us-west-2", "eu-west-1", "ap-southeast-1"],
-                                default=["us-east-1"])
+                                default=["us-east-1"],
+                                key="batch_regions")
         
-        if st.button("🎯 Generate Batch Configuration", type="primary"):
+        if st.button("🎯 Generate Batch Configuration", type="primary", key="batch_generate"):
             st.success(f"✅ Generated configuration for {count} accounts across {len(regions)} regions")
             
             # Preview
@@ -1331,7 +1334,7 @@ Staging-App-001,Financial Services,Staging,us-east-1,"SOC 2",15000"""
             
             st.dataframe(pd.DataFrame(preview_data), use_container_width=True, hide_index=True)
             
-            st.button("🚀 Provision All Accounts", type="primary")
+            st.button("🚀 Provision All Accounts", type="primary", key="batch_provision_final")
     
     with tab3:
         st.markdown("#### ⏳ Batch Operations In Progress")
@@ -2195,7 +2198,8 @@ def render_dependency_mapping():
         
         # Select account
         selected_account = st.selectbox("Select Account", 
-                                       ["Production-FinServices-001", "Production-App-002", "Data-Lake-001"])
+                                       ["Production-FinServices-001", "Production-App-002", "Data-Lake-001"],
+                                       key="dep_select_account")
         
         st.info("💡 Interactive dependency graph (placeholder)")
         
@@ -2244,18 +2248,19 @@ def render_dependency_mapping():
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            source_account = st.selectbox("Source Account", ["Production-FinServices-001"])
+            source_account = st.selectbox("Source Account", ["Production-FinServices-001"], key="dep_source_account")
         with col2:
-            target_account = st.selectbox("Target Account", ["Shared-Services", "Data-Lake-001", "Security-Hub"])
+            target_account = st.selectbox("Target Account", ["Shared-Services", "Data-Lake-001", "Security-Hub"], key="dep_target_account")
         with col3:
             dependency_type = st.selectbox("Dependency Type", 
-                                          ["IAM Role", "S3 Bucket Access", "API Gateway", "Transit Gateway", "VPC Peering", "PrivateLink"])
+                                          ["IAM Role", "S3 Bucket Access", "API Gateway", "Transit Gateway", "VPC Peering", "PrivateLink"],
+                                          key="dep_type")
         
-        critical = st.checkbox("Mark as Critical Dependency")
+        critical = st.checkbox("Mark as Critical Dependency", key="dep_critical")
         
-        description = st.text_area("Description", placeholder="Describe the dependency relationship...")
+        description = st.text_area("Description", placeholder="Describe the dependency relationship...", key="dep_description")
         
-        if st.button("➕ Add Dependency"):
+        if st.button("➕ Add Dependency", key="dep_add_button"):
             st.success(f"✅ Dependency added: {source_account} → {target_account}")
             
             st.info("""
@@ -2275,9 +2280,9 @@ def render_dependency_mapping():
             "If Production-FinServices-001 is offboarded",
             "If Shared-Services has an outage",
             "If Network-Hub is modified"
-        ])
+        ], key="dep_scenario")
         
-        if st.button("🔍 Analyze Impact"):
+        if st.button("🔍 Analyze Impact", key="dep_analyze_impact"):
             with st.spinner("Analyzing dependencies..."):
                 time.sleep(2)
                 
