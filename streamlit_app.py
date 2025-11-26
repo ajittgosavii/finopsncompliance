@@ -54,7 +54,9 @@ import base64
 from account_lifecycle_enhanced import render_enhanced_account_lifecycle
 from scp_policy_engine import render_scp_policy_engine
 from pipeline_simulator import render_pipeline_simulator
+from ai_configuration_assistant_complete import render_complete_ai_assistant_scene
 from scp_policy_engine import render_scp_policy_engine
+from scp_scene_5_complete import render_scp_policy_engine_scene
 # Import Enterprise Features (v5.0)
 try:
     from enterprise_module import (
@@ -546,6 +548,9 @@ def initialize_session_state():
         st.session_state.initialized = True
         st.session_state.aws_connected = False
         st.session_state.demo_mode = False
+        st.session_state.show_ai_panel = False
+        st.session_state.validation_complete = False
+        st.session_state.deployment_started = False
         
         # ✅ ADD THESE LINES
         if 'service_status' not in st.session_state:
@@ -6669,8 +6674,17 @@ def main():
     with tabs[2]:
         render_inspector_vulnerability_dashboard()
     
-    with tabs[3]:
-        render_policy_guardrails()
+    with tabs[3]:  # Tech Guardrails
+    st.markdown("## 🚧 Tech Guardrails")
+    
+    guardrail_tabs = st.tabs([
+        "🛡️ Service Control Policies (SCP)",
+        "📜 OPA Policies", 
+        "🔍 KICS Scanning"
+    ])
+    
+    with guardrail_tabs[0]:
+        render_scp_policy_engine_scene()
     
     with tabs[4]:
         render_ai_remediation_tab()
@@ -6680,6 +6694,9 @@ def main():
     
     with tabs[6]:
         render_enhanced_account_lifecycle()
+        sub_tabs = st.tabs(["Templates", "🤖 AI Assistant", "Deploy"])
+    with sub_tabs[1]:
+        render_complete_ai_assistant_scene()
     
     with tabs[7]:
         st.markdown("## 🔍 Security Findings Details")
