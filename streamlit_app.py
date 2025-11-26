@@ -52,6 +52,7 @@ import time
 import hashlib
 import base64
 from account_lifecycle_enhanced import render_enhanced_account_lifecycle
+from scp_policy_engine import render_scp_policy_engine
 from pipeline_simulator import render_pipeline_simulator
 # Import Enterprise Features (v5.0)
 try:
