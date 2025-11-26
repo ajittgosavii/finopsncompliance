@@ -33,7 +33,7 @@ FinOps: Apptio Cloudability, CloudHealth, Snowflake
 ITSM: Jira, ServiceNow, PagerDuty
 
 Version: 5.0 Enterprise Edition
-Built for AWS re:Invent 2025
+Enterprise Edition | Production Ready
 """
 
 import streamlit as st
@@ -6767,7 +6767,7 @@ def main():
     <div class="main-header">
         <h1>☁️ Cloud Compliance Canvas | Enterprise Platform</h1>
         <p>AI-Powered AWS Governance • Complete Security Monitoring • Advanced FinOps Intelligence • Automated Compliance</p>
-        <div class="company-badge">Enterprise Edition v5.0 | AWS re:Invent 2025</div>
+        <div class="company-badge">Enterprise Edition v5.0</div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -9797,7 +9797,7 @@ def main():
     st.markdown("""
     <div style='text-align: center; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 3rem 2rem; margin-top: 2rem; border-radius: 16px; border-top: 3px solid #0066CC;'>
         <h4 style='color: #2c3e50; margin: 0 0 1rem 0; font-size: 1.3rem;'>☁️ Cloud Compliance Canvas</h4>
-        <p style='color: #495057; margin: 0.5rem 0;'><strong>Enterprise AWS Governance Platform v5.0</strong> | Built for AWS re:Invent 2025</p>
+        <p style='color: #495057; margin: 0.5rem 0;'><strong>Enterprise AWS Governance Platform v5.0</strong></p>
         
         <div style='display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1.5rem 0;'>
             <span style='background: white; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #495057; border: 1px solid #dee2e6;'>AWS Security Hub</span>
