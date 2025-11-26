@@ -552,9 +552,7 @@ def initialize_session_state():
         st.session_state.show_ai_panel = False
         st.session_state.validation_complete = False
         st.session_state.deployment_started = False
-        'ai_analysis_started': False,
-        'remediation_started': False,
-        'demo_threat_mode': False,
+         
         
         # ✅ ADD THESE LINES
         if 'service_status' not in st.session_state:
@@ -611,6 +609,24 @@ def initialize_session_state():
         'policy_violations': [],
         'detection_metrics': {},
         
+         # AI Threat Analysis (Scene 6)
+        'ai_analysis_started': False,
+        'remediation_started': False,
+        'demo_threat_mode': False,
+        
+        # SCP Policy Engine (Scene 5)
+        'show_json': False,
+        'show_impact': False,
+        'impact_analyzed': False,
+        'and_conditions': 0,
+        
+        # AI Configuration Assistant (Scene 4)
+        'show_ai_panel': False,
+        'validation_complete': False,
+        'show_deploy_button': False,
+        'deployment_started': False,
+    }
+
         # Filters
         'selected_portfolio': ['Retail', 'Healthcare', 'Financial'],
         'selected_services': ['Security Hub', 'Config', 'GuardDuty', 'Inspector'],
