@@ -625,8 +625,7 @@ def initialize_session_state():
         'validation_complete': False,
         'show_deploy_button': False,
         'deployment_started': False,
-    }
-
+    
         # Filters
         'selected_portfolio': ['Retail', 'Healthcare', 'Financial'],
         'selected_services': ['Security Hub', 'Config', 'GuardDuty', 'Inspector'],
