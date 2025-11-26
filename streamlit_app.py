@@ -3576,7 +3576,7 @@ def render_policy_guardrails():
     ])
     
     # SCP Tab - Enhanced Policy Engine
-        with guardrail_tabs[0]:
+    with guardrail_tabs[0]:
             render_scp_policy_engine()
     # OPA Tab
     with guardrail_tabs[1]:
