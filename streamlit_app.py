@@ -6243,7 +6243,7 @@ def enforce_mfa(username):
             st.markdown("**Preview Impact:**")
             st.info("📊 This policy will affect 47 S3 buckets across 12 AWS accounts")
             
-            if st.button("🔍 Validate Policy", use_container_width=True):
+            if st.button("🔍 Validate Policy", key="validate_policy_button", use_container_width=True):
                 with st.spinner("Running KICS scan..."):
                     time.sleep(1)
                     st.success("✅ Policy validation passed - No security issues found")
