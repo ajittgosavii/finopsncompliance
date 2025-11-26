@@ -878,17 +878,17 @@ def render_create_account():
         
         col1a, col2a, col3a = st.columns(3)
         with col1a:
-            sec_hub = st.checkbox("Security Hub", value=True)
-            guardduty = st.checkbox("GuardDuty", value=True)
-            config_rules = st.checkbox("Config Rules", value=True)
+            sec_hub = st.checkbox("Security Hub", value=True, key="create_sec_hub")
+            guardduty = st.checkbox("GuardDuty", value=True, key="create_guardduty")
+            config_rules = st.checkbox("Config Rules", value=True, key="create_config_rules")
         with col2a:
-            inspector = st.checkbox("Inspector", value=True)
-            cloudtrail = st.checkbox("CloudTrail", value=True)
-            s3_encrypt = st.checkbox("S3 Encryption", value=True)
+            inspector = st.checkbox("Inspector", value=True, key="create_inspector")
+            cloudtrail = st.checkbox("CloudTrail", value=True, key="create_cloudtrail")
+            s3_encrypt = st.checkbox("S3 Encryption", value=True, key="create_s3_encrypt")
         with col3a:
-            vpc_flow = st.checkbox("VPC Flow Logs", value=True)
-            macie = st.checkbox("Macie", value=False)
-            waf = st.checkbox("WAF", value=False)
+            vpc_flow = st.checkbox("VPC Flow Logs", value=True, key="create_vpc_flow")
+            macie = st.checkbox("Macie", value=False, key="create_macie")
+            waf = st.checkbox("WAF", value=False, key="create_waf")
         
         # Guardrails
         st.markdown("#### 🚧 Guardrails & Policies")
@@ -1456,10 +1456,10 @@ def render_account_modification():
         st.markdown("✅ Security Hub, ✅ GuardDuty, ✅ Config Rules, ✅ CloudTrail")
         
         st.markdown("**Available to Enable:**")
-        enable_macie = st.checkbox("AWS Macie (Data Classification)", value=False)
-        enable_inspector = st.checkbox("Amazon Inspector V2 (Vulnerability Scanning)", value=False)
-        enable_waf = st.checkbox("AWS WAF (Web Application Firewall)", value=False)
-        enable_shield = st.checkbox("AWS Shield Advanced (DDoS Protection)", value=False)
+        enable_macie = st.checkbox("AWS Macie (Data Classification)", value=False, key="mod_macie")
+        enable_inspector = st.checkbox("Amazon Inspector V2 (Vulnerability Scanning)", value=False, key="mod_inspector")
+        enable_waf = st.checkbox("AWS WAF (Web Application Firewall)", value=False, key="mod_waf")
+        enable_shield = st.checkbox("AWS Shield Advanced (DDoS Protection)", value=False, key="mod_shield")
         
         if st.button("Apply Security Control Changes"):
             st.success("✅ Security controls will be enabled in 10-15 minutes")
@@ -1535,14 +1535,14 @@ def render_account_cloning():
         
         st.markdown("#### ⚙️ Modifications")
         
-        modify_budget = st.checkbox("Adjust Budget")
+        modify_budget = st.checkbox("Adjust Budget", key="clone_modify_budget")
         if modify_budget:
-            new_budget = st.slider("Budget as % of Source", 25, 200, 100, step=25)
+            new_budget = st.slider("Budget as % of Source", 25, 200, 100, step=25, key="clone_budget_slider")
             st.info(f"New budget: ${42000 * new_budget / 100:,.0f}/month")
         
-        modify_env = st.checkbox("Change Environment Type")
+        modify_env = st.checkbox("Change Environment Type", key="clone_modify_env")
         if modify_env:
-            new_env = st.selectbox("New Environment", ["Production", "Staging", "Development", "DR"])
+            new_env = st.selectbox("New Environment", ["Production", "Staging", "Development", "DR"], key="clone_new_env")
     
     st.markdown("---")
     
@@ -1640,8 +1640,8 @@ def render_offboarding():
         
         cloudtrail_retention = st.slider("CloudTrail Retention (years)", 1, 10, 7)
         
-        snapshot_resources = st.checkbox("Create final snapshots (RDS, EBS)", value=True)
-        export_config = st.checkbox("Export all configuration", value=True)
+        snapshot_resources = st.checkbox("Create final snapshots (RDS, EBS)", value=True, key="offboard_snapshot")
+        export_config = st.checkbox("Export all configuration", value=True, key="offboard_export")
     
     with col2:
         st.markdown("#### ⏱️ Offboarding Schedule")
@@ -1656,10 +1656,11 @@ def render_offboarding():
             offboard_date = st.date_input("Offboard Date")
             offboard_time = st.time_input("Offboard Time")
         
-        notify_stakeholders = st.checkbox("Notify stakeholders (30-day warning)", value=True)
+        notify_stakeholders = st.checkbox("Notify stakeholders (30-day warning)", value=True, key="offboard_notify")
         if notify_stakeholders:
             notification_recipients = st.text_area("Notification Recipients (comma-separated emails)",
-                                                   placeholder="user1@company.com, user2@company.com")
+                                                   placeholder="user1@company.com, user2@company.com",
+                                                   key="offboard_recipients")
     
     st.markdown("---")
     
@@ -1687,7 +1688,7 @@ def render_offboarding():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        confirm = st.checkbox("⚠️ I understand this action is irreversible after retention period")
+        confirm = st.checkbox("⚠️ I understand this action is irreversible after retention period", key="offboard_confirm")
     
     with col2:
         if st.button("🔴 Start Offboarding", type="primary", disabled=not confirm, use_container_width=True):
@@ -2100,25 +2101,25 @@ def render_network_designer():
         with col1:
             st.markdown("**Components to Include:**")
             
-            include_igw = st.checkbox("Internet Gateway", value=True)
-            include_nat = st.checkbox("NAT Gateways", value=True)
+            include_igw = st.checkbox("Internet Gateway", value=True, key="net_igw")
+            include_nat = st.checkbox("NAT Gateways", value=True, key="net_nat")
             if include_nat:
-                nat_count = st.number_input("NAT Gateway Count", 1, 6, 2)
+                nat_count = st.number_input("NAT Gateway Count", 1, 6, 2, key="net_nat_count")
             
-            include_tgw = st.checkbox("Transit Gateway", value=False)
-            include_vpn = st.checkbox("VPN Gateway", value=False)
-            include_dx = st.checkbox("Direct Connect", value=False)
+            include_tgw = st.checkbox("Transit Gateway", value=False, key="net_tgw")
+            include_vpn = st.checkbox("VPN Gateway", value=False, key="net_vpn")
+            include_dx = st.checkbox("Direct Connect", value=False, key="net_dx")
         
         with col2:
             st.markdown("**Security Configuration:**")
             
-            include_waf = st.checkbox("AWS WAF", value=False)
-            include_shield = st.checkbox("AWS Shield", value=False)
-            include_firewall = st.checkbox("Network Firewall", value=False)
+            include_waf = st.checkbox("AWS WAF", value=False, key="net_waf")
+            include_shield = st.checkbox("AWS Shield", value=False, key="net_shield")
+            include_firewall = st.checkbox("Network Firewall", value=False, key="net_firewall")
             
             st.markdown("**Monitoring:**")
-            include_flowlogs = st.checkbox("VPC Flow Logs", value=True)
-            include_traffic_mirror = st.checkbox("Traffic Mirroring", value=False)
+            include_flowlogs = st.checkbox("VPC Flow Logs", value=True, key="net_flowlogs")
+            include_traffic_mirror = st.checkbox("Traffic Mirroring", value=False, key="net_mirror")
         
         st.markdown("---")
         
