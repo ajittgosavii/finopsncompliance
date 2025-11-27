@@ -55,7 +55,6 @@ from account_lifecycle_enhanced import render_enhanced_account_lifecycle
 from scp_policy_engine import render_scp_policy_engine
 from pipeline_simulator import render_pipeline_simulator
 from ai_configuration_assistant_complete import render_complete_ai_assistant_scene
-from scp_policy_engine import render_scp_policy_engine
 from scp_scene_5_enhanced import render_scp_policy_engine_scene
 from ai_threat_scene_6_complete import render_ai_threat_analysis_scene
 from finops_scene_7_complete import render_predictive_finops_scene
@@ -6710,6 +6709,12 @@ def main():
     
     with guardrail_tabs[0]:
         render_scp_policy_engine_scene()
+    
+    with guardrail_tabs[1]:
+        render_enhanced_opa_violations()
+    
+    with guardrail_tabs[2]:
+        render_enhanced_kics_findings()
     
     with tabs[4]:  # 🤖 AI Remediation tab
         st.markdown("## 🤖 AI-Powered Remediation")
