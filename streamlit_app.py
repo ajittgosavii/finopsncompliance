@@ -5212,7 +5212,8 @@ def render_sidebar():
     with st.sidebar:
         st.markdown("---")
         st.markdown("### 🔧 Admin Tools")
-        st.page_link("pages/Admin_Deployment.py", label="AWS Deployment", icon="🚀")
+        # Commented out until Admin_Deployment page is created
+        # st.page_link("pages/Admin_Deployment.py", label="AWS Deployment", icon="🚀")
 # ============================================================================
 # MAIN TABS RENDERING
 # ============================================================================
