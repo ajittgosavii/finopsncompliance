@@ -2625,7 +2625,7 @@ def generate_remediation_code(client, finding: Dict[str, Any]) -> str:
 import boto3
 
 def lambda_handler(event, context):
-    s3_client = boto3.client('s3')
+    s3_client = boto3.client('s3', region_name='us-east-1')
     bucket_name = event['bucket']
     
     # Enable default encryption
@@ -6128,7 +6128,7 @@ def render_github_gitops_tab():
 import boto3
 
 def enable_s3_encryption(bucket_name):
-    s3 = boto3.client('s3')
+    s3 = boto3.client('s3', region_name='us-east-1')
     s3.put_bucket_encryption(
         Bucket=bucket_name,
         ServerSideEncryptionConfiguration={
@@ -6175,7 +6175,7 @@ resource "aws_security_group_rule" "remove_ssh_public" {
 import boto3
 
 def enforce_mfa(username):
-    iam = boto3.client('iam')
+    iam = boto3.client('iam', region_name='us-east-1')
     # Attach MFA requirement policy
     iam.attach_user_policy(
         UserName=username,

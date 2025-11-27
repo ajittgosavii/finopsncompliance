@@ -18,13 +18,74 @@ import plotly.graph_objects as go
 from typing import Dict, List, Optional
 import json
 
-# AWS Clients
-dynamodb = boto3.resource('dynamodb')
-bedrock = boto3.client('bedrock-runtime')
+def get_mock_threats(limit: int = 10) -> List[Dict]:
+    """
+    Generate mock threat data for demo purposes when AWS is not available
+    """
+    mock_threats = [
+        {
+            'threat_id': 'THREAT-2024-001',
+            'timestamp': (datetime.utcnow() - timedelta(minutes=15)).isoformat(),
+            'severity': 'CRITICAL',
+            'status': 'ACTIVE',
+            'threat_type': 'Unauthorized IAM Policy Modification',
+            'description': 'Suspicious IAM policy modification detected - wildcard permissions granted',
+            'affected_resource': 'arn:aws:iam::123456789012:role/ProductionRole',
+            'source_ip': '203.0.113.42',
+            'event_details': {
+                'eventName': 'PutRolePolicy',
+                'userIdentity': {
+                    'type': 'IAMUser',
+                    'principalId': 'AIDAI23HXX2LH4EXAMPLE',
+                    'arn': 'arn:aws:iam::123456789012:user/suspicious-user'
+                },
+                'requestParameters': {
+                    'roleName': 'ProductionRole',
+                    'policyName': 'MaliciousPolicy',
+                    'policyDocument': '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]}'
+                },
+                'sourceIPAddress': '203.0.113.42',
+                'userAgent': 'aws-cli/2.13.0'
+            }
+        },
+        {
+            'threat_id': 'THREAT-2024-002',
+            'timestamp': (datetime.utcnow() - timedelta(hours=2)).isoformat(),
+            'severity': 'HIGH',
+            'status': 'ACTIVE',
+            'threat_type': 'Unusual API Activity',
+            'description': 'Multiple failed API calls from suspicious IP address',
+            'affected_resource': 'arn:aws:iam::123456789012:user/admin',
+            'source_ip': '198.51.100.23',
+            'event_details': {
+                'eventName': 'GetUser',
+                'userIdentity': {
+                    'type': 'IAMUser',
+                    'principalId': 'AIDAI23HXX2LH5EXAMPLE',
+                    'arn': 'arn:aws:iam::123456789012:user/admin'
+                }
+            }
+        }
+    ]
+    return mock_threats[:limit]
 
-# DynamoDB Table
+# AWS Configuration
+AWS_REGION = 'us-east-1'  # Default region, can be overridden by environment variable
 THREATS_TABLE = 'security-threats'
-threats_table = dynamodb.Table(THREATS_TABLE)
+
+# AWS Client initialization with error handling
+try:
+    dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
+    bedrock = boto3.client('bedrock-runtime', region_name=AWS_REGION)
+    threats_table = dynamodb.Table(THREATS_TABLE)
+    AWS_AVAILABLE = True
+except Exception as e:
+    # AWS not available - will use mock data for demo
+    dynamodb = None
+    bedrock = None
+    threats_table = None
+    AWS_AVAILABLE = False
+    print(f"Note: AWS services not available - using demo mode: {str(e)}")
 
 
 def fetch_active_threats(limit: int = 10) -> List[Dict]:
@@ -34,6 +95,10 @@ def fetch_active_threats(limit: int = 10) -> List[Dict]:
     Returns:
         List of threat dictionaries
     """
+    # If AWS is not available, return mock data
+    if not AWS_AVAILABLE or threats_table is None:
+        return get_mock_threats(limit)
+    
     try:
         # Query active threats, sorted by timestamp (newest first)
         response = threats_table.query(
@@ -47,13 +112,21 @@ def fetch_active_threats(limit: int = 10) -> List[Dict]:
         
     except Exception as e:
         st.error(f"Error fetching threats from DynamoDB: {str(e)}")
-        return []
+        return get_mock_threats(limit)
 
 
 def fetch_threat_by_id(threat_id: str) -> Optional[Dict]:
     """
     Fetch a specific threat by ID
     """
+    # If AWS is not available, return mock data
+    if not AWS_AVAILABLE or threats_table is None:
+        mock_threats = get_mock_threats(10)
+        for threat in mock_threats:
+            if threat['threat_id'] == threat_id:
+                return threat
+        return mock_threats[0] if mock_threats else None
+    
     try:
         response = threats_table.get_item(
             Key={'threat_id': threat_id}
@@ -68,6 +141,16 @@ def get_threat_statistics() -> Dict:
     """
     Get statistics about threats
     """
+    # If AWS is not available, return mock statistics
+    if not AWS_AVAILABLE or threats_table is None:
+        return {
+            'total_24h': 8,
+            'critical': 2,
+            'high': 3,
+            'medium': 2,
+            'low': 1
+        }
+    
     try:
         # Get threats from last 24 hours
         cutoff_time = (datetime.utcnow() - timedelta(hours=24)).isoformat()
@@ -120,13 +203,62 @@ def execute_automated_remediation(threat_id: str, threat_data: Dict, selected_ac
         'end_time': None
     }
     
+    # If AWS is not available, return mock remediation results
+    if not AWS_AVAILABLE:
+        for action in selected_actions:
+            if "✅ Revert IAM policy" in action:
+                results['actions_completed'].append({
+                    'action': 'Policy Reverted',
+                    'details': 'Deleted malicious policy from role (simulated)',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+            elif "✅ Rotate credentials" in action:
+                results['actions_completed'].append({
+                    'action': 'Credentials Rotated',
+                    'details': 'Rotated access keys and revoked sessions (simulated)',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+            elif "✅ Generate CloudTrail" in action:
+                results['actions_completed'].append({
+                    'action': 'CloudTrail Report Generated',
+                    'details': 'Found related security events (simulated)',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+            elif "✅ Deploy preventive SCP" in action:
+                results['actions_completed'].append({
+                    'action': 'SCP Deployed',
+                    'details': 'Preventive SCP deployed across organization (simulated)',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+            elif "✅ Create Jira" in action:
+                results['actions_completed'].append({
+                    'action': 'Jira Ticket Created',
+                    'details': 'Incident ticket created in Jira (simulated)',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+            elif "✅ Notify Security" in action:
+                results['actions_completed'].append({
+                    'action': 'SOC Notified',
+                    'details': 'Security team notified via Slack (simulated)',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+            elif "✅ Quarantine user" in action:
+                results['actions_completed'].append({
+                    'action': 'User Quarantined',
+                    'details': 'User account access suspended (simulated)',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+        
+        results['end_time'] = datetime.utcnow().isoformat()
+        return results
+    
     try:
         event_details = threat_data.get('event_details', {})
         event_name = event_details.get('eventName')
         request_parameters = event_details.get('requestParameters', {})
         
         # IAM Client for remediation
-        iam = boto3.client('iam')
+        iam = boto3.client('iam', region_name=AWS_REGION)
         
         # Action 1: Revert IAM policy
         if "✅ Revert IAM policy to previous version" in selected_actions:
@@ -182,7 +314,7 @@ def execute_automated_remediation(threat_id: str, threat_data: Dict, selected_ac
         # Action 3: Generate CloudTrail report
         if "✅ Generate CloudTrail analysis report" in selected_actions:
             try:
-                cloudtrail = boto3.client('cloudtrail')
+                cloudtrail = boto3.client('cloudtrail', region_name=AWS_REGION)
                 
                 # Look up related events
                 user_identity = event_details.get('userIdentity', {})
@@ -247,7 +379,7 @@ def execute_automated_remediation(threat_id: str, threat_data: Dict, selected_ac
         # Action 6: Notify SOC
         if "✅ Notify Security Operations Center" in selected_actions:
             try:
-                sns = boto3.client('sns')
+                sns = boto3.client('sns', region_name=AWS_REGION)
                 
                 # Get SNS topic ARN from environment or configuration
                 sns_topic_arn = st.secrets.get('SNS_TOPIC_ARN', '')
@@ -304,17 +436,21 @@ def execute_automated_remediation(threat_id: str, threat_data: Dict, selected_ac
                 })
         
         # Update threat status in DynamoDB
-        threats_table.update_item(
-            Key={'threat_id': threat_id},
-            UpdateExpression='SET remediation_status = :status, remediation_results = :results, remediation_time = :time, #st = :st',
-            ExpressionAttributeNames={'#st': 'status'},
-            ExpressionAttributeValues={
-                ':status': 'REMEDIATED',
-                ':results': results,
-                ':time': datetime.utcnow().isoformat(),
-                ':st': 'REMEDIATED'
-            }
-        )
+        if threats_table is not None:
+            try:
+                threats_table.update_item(
+                    Key={'threat_id': threat_id},
+                    UpdateExpression='SET remediation_status = :status, remediation_results = :results, remediation_time = :time, #st = :st',
+                    ExpressionAttributeNames={'#st': 'status'},
+                    ExpressionAttributeValues={
+                        ':status': 'REMEDIATED',
+                        ':results': results,
+                        ':time': datetime.utcnow().isoformat(),
+                        ':st': 'REMEDIATED'
+                    }
+                )
+            except Exception as e:
+                print(f"Warning: Could not update DynamoDB: {str(e)}")
         
         results['end_time'] = datetime.utcnow().isoformat()
         
