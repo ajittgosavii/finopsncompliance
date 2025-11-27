@@ -60,6 +60,60 @@ from ai_threat_scene_6_PRODUCTION import render_ai_threat_analysis_scene
 from finops_scene_7_complete import render_predictive_finops_scene
 from integration_scene_8_complete import render_enterprise_integration_scene
 
+# Production AI Remediation Modules (optional - falls back to placeholder if not available)
+try:
+    from code_generation_production import render_code_generation_tab, CODE_GENERATION_ENABLED
+    CODE_GEN_MODULE_AVAILABLE = True
+except ImportError:
+    CODE_GENERATION_ENABLED = False
+    CODE_GEN_MODULE_AVAILABLE = False
+    print("Note: code_generation_production.py not found - using placeholder")
+    
+    # Fallback placeholder function
+    def render_code_generation_tab(threat=None):
+        st.markdown("### 🔧 Automated Remediation Code Generation")
+        st.info("💡 **Coming Soon:** AI-powered code generation for automated threat remediation")
+        st.markdown("""
+        This feature will automatically generate:
+        - Lambda functions for automated response
+        - EventBridge rules for threat detection
+        - IAM policies for least-privilege access
+        - CloudFormation templates for infrastructure
+        - Python/Terraform code for remediation actions
+        
+        **To enable:** Upload `code_generation_production.py` to your repository
+        """)
+
+try:
+    from batch_remediation_production import render_batch_remediation_tab, BATCH_REMEDIATION_ENABLED
+    BATCH_MODULE_AVAILABLE = True
+except ImportError:
+    BATCH_REMEDIATION_ENABLED = False
+    BATCH_MODULE_AVAILABLE = False
+    print("Note: batch_remediation_production.py not found - using placeholder")
+    
+    # Fallback placeholder function
+    def render_batch_remediation_tab(available_threats=None):
+        st.markdown("### ⚡ Batch Threat Remediation")
+        st.info("💡 **Coming Soon:** Bulk remediation across multiple threats and accounts")
+        st.markdown("""
+        This feature will enable:
+        - Remediate multiple threats simultaneously
+        - Apply fixes across multiple AWS accounts
+        - Schedule remediation during maintenance windows
+        - Rollback capabilities with audit trail
+        - Compliance reporting for all remediation actions
+        
+        **To enable:** Upload `batch_remediation_production.py` to your repository
+        """)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Pending Remediations", "0")
+        with col2:
+            st.metric("Scheduled Actions", "0")
+        with col3:
+            st.metric("Success Rate", "N/A")
+
  
 
 
@@ -6728,6 +6782,27 @@ def main():
     with tabs[4]:  # 🤖 AI Remediation tab
         st.markdown("## 🤖 AI-Powered Remediation")
         
+        # Feature Status Banner
+        if CODE_GEN_MODULE_AVAILABLE and BATCH_MODULE_AVAILABLE:
+            if CODE_GENERATION_ENABLED and BATCH_REMEDIATION_ENABLED:
+                st.success("✅ **Production Mode Enabled:** All AI remediation features are active")
+            elif CODE_GENERATION_ENABLED or BATCH_REMEDIATION_ENABLED:
+                enabled_features = []
+                if CODE_GENERATION_ENABLED:
+                    enabled_features.append("Code Generation")
+                if BATCH_REMEDIATION_ENABLED:
+                    enabled_features.append("Batch Remediation")
+                st.info(f"⚙️ **Partial Production Mode:** {', '.join(enabled_features)} enabled")
+            else:
+                st.warning("🔧 **Demo Mode:** Production features available but disabled. Change flags to True to enable.")
+        else:
+            missing_modules = []
+            if not CODE_GEN_MODULE_AVAILABLE:
+                missing_modules.append("code_generation_production.py")
+            if not BATCH_MODULE_AVAILABLE:
+                missing_modules.append("batch_remediation_production.py")
+            st.warning(f"📦 **Modules Not Found:** Upload {', '.join(missing_modules)} to enable production features")
+        
         # Create sub-tabs
         ai_tabs = st.tabs([
             "🔍 Threat Analysis",  # NEW TAB
@@ -6737,7 +6812,7 @@ def main():
     ])
     
     with ai_tabs[0]:
-        # NEW: AI Threat Analysis scene
+        # Threat Analysis - stores threats in session state
         render_ai_threat_analysis_scene()
     
     with ai_tabs[1]:
@@ -6745,74 +6820,14 @@ def main():
         render_ai_insights_panel(st.session_state.claude_client)
     
     with ai_tabs[2]:
-        # Code Generation tab
-        st.markdown("### 🔧 Automated Remediation Code Generation")
-        st.info("💡 **Coming Soon:** AI-powered code generation for automated threat remediation")
-        
-        st.markdown("""
-        This feature will automatically generate:
-        - Lambda functions for automated response
-        - EventBridge rules for threat detection
-        - IAM policies for least-privilege access
-        - CloudFormation templates for infrastructure
-        - Python/Terraform code for remediation actions
-        """)
-        
-        # Placeholder example
-        with st.expander("📝 Example: Lambda Function for IAM Policy Remediation", expanded=False):
-            st.code('''
-import boto3
-import json
-
-def lambda_handler(event, context):
-    """
-    Automatically reverts unauthorized IAM policy changes
-    """
-    iam = boto3.client('iam')
-    
-    # Extract event details
-    event_name = event['detail']['eventName']
-    role_name = event['detail']['requestParameters']['roleName']
-    policy_name = event['detail']['requestParameters']['policyName']
-    
-    # Revert the malicious policy
-    if event_name == 'PutRolePolicy':
-        iam.delete_role_policy(
-            RoleName=role_name,
-            PolicyName=policy_name
-        )
-        
-        return {
-            'statusCode': 200,
-            'body': json.dumps('Malicious policy reverted successfully')
-        }
-            ''', language='python')
+        # Code Generation - PRODUCTION IMPLEMENTATION
+        selected_threat = st.session_state.get('selected_threat')
+        render_code_generation_tab(threat=selected_threat)
     
     with ai_tabs[3]:
-        # Batch Remediation tab
-        st.markdown("### ⚡ Batch Threat Remediation")
-        st.info("💡 **Coming Soon:** Bulk remediation across multiple threats and accounts")
-        
-        st.markdown("""
-        This feature will enable:
-        - Remediate multiple threats simultaneously
-        - Apply fixes across multiple AWS accounts
-        - Schedule remediation during maintenance windows
-        - Rollback capabilities with audit trail
-        - Compliance reporting for all remediation actions
-        """)
-        
-        # Placeholder UI
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Pending Remediations", "0", help="Threats awaiting batch remediation")
-        with col2:
-            st.metric("Scheduled Actions", "0", help="Remediation actions scheduled")
-        with col3:
-            st.metric("Success Rate", "N/A", help="Historical remediation success rate")
-        
-        st.markdown("---")
-        st.markdown("**Batch Operations:** Select multiple threats from the Threat Analysis tab to enable batch remediation.")
+        # Batch Remediation - PRODUCTION IMPLEMENTATION
+        available_threats = st.session_state.get('available_threats', [])
+        render_batch_remediation_tab(available_threats=available_threats)
     
     with tabs[5]:
         render_github_gitops_tab()

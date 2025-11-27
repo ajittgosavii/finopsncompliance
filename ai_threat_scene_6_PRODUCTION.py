@@ -508,6 +508,9 @@ def render_ai_threat_analysis_scene():
     # Fetch active threats
     threats = fetch_active_threats(limit=10)
     
+    # Store in session state for Code Generation and Batch Remediation tabs
+    st.session_state.available_threats = threats
+    
     if not threats:
         st.info("✅ No active security threats detected in the last 24 hours.")
         st.balloons()
@@ -530,6 +533,9 @@ def render_ai_threat_analysis_scene():
         selected_threat = threats[selected_index]
     else:
         selected_threat = threats[0]
+    
+    # Store selected threat in session state for Code Generation tab
+    st.session_state.selected_threat = selected_threat
     
     # Display selected threat
     render_threat_alert(selected_threat)
