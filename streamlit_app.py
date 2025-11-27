@@ -59,7 +59,8 @@ from scp_scene_5_enhanced import render_scp_policy_engine_scene
 from ai_threat_scene_6_PRODUCTION import render_ai_threat_analysis_scene
 from finops_scene_7_complete import render_predictive_finops_scene
 from integration_scene_8_complete import render_enterprise_integration_scene
-
+from modules.code_generation_production import render_code_generation_tab
+from modules.batch_remediation_production import render_batch_remediation_tab
  
 
 
@@ -6743,6 +6744,76 @@ def main():
     with ai_tabs[1]:
         # Your existing AI insights code
         render_ai_insights_panel(st.session_state.claude_client)
+    
+    with ai_tabs[2]:
+        # Code Generation tab
+        st.markdown("### 🔧 Automated Remediation Code Generation")
+        st.info("💡 **Coming Soon:** AI-powered code generation for automated threat remediation")
+        
+        st.markdown("""
+        This feature will automatically generate:
+        - Lambda functions for automated response
+        - EventBridge rules for threat detection
+        - IAM policies for least-privilege access
+        - CloudFormation templates for infrastructure
+        - Python/Terraform code for remediation actions
+        """)
+        
+        # Placeholder example
+        with st.expander("📝 Example: Lambda Function for IAM Policy Remediation", expanded=False):
+            st.code('''
+import boto3
+import json
+
+def lambda_handler(event, context):
+    """
+    Automatically reverts unauthorized IAM policy changes
+    """
+    iam = boto3.client('iam')
+    
+    # Extract event details
+    event_name = event['detail']['eventName']
+    role_name = event['detail']['requestParameters']['roleName']
+    policy_name = event['detail']['requestParameters']['policyName']
+    
+    # Revert the malicious policy
+    if event_name == 'PutRolePolicy':
+        iam.delete_role_policy(
+            RoleName=role_name,
+            PolicyName=policy_name
+        )
+        
+        return {
+            'statusCode': 200,
+            'body': json.dumps('Malicious policy reverted successfully')
+        }
+            ''', language='python')
+    
+    with ai_tabs[3]:
+        # Batch Remediation tab
+        st.markdown("### ⚡ Batch Threat Remediation")
+        st.info("💡 **Coming Soon:** Bulk remediation across multiple threats and accounts")
+        
+        st.markdown("""
+        This feature will enable:
+        - Remediate multiple threats simultaneously
+        - Apply fixes across multiple AWS accounts
+        - Schedule remediation during maintenance windows
+        - Rollback capabilities with audit trail
+        - Compliance reporting for all remediation actions
+        """)
+        
+        # Placeholder UI
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Pending Remediations", "0", help="Threats awaiting batch remediation")
+        with col2:
+            st.metric("Scheduled Actions", "0", help="Remediation actions scheduled")
+        with col3:
+            st.metric("Success Rate", "N/A", help="Historical remediation success rate")
+        
+        st.markdown("---")
+        st.markdown("**Batch Operations:** Select multiple threats from the Threat Analysis tab to enable batch remediation.")
     
     with tabs[5]:
         render_github_gitops_tab()
