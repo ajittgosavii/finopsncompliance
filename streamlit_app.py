@@ -59,6 +59,23 @@ from scp_scene_5_enhanced import render_scp_policy_engine_scene
 from ai_threat_scene_6_complete import render_ai_threat_analysis_scene
 from finops_scene_7_complete import render_predictive_finops_scene
 from integration_scene_8_complete import render_enterprise_integration_scene
+from aws_deployment_utility import render_deployment_utility
+import streamlit as st
+from aws_deployment_utility import render_deployment_utility
+
+st.set_page_config(page_title="AWS Deployment", layout="wide")
+
+# Optional password protection
+if not st.session_state.get('auth'):
+    pw = st.text_input("Password", type="password")
+    if pw == st.secrets.get('admin_password'):
+        st.session_state.auth = True
+        st.rerun()
+    st.stop()
+
+render_deployment_utility()
+
+
 # Import Enterprise Features (v5.0)
 try:
     from enterprise_module import (
