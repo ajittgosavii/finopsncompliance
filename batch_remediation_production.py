@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import json
 
 # Feature flag - set to True when ready to enable in production
-BATCH_REMEDIATION_ENABLED = False  # Change to True to enable
+BATCH_REMEDIATION_ENABLED = True  # Change to True to enable
 
 
 def execute_batch_remediation(selected_threats: List[Dict], remediation_options: Dict) -> Dict:

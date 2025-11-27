@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 from datetime import datetime
 
 # Feature flag - set to True when ready to enable in production
-CODE_GENERATION_ENABLED = False  # Change to True to enable
+CODE_GENERATION_ENABLED = True  # Change to True to enable
 
 
 def generate_lambda_remediation_code(threat: Dict) -> str:
