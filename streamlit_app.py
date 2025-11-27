@@ -59,8 +59,7 @@ from scp_scene_5_enhanced import render_scp_policy_engine_scene
 from ai_threat_scene_6_PRODUCTION import render_ai_threat_analysis_scene
 from finops_scene_7_complete import render_predictive_finops_scene
 from integration_scene_8_complete import render_enterprise_integration_scene
-from modules.code_generation_production import render_code_generation_tab
-from modules.batch_remediation_production import render_batch_remediation_tab
+
  
 
 
