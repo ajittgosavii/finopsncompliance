@@ -65,13 +65,7 @@ from aws_deployment_utility import render_deployment_utility
 
 st.set_page_config(page_title="AWS Deployment", layout="wide")
 
-# Optional password protection
-if not st.session_state.get('auth'):
-    pw = st.text_input("Password", type="password")
-    if pw == st.secrets.get('admin_password'):
-        st.session_state.auth = True
-        st.rerun()
-    st.stop()
+ 
 
 render_deployment_utility()
 
