@@ -854,6 +854,13 @@ def render_enhanced_cfo_dashboard():
     # Check mode
     is_demo = st.session_state.get('demo_mode', False)
     
+    # Get integrated data FIRST
+    data = get_integrated_dashboard_data()
+    
+    if not data or 'total_spend' not in data:
+        st.warning("⚠️ Unable to load dashboard data")
+        return
+    
     # Header with mode indicator
     if is_demo:
         st.title("💰 CFO Dashboard - Executive Financial Overview 🟠 DEMO MODE")
@@ -880,12 +887,6 @@ def render_enhanced_cfo_dashboard():
         else:
             st.info("🔗 Connected to your AWS Cost Explorer and compliance systems")
     
-    # Get integrated data
-    data = get_integrated_dashboard_data()
-    
-    if not data or 'total_spend' not in data:
-        st.warning("⚠️ Unable to load dashboard data")
-        return
     
     # ========================================================================
     # SECTION 1: EXECUTIVE KPIs
