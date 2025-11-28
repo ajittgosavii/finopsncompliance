@@ -1172,565 +1172,580 @@ def render_enhanced_cfo_dashboard():
         st.warning("⚠️ Unable to load dashboard data")
         return
     
-    # Header with mode indicator
-    if is_demo:
-        st.title("💰 CFO Dashboard - Executive Financial Overview 🟠 DEMO MODE")
-        st.info("📊 Demo Mode: Showing comprehensive sample financial data")
-    else:
-        st.title("💰 CFO Dashboard - Executive Financial Overview 🟢 LIVE MODE")
-        # Check if we have real data or just placeholders
-        if data.get('monthly_spend', 0) == 0 and data.get('total_spend', 0) == 0:
-            st.warning("""
-            ⚠️ **LIVE MODE - Data Sources Not Connected**
-            
-            This dashboard is ready for live data but is currently showing placeholder values (zeros).
-            
-            **To connect real data, update the `get_integrated_dashboard_data()` function to integrate with:**
-            - AWS Cost Explorer (for spend, trends, forecasts)
-            - AWS Security Hub (for security findings)
-            - AWS Config (for compliance metrics)
-            - AWS Compute Optimizer / Trusted Advisor (for optimization opportunities)
-            - AWS Organizations (for account data)
-            - Customer Carbon Footprint Tool (for sustainability metrics)
-            
-            **Toggle to Demo Mode** in the sidebar to see sample data and explore all features.
-            """)
+    # Wrap entire dashboard in try-except to catch any calculation errors
+    try:
+        # Header with mode indicator
+        if is_demo:
+            st.title("💰 CFO Dashboard - Executive Financial Overview 🟠 DEMO MODE")
+            st.info("📊 Demo Mode: Showing comprehensive sample financial data")
         else:
-            st.info("🔗 Connected to your AWS Cost Explorer and compliance systems")
-    
-    
-    # ========================================================================
-    # SECTION 1: EXECUTIVE KPIs
-    # ========================================================================
-    st.markdown("### 📊 Executive KPIs - Current Month")
-    
-    col1, col2, col3, col4, col5 = st.columns(5)
-    
-    with col1:
-        st.metric(
-            "Total Cloud Spend",
-            f"${data['monthly_spend']/1000000:.1f}M",
-            f"-{abs(random.uniform(5, 12)):.1f}%",
-            delta_color="inverse"
-        )
-        st.caption("Monthly cloud expenditure")
-    
-    with col2:
-        st.metric(
-            "Savings Realized",
-            f"${data['savings_realized']/1000:.0f}K",
-            f"+${random.randint(30, 60)}K"
-        )
-        st.caption("YTD cost optimizations")
-    
-    with col3:
-        # Safe division - avoid divide by zero
-        if data['monthly_spend'] > 0:
-            savings_pct = (data['savings_realized'] / data['monthly_spend'] * 100)
-        else:
-            savings_pct = 0
+            st.title("💰 CFO Dashboard - Executive Financial Overview 🟢 LIVE MODE")
+            # Check if we have real data or just placeholders
+            if data.get('monthly_spend', 0) == 0 and data.get('total_spend', 0) == 0:
+                st.warning("""
+                ⚠️ **LIVE MODE - Data Sources Not Connected**
+                
+                This dashboard is ready for live data but is currently showing placeholder values (zeros).
+                
+                **To connect real data, update the `get_integrated_dashboard_data()` function to integrate with:**
+                - AWS Cost Explorer (for spend, trends, forecasts)
+                - AWS Security Hub (for security findings)
+                - AWS Config (for compliance metrics)
+                - AWS Compute Optimizer / Trusted Advisor (for optimization opportunities)
+                - AWS Organizations (for account data)
+                - Customer Carbon Footprint Tool (for sustainability metrics)
+                
+                **Toggle to Demo Mode** in the sidebar to see sample data and explore all features.
+                """)
+            else:
+                st.info("🔗 Connected to your AWS Cost Explorer and compliance systems")
         
-        st.metric(
-            "Savings Rate",
-            f"{savings_pct:.1f}%",
-            f"+{random.uniform(1, 3):.1f}%"
-        )
-        st.caption("% of spend optimized")
-    
-    with col4:
-        st.metric(
-            "Budget Utilization",
-            f"{data['budget_utilization']:.1f}%",
-            f"+{random.uniform(2, 5):.1f}%"
-        )
-        st.caption(f"${data['budget']/1000000:.1f}M allocated")
-    
-    with col5:
-        st.metric(
-            "ROI on Cloud",
-            f"{data['roi']}%",
-            f"+{random.randint(10, 20)}%"
-        )
-        st.caption("Business value delivered")
-    
-    st.markdown("---")
-    
-    # ========================================================================
-    # SECTION 2: SPEND TRENDS & FORECAST
-    # ========================================================================
-    st.markdown("### 📈 Spend Trends & Forecast")
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        # Spend trend chart
-        fig = go.Figure()
         
-        # Historical spend
-        fig.add_trace(go.Scatter(
-            x=data['months'],
-            y=data['spend_trend'],
-            mode='lines+markers',
-            name='Monthly Spend',
-            line=dict(color='#FF6B6B', width=3),
-            marker=dict(size=8)
-        ))
+        # ========================================================================
+        # SECTION 1: EXECUTIVE KPIs
+        # ========================================================================
+        st.markdown("### 📊 Executive KPIs - Current Month")
         
-        # Savings trend
-        fig.add_trace(go.Scatter(
-            x=data['months'],
-            y=data['savings_trend'],
-            mode='lines+markers',
-            name='Cumulative Savings',
-            line=dict(color='#4ECDC4', width=3),
-            marker=dict(size=8),
-            yaxis='y2'
-        ))
+        col1, col2, col3, col4, col5 = st.columns(5)
         
-        fig.update_layout(
-            title="6-Month Spend & Savings Trend",
-            xaxis_title="Month",
-            yaxis=dict(title="Monthly Spend ($)", tickformat='$,.0f'),
-            yaxis2=dict(title="Savings ($)", overlaying='y', side='right', tickformat='$,.0f'),
-            hovermode='x unified',
-            height=350
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        st.markdown("#### 🔮 Forecast")
-        
-        # Safe calculation of forecast change percentage
-        if data['monthly_spend'] > 0:
-            forecast_change_pct = ((data['forecast_next_month']/data['monthly_spend']-1)*100)
-        else:
-            forecast_change_pct = 0
-        
-        st.metric(
-            "Next Month",
-            f"${data['forecast_next_month']/1000000:.2f}M",
-            f"+{forecast_change_pct:.1f}%"
-        )
-        
-        st.metric(
-            "Next Quarter",
-            f"${data['forecast_next_quarter']/1000000:.2f}M",
-            f"Confidence: {data['forecast_confidence']:.1f}%"
-        )
-        
-        st.metric(
-            "Savings Potential",
-            f"${data['savings_potential']/1000:.0f}K",
-            "Available optimizations"
-        )
-        
-        st.caption(f"💡 Burn rate: ${data['burn_rate_hourly']:.2f}/hour")
-    
-    st.markdown("---")
-    
-    # ========================================================================
-    # SECTION 3: COST BREAKDOWN
-    # ========================================================================
-    st.markdown("### 💳 Cost Breakdown Analysis")
-    
-    tab1, tab2, tab3 = st.tabs(["By Service", "By Region", "By Environment"])
-    
-    with tab1:
-        # Service breakdown pie chart
-        fig = px.pie(
-            values=list(data['cost_by_service'].values()),
-            names=list(data['cost_by_service'].keys()),
-            title="Cost Distribution by AWS Service",
-            hole=0.4
-        )
-        fig.update_traces(textposition='inside', textinfo='percent+label')
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with tab2:
-        # Region breakdown bar chart
-        fig = px.bar(
-            x=list(data['cost_by_region'].keys()),
-            y=list(data['cost_by_region'].values()),
-            title="Cost Distribution by Region",
-            labels={'x': 'Region', 'y': 'Cost ($)'},
-            color=list(data['cost_by_region'].values()),
-            color_continuous_scale='Viridis'
-        )
-        fig.update_layout(showlegend=False, yaxis_tickformat='$,.0f')
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with tab3:
-        # Environment breakdown
-        fig = px.funnel(
-            y=list(data['cost_by_environment'].keys()),
-            x=list(data['cost_by_environment'].values()),
-            title="Cost Distribution by Environment"
-        )
-        fig.update_traces(textinfo='value+percent total')
-        st.plotly_chart(fig, use_container_width=True)
-    
-    st.markdown("---")
-    
-    # ========================================================================
-    # SECTION 4: DEPARTMENT DEEP DIVE
-    # ========================================================================
-    st.markdown("### 🏢 Department Financial Performance")
-    
-    # Create department comparison chart
-    dept_df = pd.DataFrame(data['departments'])
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        # Department spend comparison
-        fig = go.Figure()
-        
-        fig.add_trace(go.Bar(
-            name='Actual Cost',
-            x=dept_df['name'],
-            y=dept_df['cost'],
-            marker_color='#FF6B6B'
-        ))
-        
-        fig.add_trace(go.Bar(
-            name='Budget',
-            x=dept_df['name'],
-            y=dept_df['budget'],
-            marker_color='#4ECDC4'
-        ))
-        
-        fig.update_layout(
-            title="Department: Actual vs Budget",
-            xaxis_title="Department",
-            yaxis_title="Cost ($)",
-            yaxis_tickformat='$,.0f',
-            barmode='group',
-            height=350
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        st.markdown("#### 🎯 Efficiency Scores")
-        for dept in data['departments'][:3]:
-            efficiency = 100 - dept['utilization']
+        with col1:
             st.metric(
-                dept['name'],
-                f"{dept['utilization']:.1f}%",
-                f"{dept['cost_change']:+.1f}% MoM",
-                delta_color="inverse" if dept['cost_change'] > 0 else "normal"
+                "Total Cloud Spend",
+                f"${data['monthly_spend']/1000000:.1f}M",
+                f"-{abs(random.uniform(5, 12)):.1f}%",
+                delta_color="inverse"
             )
-    
-    # Detailed department table
-    st.markdown("#### 📋 Department Details")
-    dept_display = []
-    for dept in data['departments']:
-        dept_display.append({
-            'Department': dept['name'],
-            'Cost': f"${dept['cost']/1000:.0f}K",
-            'Budget': f"${dept['budget']/1000:.0f}K",
-            'Utilization': f"{dept['utilization']:.1f}%",
-            'Accounts': dept['accounts'],
-            'Top Services': ', '.join(dept['top_services']),
-            'Savings Potential': f"${dept['savings_potential']/1000:.0f}K",
-            'MoM Change': f"{dept['cost_change']:+.1f}%"
-        })
-    
-    st.dataframe(pd.DataFrame(dept_display), use_container_width=True, hide_index=True)
-    
-    st.markdown("---")
-    
-    # ========================================================================
-    # SECTION 5: SECURITY & COMPLIANCE FINANCIAL IMPACT
-    # ========================================================================
-    st.markdown("### 🛡️ Security & Compliance Financial Impact")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric(
-            "Cost at Risk",
-            f"${data['security_findings']['cost_at_risk']/1000:.0f}K",
-            f"{data['security_findings']['critical']} critical findings"
-        )
-        st.caption("Potential loss if exploited")
-    
-    with col2:
-        st.metric(
-            "Remediation Cost",
-            f"${data['security_findings']['remediation_cost']/1000:.0f}K",
-            f"{data['security_findings']['total_findings']} findings"
-        )
-        st.caption("To fix all findings")
-    
-    with col3:
-        st.metric(
-            "Compliance Risk",
-            f"${data['compliance']['potential_fines']/1000:.0f}K",
-            f"{data['compliance']['non_compliant_resources']} resources"
-        )
-        st.caption("Potential regulatory fines")
-    
-    with col4:
-        st.metric(
-            "Compliance Cost",
-            f"${data['compliance']['compliance_cost']/1000:.0f}K/mo",
-            f"{data['compliance']['overall_score']:.1f}% compliant"
-        )
-        st.caption("Monthly compliance tooling")
-    
-    # ROI comparison
-    col1, col2 = st.columns(2)
-    
-    # Calculate security ROI safely
-    if data['security_findings']['remediation_cost'] > 0:
-        security_roi = (data['security_findings']['cost_at_risk']/data['security_findings']['remediation_cost']*100-100)
-    else:
-        security_roi = 0
-    
-    with col1:
-        st.info(f"""
-        **💡 Security ROI Analysis**
-        - Investment: ${data['security_findings']['remediation_cost']:,}
-        - Risk Reduction: ${data['security_findings']['cost_at_risk']:,}
-        - ROI: {security_roi:.0f}%
-        - Payback Period: ~2.3 months
-        """)
-    
-    # Calculate compliance risk mitigation safely
-    if data['compliance']['compliance_cost'] > 0:
-        risk_mitigation = (data['compliance']['potential_fines']/data['compliance']['compliance_cost'])
-    else:
-        risk_mitigation = 0
-    
-    with col2:
-        st.info(f"""
-        **📊 Compliance Investment**
-        - Monthly Cost: ${data['compliance']['compliance_cost']:,}
-        - Avoided Fines: ${data['compliance']['potential_fines']:,}
-        - Risk Mitigation: {risk_mitigation:.1f}x
-        - Score: {data['compliance']['overall_score']}%
-        """)
-    
-    st.markdown("---")
-    
-    # ========================================================================
-    # SECTION 6: OPTIMIZATION OPPORTUNITIES
-    # ========================================================================
-    st.markdown("### 💡 Cost Optimization Opportunities")
-    
-    st.markdown(f"""
-    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                padding: 1.5rem; border-radius: 10px; color: white; margin-bottom: 1rem;'>
-        <h3 style='margin: 0; color: white;'>💰 Total Savings Potential: ${data['savings_potential']/1000:.0f}K/month</h3>
-        <p style='margin: 0.5rem 0 0 0; opacity: 0.9;'>Identified {sum(opt['resource_count'] for opt in data['optimizations'])} optimization opportunities</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Optimization opportunities table
-    opt_display = []
-    for opt in data['optimizations']:
-        opt_display.append({
-            'Category': opt['category'],
-            'Resources': opt['resource_count'],
-            'Monthly Savings': f"${opt['potential_savings']/1000:.0f}K",
-            'Annual Impact': f"${opt['potential_savings']*12/1000:.0f}K",
-            'Confidence': opt['confidence'],
-            'Implementation': opt['effort']
-        })
-    
-    st.dataframe(pd.DataFrame(opt_display), use_container_width=True, hide_index=True)
-    
-    # Quick wins
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.success("""
-        **🎯 Quick Wins (This Month)**
-        - Right-size 234 over-provisioned instances → $185K/mo
-        - Delete 567 old snapshots → $23K/mo  
-        - Stop 123 idle resources → $62K/mo
+            st.caption("Monthly cloud expenditure")
         
-        **Total Quick Wins: $270K/month savings**
-        """)
-    
-    with col2:
-        st.warning("""
-        **📅 Strategic Initiatives (This Quarter)**
-        - Purchase Reserved Instances → $125K/mo
-        - Implement S3 lifecycle policies → $78K/mo
-        - Migrate to Graviton instances → $95K/mo
+        with col2:
+            st.metric(
+                "Savings Realized",
+                f"${data['savings_realized']/1000:.0f}K",
+                f"+${random.randint(30, 60)}K"
+            )
+            st.caption("YTD cost optimizations")
         
-        **Total Strategic: $298K/month savings**
-        """)
-    
-    st.markdown("---")
-    
-    # ========================================================================
-    # SECTION 7: ANOMALIES & ALERTS
-    # ========================================================================
-    if data['anomalies']:
-        st.markdown("### 🚨 Cost Anomalies Detected")
+        with col3:
+            # Safe division - avoid divide by zero
+            if data['monthly_spend'] > 0:
+                savings_pct = (data['savings_realized'] / data['monthly_spend'] * 100)
+            else:
+                savings_pct = 0
+            
+            st.metric(
+                "Savings Rate",
+                f"{savings_pct:.1f}%",
+                f"+{random.uniform(1, 3):.1f}%"
+            )
+            st.caption("% of spend optimized")
         
-        for anomaly in data['anomalies']:
-            st.warning(f"""
-            **{anomaly['service']}** in {anomaly['region']} ({anomaly['department']})
-            - Cost Increase: **+{anomaly['cost_increase']:.1f}%** (${anomaly['amount']:,})
-            - Root Cause: {anomaly['root_cause']}
-            - Action Required: Review and optimize
-            """)
-    
-    st.markdown("---")
-    
-    # ========================================================================
-    # SECTION 8: SUSTAINABILITY METRICS
-    # ========================================================================
-    st.markdown("### 🌱 Sustainability & ESG Metrics")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric(
-            "Carbon Footprint",
-            f"{data['carbon_footprint']:.1f} tons",
-            "-12.3% YoY",
-            delta_color="inverse"
-        )
-        st.caption("CO2 emissions this month")
-    
-    with col2:
-        st.metric(
-            "Implied Carbon Cost",
-            f"${data['carbon_cost']:,}",
-            "-8.5%",
-            delta_color="inverse"
-        )
-        st.caption("At $50/ton CO2")
-    
-    with col3:
-        st.metric(
-            "Renewable Energy",
-            f"{data['renewable_energy_pct']:.1f}%",
-            "+5.2%"
-        )
-        st.caption("Of total energy consumption")
-    
-    with col4:
-        # Safe division - avoid divide by zero
-        if data['monthly_spend'] > 0:
-            carbon_per_dollar = data['carbon_footprint'] / (data['monthly_spend']/1000000)
+        with col4:
+            st.metric(
+                "Budget Utilization",
+                f"{data['budget_utilization']:.1f}%",
+                f"+{random.uniform(2, 5):.1f}%"
+            )
+            st.caption(f"${data['budget']/1000000:.1f}M allocated")
+        
+        with col5:
+            st.metric(
+                "ROI on Cloud",
+                f"{data['roi']}%",
+                f"+{random.randint(10, 20)}%"
+            )
+            st.caption("Business value delivered")
+        
+        st.markdown("---")
+        
+        # ========================================================================
+        # SECTION 2: SPEND TRENDS & FORECAST
+        # ========================================================================
+        st.markdown("### 📈 Spend Trends & Forecast")
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            # Spend trend chart
+            fig = go.Figure()
+            
+            # Historical spend
+            fig.add_trace(go.Scatter(
+                x=data['months'],
+                y=data['spend_trend'],
+                mode='lines+markers',
+                name='Monthly Spend',
+                line=dict(color='#FF6B6B', width=3),
+                marker=dict(size=8)
+            ))
+            
+            # Savings trend
+            fig.add_trace(go.Scatter(
+                x=data['months'],
+                y=data['savings_trend'],
+                mode='lines+markers',
+                name='Cumulative Savings',
+                line=dict(color='#4ECDC4', width=3),
+                marker=dict(size=8),
+                yaxis='y2'
+            ))
+            
+            fig.update_layout(
+                title="6-Month Spend & Savings Trend",
+                xaxis_title="Month",
+                yaxis=dict(title="Monthly Spend ($)", tickformat='$,.0f'),
+                yaxis2=dict(title="Savings ($)", overlaying='y', side='right', tickformat='$,.0f'),
+                hovermode='x unified',
+                height=350
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            st.markdown("#### 🔮 Forecast")
+            
+            # Safe calculation of forecast change percentage
+            if data['monthly_spend'] > 0:
+                forecast_change_pct = ((data['forecast_next_month']/data['monthly_spend']-1)*100)
+            else:
+                forecast_change_pct = 0
+            
+            st.metric(
+                "Next Month",
+                f"${data['forecast_next_month']/1000000:.2f}M",
+                f"+{forecast_change_pct:.1f}%"
+            )
+            
+            st.metric(
+                "Next Quarter",
+                f"${data['forecast_next_quarter']/1000000:.2f}M",
+                f"Confidence: {data['forecast_confidence']:.1f}%"
+            )
+            
+            st.metric(
+                "Savings Potential",
+                f"${data['savings_potential']/1000:.0f}K",
+                "Available optimizations"
+            )
+            
+            st.caption(f"💡 Burn rate: ${data['burn_rate_hourly']:.2f}/hour")
+        
+        st.markdown("---")
+        
+        # ========================================================================
+        # SECTION 3: COST BREAKDOWN
+        # ========================================================================
+        st.markdown("### 💳 Cost Breakdown Analysis")
+        
+        tab1, tab2, tab3 = st.tabs(["By Service", "By Region", "By Environment"])
+        
+        with tab1:
+            # Service breakdown pie chart
+            fig = px.pie(
+                values=list(data['cost_by_service'].values()),
+                names=list(data['cost_by_service'].keys()),
+                title="Cost Distribution by AWS Service",
+                hole=0.4
+            )
+            fig.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with tab2:
+            # Region breakdown bar chart
+            fig = px.bar(
+                x=list(data['cost_by_region'].keys()),
+                y=list(data['cost_by_region'].values()),
+                title="Cost Distribution by Region",
+                labels={'x': 'Region', 'y': 'Cost ($)'},
+                color=list(data['cost_by_region'].values()),
+                color_continuous_scale='Viridis'
+            )
+            fig.update_layout(showlegend=False, yaxis_tickformat='$,.0f')
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with tab3:
+            # Environment breakdown
+            fig = px.funnel(
+                y=list(data['cost_by_environment'].keys()),
+                x=list(data['cost_by_environment'].values()),
+                title="Cost Distribution by Environment"
+            )
+            fig.update_traces(textinfo='value+percent total')
+            st.plotly_chart(fig, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # ========================================================================
+        # SECTION 4: DEPARTMENT DEEP DIVE
+        # ========================================================================
+        st.markdown("### 🏢 Department Financial Performance")
+        
+        # Create department comparison chart
+        dept_df = pd.DataFrame(data['departments'])
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            # Department spend comparison
+            fig = go.Figure()
+            
+            fig.add_trace(go.Bar(
+                name='Actual Cost',
+                x=dept_df['name'],
+                y=dept_df['cost'],
+                marker_color='#FF6B6B'
+            ))
+            
+            fig.add_trace(go.Bar(
+                name='Budget',
+                x=dept_df['name'],
+                y=dept_df['budget'],
+                marker_color='#4ECDC4'
+            ))
+            
+            fig.update_layout(
+                title="Department: Actual vs Budget",
+                xaxis_title="Department",
+                yaxis_title="Cost ($)",
+                yaxis_tickformat='$,.0f',
+                barmode='group',
+                height=350
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            st.markdown("#### 🎯 Efficiency Scores")
+            for dept in data['departments'][:3]:
+                efficiency = 100 - dept['utilization']
+                st.metric(
+                    dept['name'],
+                    f"{dept['utilization']:.1f}%",
+                    f"{dept['cost_change']:+.1f}% MoM",
+                    delta_color="inverse" if dept['cost_change'] > 0 else "normal"
+                )
+        
+        # Detailed department table
+        st.markdown("#### 📋 Department Details")
+        dept_display = []
+        for dept in data['departments']:
+            dept_display.append({
+                'Department': dept['name'],
+                'Cost': f"${dept['cost']/1000:.0f}K",
+                'Budget': f"${dept['budget']/1000:.0f}K",
+                'Utilization': f"{dept['utilization']:.1f}%",
+                'Accounts': dept['accounts'],
+                'Top Services': ', '.join(dept['top_services']),
+                'Savings Potential': f"${dept['savings_potential']/1000:.0f}K",
+                'MoM Change': f"{dept['cost_change']:+.1f}%"
+            })
+        
+        st.dataframe(pd.DataFrame(dept_display), use_container_width=True, hide_index=True)
+        
+        st.markdown("---")
+        
+        # ========================================================================
+        # SECTION 5: SECURITY & COMPLIANCE FINANCIAL IMPACT
+        # ========================================================================
+        st.markdown("### 🛡️ Security & Compliance Financial Impact")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric(
+                "Cost at Risk",
+                f"${data['security_findings']['cost_at_risk']/1000:.0f}K",
+                f"{data['security_findings']['critical']} critical findings"
+            )
+            st.caption("Potential loss if exploited")
+        
+        with col2:
+            st.metric(
+                "Remediation Cost",
+                f"${data['security_findings']['remediation_cost']/1000:.0f}K",
+                f"{data['security_findings']['total_findings']} findings"
+            )
+            st.caption("To fix all findings")
+        
+        with col3:
+            st.metric(
+                "Compliance Risk",
+                f"${data['compliance']['potential_fines']/1000:.0f}K",
+                f"{data['compliance']['non_compliant_resources']} resources"
+            )
+            st.caption("Potential regulatory fines")
+        
+        with col4:
+            st.metric(
+                "Compliance Cost",
+                f"${data['compliance']['compliance_cost']/1000:.0f}K/mo",
+                f"{data['compliance']['overall_score']:.1f}% compliant"
+            )
+            st.caption("Monthly compliance tooling")
+        
+        # ROI comparison
+        col1, col2 = st.columns(2)
+        
+        # Calculate security ROI safely
+        if data['security_findings']['remediation_cost'] > 0:
+            security_roi = (data['security_findings']['cost_at_risk']/data['security_findings']['remediation_cost']*100-100)
         else:
-            carbon_per_dollar = 0
+            security_roi = 0
         
-        st.metric(
-            "Carbon Efficiency",
-            f"{carbon_per_dollar:.1f} kg/$K",
-            "-3.8%",
-            delta_color="inverse"
-        )
-        st.caption("Emissions per $1K spend")
-    
-    st.markdown("---")
-    
-    # ========================================================================
-    # SECTION 9: ACCOUNT GROWTH & SCALE
-    # ========================================================================
-    st.markdown("### 📊 Account Growth & Economics")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric(
-            "Total Accounts",
-            data['accounts_managed'],
-            f"+{data['accounts_added_month']} this month"
-        )
-    
-    with col2:
-        st.metric(
-            "Cost per Account",
-            f"${data['cost_per_account']:,}",
-            "-2.3%",
-            delta_color="inverse"
-        )
-    
-    with col3:
-        st.metric(
-            "Active Accounts",
-            f"{int(data['accounts_managed'] * 0.87)}",
-            "86.7% utilization"
-        )
-    
-    with col4:
-        st.metric(
-            "Dormant Accounts",
-            f"{int(data['accounts_managed'] * 0.13)}",
-            "Potential to close"
-        )
-    
-    st.markdown("---")
-    
-    # ========================================================================
-    # FOOTER: EXECUTIVE SUMMARY
-    # ========================================================================
-    st.markdown("### 📋 Executive Summary")
-    
-    # Calculate savings percentage safely
-    if data['monthly_spend'] > 0:
-        savings_pct_summary = (data['savings_realized']/data['monthly_spend']*100)
-    else:
-        savings_pct_summary = 0
-    
-    # Build recommendations based on available data
-    recommendations = [
-        "1. Implement quick-win optimizations → $270K/month savings",
-        f"2. Address critical security findings → Protect ${data['security_findings']['cost_at_risk']/1000:.0f}K at risk"
-    ]
-    
-    # Add anomaly recommendation if anomalies exist
-    if data['anomalies'] and len(data['anomalies']) > 0:
-        recommendations.append(f"3. Review {data['anomalies'][0]['department']} department's {data['anomalies'][0]['service']} spike")
-    
-    # Add dormant accounts recommendation
-    dormant_count = int(data['accounts_managed'] * 0.13)
-    if dormant_count > 0 and data['cost_per_account'] > 0:
-        dormant_savings = int(dormant_count * data['cost_per_account']/1000)
-        recommendations.append(f"4. Close {dormant_count} dormant accounts → ~${dormant_savings}K/month")
-    
-    recommendations_text = "\n        ".join(recommendations)
-    
-    st.markdown(f"""
-    <div style='background: #f8f9fa; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #667eea;'>
-        <h4 style='margin-top: 0; color: #333;'>Financial Health: <span style='color: #4ECDC4;'>Strong</span></h4>
+        with col1:
+            st.info(f"""
+            **💡 Security ROI Analysis**
+            - Investment: ${data['security_findings']['remediation_cost']:,}
+            - Risk Reduction: ${data['security_findings']['cost_at_risk']:,}
+            - ROI: {security_roi:.0f}%
+            - Payback Period: ~2.3 months
+            """)
         
-        **Key Highlights:**
-        - Monthly spend: ${data['monthly_spend']/1000000:.1f}M (within budget at {data['budget_utilization']:.1f}% utilization)
-        - YTD savings: ${data['savings_realized']/1000:.0f}K ({savings_pct_summary:.1f}% of spend)
-        - Optimization potential: ${data['savings_potential']/1000:.0f}K/month identified
-        - ROI on cloud investments: {data['roi']}%
+        # Calculate compliance risk mitigation safely
+        if data['compliance']['compliance_cost'] > 0:
+            risk_mitigation = (data['compliance']['potential_fines']/data['compliance']['compliance_cost'])
+        else:
+            risk_mitigation = 0
         
-        **Risk Factors:**
-        - ${data['security_findings']['cost_at_risk']/1000:.0f}K at risk from {data['security_findings']['critical']} critical security findings
-        - ${data['compliance']['potential_fines']/1000:.0f}K potential compliance fines
-        - {len(data['anomalies'])} cost anomalies detected requiring attention
+        with col2:
+            st.info(f"""
+            **📊 Compliance Investment**
+            - Monthly Cost: ${data['compliance']['compliance_cost']:,}
+            - Avoided Fines: ${data['compliance']['potential_fines']:,}
+            - Risk Mitigation: {risk_mitigation:.1f}x
+            - Score: {data['compliance']['overall_score']}%
+            """)
         
-        **Recommendations:**
-        {recommendations_text}
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Export buttons
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("📊 Export to PDF", use_container_width=True):
-            st.info("PDF export functionality coming soon")
-    with col2:
-        if st.button("📧 Email Report", use_container_width=True):
-            st.info("Email functionality coming soon")
-    with col3:
-        if st.button("📅 Schedule Report", use_container_width=True):
-            st.info("Scheduling functionality coming soon")
+        st.markdown("---")
+        
+        # ========================================================================
+        # SECTION 6: OPTIMIZATION OPPORTUNITIES
+        # ========================================================================
+        st.markdown("### 💡 Cost Optimization Opportunities")
+        
+        st.markdown(f"""
+        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    padding: 1.5rem; border-radius: 10px; color: white; margin-bottom: 1rem;'>
+            <h3 style='margin: 0; color: white;'>💰 Total Savings Potential: ${data['savings_potential']/1000:.0f}K/month</h3>
+            <p style='margin: 0.5rem 0 0 0; opacity: 0.9;'>Identified {sum(opt['resource_count'] for opt in data['optimizations'])} optimization opportunities</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Optimization opportunities table
+        opt_display = []
+        for opt in data['optimizations']:
+            opt_display.append({
+                'Category': opt['category'],
+                'Resources': opt['resource_count'],
+                'Monthly Savings': f"${opt['potential_savings']/1000:.0f}K",
+                'Annual Impact': f"${opt['potential_savings']*12/1000:.0f}K",
+                'Confidence': opt['confidence'],
+                'Implementation': opt['effort']
+            })
+        
+        st.dataframe(pd.DataFrame(opt_display), use_container_width=True, hide_index=True)
+        
+        # Quick wins
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.success("""
+            **🎯 Quick Wins (This Month)**
+            - Right-size 234 over-provisioned instances → $185K/mo
+            - Delete 567 old snapshots → $23K/mo  
+            - Stop 123 idle resources → $62K/mo
+            
+            **Total Quick Wins: $270K/month savings**
+            """)
+        
+        with col2:
+            st.warning("""
+            **📅 Strategic Initiatives (This Quarter)**
+            - Purchase Reserved Instances → $125K/mo
+            - Implement S3 lifecycle policies → $78K/mo
+            - Migrate to Graviton instances → $95K/mo
+            
+            **Total Strategic: $298K/month savings**
+            """)
+        
+        st.markdown("---")
+        
+        # ========================================================================
+        # SECTION 7: ANOMALIES & ALERTS
+        # ========================================================================
+        if data['anomalies']:
+            st.markdown("### 🚨 Cost Anomalies Detected")
+            
+            for anomaly in data['anomalies']:
+                st.warning(f"""
+                **{anomaly['service']}** in {anomaly['region']} ({anomaly['department']})
+                - Cost Increase: **+{anomaly['cost_increase']:.1f}%** (${anomaly['amount']:,})
+                - Root Cause: {anomaly['root_cause']}
+                - Action Required: Review and optimize
+                """)
+        
+        st.markdown("---")
+        
+        # ========================================================================
+        # SECTION 8: SUSTAINABILITY METRICS
+        # ========================================================================
+        st.markdown("### 🌱 Sustainability & ESG Metrics")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric(
+                "Carbon Footprint",
+                f"{data['carbon_footprint']:.1f} tons",
+                "-12.3% YoY",
+                delta_color="inverse"
+            )
+            st.caption("CO2 emissions this month")
+        
+        with col2:
+            st.metric(
+                "Implied Carbon Cost",
+                f"${data['carbon_cost']:,}",
+                "-8.5%",
+                delta_color="inverse"
+            )
+            st.caption("At $50/ton CO2")
+        
+        with col3:
+            st.metric(
+                "Renewable Energy",
+                f"{data['renewable_energy_pct']:.1f}%",
+                "+5.2%"
+            )
+            st.caption("Of total energy consumption")
+        
+        with col4:
+            # Safe division - avoid divide by zero
+            if data['monthly_spend'] > 0:
+                carbon_per_dollar = data['carbon_footprint'] / (data['monthly_spend']/1000000)
+            else:
+                carbon_per_dollar = 0
+            
+            st.metric(
+                "Carbon Efficiency",
+                f"{carbon_per_dollar:.1f} kg/$K",
+                "-3.8%",
+                delta_color="inverse"
+            )
+            st.caption("Emissions per $1K spend")
+        
+        st.markdown("---")
+        
+        # ========================================================================
+        # SECTION 9: ACCOUNT GROWTH & SCALE
+        # ========================================================================
+        st.markdown("### 📊 Account Growth & Economics")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric(
+                "Total Accounts",
+                data['accounts_managed'],
+                f"+{data['accounts_added_month']} this month"
+            )
+        
+        with col2:
+            st.metric(
+                "Cost per Account",
+                f"${data['cost_per_account']:,}",
+                "-2.3%",
+                delta_color="inverse"
+            )
+        
+        with col3:
+            st.metric(
+                "Active Accounts",
+                f"{int(data['accounts_managed'] * 0.87)}",
+                "86.7% utilization"
+            )
+        
+        with col4:
+            st.metric(
+                "Dormant Accounts",
+                f"{int(data['accounts_managed'] * 0.13)}",
+                "Potential to close"
+            )
+        
+        st.markdown("---")
+        
+        # ========================================================================
+        # FOOTER: EXECUTIVE SUMMARY
+        # ========================================================================
+        st.markdown("### 📋 Executive Summary")
+        
+        # Calculate savings percentage safely
+        if data['monthly_spend'] > 0:
+            savings_pct_summary = (data['savings_realized']/data['monthly_spend']*100)
+        else:
+            savings_pct_summary = 0
+        
+        # Build recommendations based on available data
+        recommendations = [
+            "1. Implement quick-win optimizations → $270K/month savings",
+            f"2. Address critical security findings → Protect ${data['security_findings']['cost_at_risk']/1000:.0f}K at risk"
+        ]
+        
+        # Add anomaly recommendation if anomalies exist
+        if data['anomalies'] and len(data['anomalies']) > 0:
+            recommendations.append(f"3. Review {data['anomalies'][0]['department']} department's {data['anomalies'][0]['service']} spike")
+        
+        # Add dormant accounts recommendation
+        dormant_count = int(data['accounts_managed'] * 0.13)
+        if dormant_count > 0 and data['cost_per_account'] > 0:
+            dormant_savings = int(dormant_count * data['cost_per_account']/1000)
+            recommendations.append(f"4. Close {dormant_count} dormant accounts → ~${dormant_savings}K/month")
+        
+        recommendations_text = "\n        ".join(recommendations)
+        
+        st.markdown(f"""
+        <div style='background: #f8f9fa; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #667eea;'>
+            <h4 style='margin-top: 0; color: #333;'>Financial Health: <span style='color: #4ECDC4;'>Strong</span></h4>
+            
+            **Key Highlights:**
+            - Monthly spend: ${data['monthly_spend']/1000000:.1f}M (within budget at {data['budget_utilization']:.1f}% utilization)
+            - YTD savings: ${data['savings_realized']/1000:.0f}K ({savings_pct_summary:.1f}% of spend)
+            - Optimization potential: ${data['savings_potential']/1000:.0f}K/month identified
+            - ROI on cloud investments: {data['roi']}%
+            
+            **Risk Factors:**
+            - ${data['security_findings']['cost_at_risk']/1000:.0f}K at risk from {data['security_findings']['critical']} critical security findings
+            - ${data['compliance']['potential_fines']/1000:.0f}K potential compliance fines
+            - {len(data['anomalies'])} cost anomalies detected requiring attention
+            
+            **Recommendations:**
+            {recommendations_text}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Export buttons
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("📊 Export to PDF", use_container_width=True):
+                st.info("PDF export functionality coming soon")
+        with col2:
+            if st.button("📧 Email Report", use_container_width=True):
+                st.info("Email functionality coming soon")
+        with col3:
+            if st.button("📅 Schedule Report", use_container_width=True):
+                st.info("Scheduling functionality coming soon")
+        
+    except ZeroDivisionError as e:
+        st.error(f"""
+        ❌ **Calculation Error**: A division by zero occurred while rendering the dashboard.
+        
+        This typically happens when cost data is zero. Please ensure:
+        - Toggle to **Demo Mode** to see sample data, OR
+        - Connect to real AWS data sources (see warning above)
+        
+        **Technical Details**: {str(e)}
+        """)
+    except Exception as e:
+        st.error(f"❌ An unexpected error occurred: {str(e)}")
 
 def render_control_tower():
     """Control Tower Management Dashboard with Demo/Live Mode Support"""
