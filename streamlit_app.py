@@ -741,9 +741,29 @@ def initialize_session_state():
         
         # Service status
         'service_status': {},
-        
-        # Compliance data
-        'compliance_data': {
+    }
+    
+    # Initialize defaults
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+    
+    # Initialize compliance_data based on mode (separate to allow dynamic updates)
+    if 'compliance_data' not in st.session_state:
+        st.session_state['compliance_data'] = get_compliance_data_for_mode()
+
+def get_compliance_data_for_mode():
+    """Get compliance data based on current mode (demo vs live)
+    
+    Returns appropriate data structure based on demo_mode setting:
+    - Demo mode: Sample data for demonstration
+    - Live mode: Zeros (ready for real AWS integration)
+    """
+    is_demo = st.session_state.get('demo_mode', False)
+    
+    if is_demo:
+        # DEMO MODE - Return sample data
+        return {
             'aws_security_hub': {
                 'compliance_score': 87.5,
                 'total_findings': 1247,
@@ -792,11 +812,57 @@ def initialize_session_state():
                 'dependency_alerts': 234
             }
         }
-    }
-    
-    for key, value in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
+    else:
+        # LIVE/REAL MODE - Return zeros (ready for AWS integration)
+        return {
+            'aws_security_hub': {
+                'compliance_score': 0,
+                'total_findings': 0,
+                'critical': 0,
+                'high': 0,
+                'medium': 0,
+                'low': 0
+            },
+            'aws_config': {
+                'compliance_percentage': 0,
+                'total_rules': 0,
+                'compliant': 0,
+                'non_compliant': 0
+            },
+            'opa_policies': {
+                'total_policies': 0,
+                'passing': 0,
+                'failing': 0,
+                'compliance_percentage': 0,
+                'github_actions_policies': 0,
+                'iac_policies': 0
+            },
+            'kics_scans': {
+                'total_scans': 0,
+                'files_scanned': 0,
+                'compliance_score': 0,
+                'last_scan': 'N/A',
+                'high_severity': 0,
+                'medium_severity': 0,
+                'low_severity': 0,
+                'info': 0
+            },
+            'wiz_io': {
+                'posture_score': 0,
+                'resources_scanned': 0,
+                'critical_issues': 0,
+                'high_issues': 0,
+                'medium_issues': 0,
+                'low_issues': 0
+            },
+            'github_advanced_security': {
+                'compliance_score': 0,
+                'repositories_scanned': 0,
+                'code_scanning_alerts': 0,
+                'secret_scanning_alerts': 0,
+                'dependency_alerts': 0
+            }
+        }
 
 # ============================================================================
 # AWS CLIENT INITIALIZATION
@@ -5242,7 +5308,13 @@ def render_sidebar():
                 value=st.session_state.get('demo_mode', False),
                 help="Toggle between Demo (sample data) and Live (real AWS data)"
             )
-            st.session_state.demo_mode = demo_mode
+            # Update mode and refresh compliance data if mode changed
+            if demo_mode != st.session_state.get('demo_mode', False):
+                st.session_state.demo_mode = demo_mode
+                # Refresh compliance data based on new mode
+                st.session_state.compliance_data = get_compliance_data_for_mode()
+            else:
+                st.session_state.demo_mode = demo_mode
         
         with col2:
             if demo_mode:
@@ -6641,7 +6713,36 @@ def render_unified_compliance_dashboard():
     st.markdown("## 🎯 Unified Compliance Dashboard")
     st.markdown("**Single Pane of Glass:** Policy Compliance • IaC Security • Account Lifecycle Management")
     
+    # Check mode and refresh compliance data
+    is_demo = st.session_state.get('demo_mode', False)
+    
+    # Update compliance data based on current mode
+    st.session_state.compliance_data = get_compliance_data_for_mode()
     compliance_data = st.session_state.compliance_data
+    
+    # Show mode indicator and warning if in LIVE mode with no data
+    if is_demo:
+        st.info("📊 **Demo Mode**: Showing sample compliance data from 6 integrated sources")
+    else:
+        # LIVE/REAL MODE - Check if we have real data or zeros
+        if compliance_data['aws_security_hub']['compliance_score'] == 0:
+            st.warning("""
+            ⚠️ **LIVE MODE - Compliance Data Not Connected**
+            
+            This dashboard aggregates data from 6 compliance sources but is currently showing zeros.
+            
+            **To view real compliance data, integrate with:**
+            - **AWS Security Hub** (security findings and compliance)
+            - **AWS Config** (resource compliance rules)
+            - **OPA Policies** (policy-as-code enforcement)
+            - **KICS Scans** (Infrastructure-as-Code security scanning)
+            - **Wiz.io** (cloud security posture - optional)
+            - **GitHub Advanced Security** (code scanning - optional)
+            
+            **Or toggle to Demo Mode** in the sidebar to see sample data and explore dashboard features.
+            """)
+        else:
+            st.success("🔗 **LIVE MODE**: Connected to real compliance data sources")
     
     # Overall Compliance Score
     weights = {
@@ -6720,34 +6821,58 @@ def render_unified_compliance_dashboard():
     
     # Compliance Trend Over Time
     st.markdown("### 📈 Compliance Trend (Last 30 Days)")
-    trend_data = pd.DataFrame({
-        'Date': pd.date_range(start='2025-10-22', end='2025-11-21', freq='D'),
-        'AWS Security Hub': [85 + i*0.08 for i in range(31)],
-        'AWS Config': [88 + i*0.1 for i in range(31)],
-        'OPA': [83 + i*0.08 for i in range(31)],
-        'KICS': [90 + i*0.07 for i in range(31)],
-        'Wiz.io': [86 + i*0.08 for i in range(31)],
-        'Overall': [86 + i*0.07 for i in range(31)]
-    })
-    fig = px.line(trend_data, x='Date', y=['AWS Security Hub', 'AWS Config', 'OPA', 'KICS', 'Wiz.io', 'Overall'],
-                  labels={'value': 'Compliance %', 'variable': 'Source'})
-    fig.update_layout(height=400, hovermode='x unified')
-    st.plotly_chart(fig, use_container_width=True)
+    
+    if is_demo:
+        # DEMO MODE - Show sample trend data
+        trend_data = pd.DataFrame({
+            'Date': pd.date_range(start='2025-10-22', end='2025-11-21', freq='D'),
+            'AWS Security Hub': [85 + i*0.08 for i in range(31)],
+            'AWS Config': [88 + i*0.1 for i in range(31)],
+            'OPA': [83 + i*0.08 for i in range(31)],
+            'KICS': [90 + i*0.07 for i in range(31)],
+            'Wiz.io': [86 + i*0.08 for i in range(31)],
+            'Overall': [86 + i*0.07 for i in range(31)]
+        })
+        fig = px.line(trend_data, x='Date', y=['AWS Security Hub', 'AWS Config', 'OPA', 'KICS', 'Wiz.io', 'Overall'],
+                      labels={'value': 'Compliance %', 'variable': 'Source'})
+        fig.update_layout(height=400, hovermode='x unified')
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        # LIVE/REAL MODE - Show placeholder message
+        st.info("""
+        📊 **Historical Trend Data**
+        
+        Compliance trend charts will appear here once compliance sources are connected and data is collected over time.
+        
+        Trends typically become available after 7-30 days of continuous monitoring.
+        """)
     
     st.markdown("---")
     
     # Consolidated Findings Table
     st.markdown("### 📋 Consolidated Findings Across All Sources")
-    consolidated_findings = [
-        {'Source': 'AWS Security Hub', 'Category': 'S3 Public Access', 'Severity': 'CRITICAL', 'Count': 12, 'Status': 'In Remediation', 'SLA': '24 hours'},
-        {'Source': 'KICS', 'Category': 'Unencrypted Storage', 'Severity': 'HIGH', 'Count': 56, 'Status': 'Active', 'SLA': '72 hours'},
-        {'Source': 'OPA', 'Category': 'Policy Violations', 'Severity': 'HIGH', 'Count': 13, 'Status': 'Blocked', 'SLA': 'Immediate'},
-        {'Source': 'GitHub Advanced Security', 'Category': 'Secret Exposure', 'Severity': 'CRITICAL', 'Count': 23, 'Status': 'Revoked', 'SLA': 'Immediate'},
-        {'Source': 'Wiz.io', 'Category': 'Misconfigurations', 'Severity': 'HIGH', 'Count': 34, 'Status': 'In Remediation', 'SLA': '48 hours'},
-        {'Source': 'AWS Config', 'Category': 'Non-Compliant Resources', 'Severity': 'MEDIUM', 'Count': 14, 'Status': 'Active', 'SLA': '1 week'}
-    ]
-    df = pd.DataFrame(consolidated_findings)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    
+    if is_demo:
+        # DEMO MODE - Show sample findings
+        consolidated_findings = [
+            {'Source': 'AWS Security Hub', 'Category': 'S3 Public Access', 'Severity': 'CRITICAL', 'Count': 12, 'Status': 'In Remediation', 'SLA': '24 hours'},
+            {'Source': 'KICS', 'Category': 'Unencrypted Storage', 'Severity': 'HIGH', 'Count': 56, 'Status': 'Active', 'SLA': '72 hours'},
+            {'Source': 'OPA', 'Category': 'Policy Violations', 'Severity': 'HIGH', 'Count': 13, 'Status': 'Blocked', 'SLA': 'Immediate'},
+            {'Source': 'GitHub Advanced Security', 'Category': 'Secret Exposure', 'Severity': 'CRITICAL', 'Count': 23, 'Status': 'Revoked', 'SLA': 'Immediate'},
+            {'Source': 'Wiz.io', 'Category': 'Misconfigurations', 'Severity': 'HIGH', 'Count': 34, 'Status': 'In Remediation', 'SLA': '48 hours'},
+            {'Source': 'AWS Config', 'Category': 'Non-Compliant Resources', 'Severity': 'MEDIUM', 'Count': 14, 'Status': 'Active', 'SLA': '1 week'}
+        ]
+        df = pd.DataFrame(consolidated_findings)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+    else:
+        # LIVE/REAL MODE - Show placeholder
+        st.info("""
+        📋 **Consolidated Findings**
+        
+        Security findings, policy violations, and compliance issues from all sources will appear here once detected.
+        
+        Connect your compliance tools to start seeing findings.
+        """)
     
     # Export Options
     st.markdown("---")
