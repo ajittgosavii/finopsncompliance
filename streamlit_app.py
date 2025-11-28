@@ -1059,37 +1059,103 @@ def fetch_guardduty_findings(client) -> Dict[str, Any]:
             'total_findings': 89,
             'active_threats': 12,
             'resolved_threats': 77,
+            'archived': 35,
             'high_severity': 8,
             'medium_severity': 23,
-            'low_severity': 58
+            'low_severity': 58,
+            'threat_types': {
+                'UnauthorizedAccess': 5,
+                'Recon': 3,
+                'Backdoor': 2,
+                'Trojan': 1,
+                'CryptoCurrency': 1
+            }
         }
     
     if not client:
         st.error("⚠️ AWS not connected. Enable Demo Mode or configure AWS credentials.")
-        return {'total_findings': 0}
+        return {
+            'total_findings': 0,
+            'active_threats': 0,
+            'archived': 0,
+            'high_severity': 0,
+            'threat_types': {}
+        }
     try:
         detectors = client.list_detectors().get('DetectorIds', [])
         if not detectors:
-            return {'total_findings': 0}
+            return {
+                'total_findings': 0,
+                'active_threats': 0,
+                'archived': 0,
+                'high_severity': 0,
+                'threat_types': {}
+            }
         
-        findings = client.list_findings(DetectorId=detectors[0], MaxResults=100)
-        finding_ids = findings.get('FindingIds', [])
+        detector_id = detectors[0]
+        findings_response = client.list_findings(
+            DetectorId=detector_id,
+            MaxResults=100
+        )
+        finding_ids = findings_response.get('FindingIds', [])
+        
+        # Get detailed findings if any exist
+        threat_types = {}
+        high_severity_count = 0
+        active_count = 0
+        archived_count = 0
+        
+        if finding_ids:
+            details = client.get_findings(
+                DetectorId=detector_id,
+                FindingIds=finding_ids[:50]  # Limit to 50 for performance
+            )
+            
+            for finding in details.get('Findings', []):
+                # Count by type
+                finding_type = finding.get('Type', '').split('/')[0]
+                threat_types[finding_type] = threat_types.get(finding_type, 0) + 1
+                
+                # Count severity
+                severity = finding.get('Severity', 0)
+                if severity >= 7.0:  # High severity
+                    high_severity_count += 1
+                
+                # Count active vs archived
+                service = finding.get('Service', {})
+                if service.get('Archived', False):
+                    archived_count += 1
+                else:
+                    active_count += 1
         
         return {
             'total_findings': len(finding_ids),
-            'active_threats': len(finding_ids),
-            'resolved_threats': 0
+            'active_threats': active_count,
+            'archived': archived_count,
+            'high_severity': high_severity_count,
+            'threat_types': threat_types
         }
     except Exception as e:
         st.error(f"Error fetching GuardDuty findings: {str(e)}")
-        return {}
+        return {
+            'total_findings': 0,
+            'active_threats': 0,
+            'archived': 0,
+            'high_severity': 0,
+            'threat_types': {}
+        }
 
 def fetch_inspector_findings(client) -> Dict[str, Any]:
     """Fetch Amazon Inspector vulnerability findings with OS-specific details"""
      # 🆕 CHECK DEMO MODE FIRST
     if st.session_state.get('demo_mode', False):
         return {
+            'total_vulnerabilities': 234,
             'total_findings': 234,
+            'critical': 5,
+            'high': 34,
+            'medium': 98,
+            'low': 97,
             'critical_vulns': 5,
             'high_vulns': 34,
             'medium_vulns': 98,
@@ -1191,6 +1257,11 @@ def fetch_inspector_findings(client) -> Dict[str, Any]:
         st.error("⚠️ AWS not connected. Enable Demo Mode or configure AWS credentials.")
         return {
             'total_findings': 0,
+            'total_vulnerabilities': 0,
+            'critical': 0,
+            'high': 0,
+            'medium': 0,
+            'low': 0,
             'critical_vulns': 0,
             'high_vulns': 0,
             'medium_vulns': 0,
@@ -1361,6 +1432,11 @@ def fetch_inspector_findings(client) -> Dict[str, Any]:
         
         return {
             'total_findings': len(all_findings),
+            'total_vulnerabilities': len(all_findings),
+            'critical': severity_counts['CRITICAL'],
+            'high': severity_counts['HIGH'],
+            'medium': severity_counts['MEDIUM'],
+            'low': severity_counts['LOW'],
             'critical_vulns': severity_counts['CRITICAL'],
             'high_vulns': severity_counts['HIGH'],
             'medium_vulns': severity_counts['MEDIUM'],
@@ -1409,6 +1485,11 @@ def fetch_inspector_findings(client) -> Dict[str, Any]:
         # Return empty structure
         return {
             'total_findings': 0,
+            'total_vulnerabilities': 0,
+            'critical': 0,
+            'high': 0,
+            'medium': 0,
+            'low': 0,
             'critical_vulns': 0,
             'high_vulns': 0,
             'medium_vulns': 0,
@@ -6841,33 +6922,308 @@ def main():
         render_complete_ai_assistant_scene()
     
     with tabs[7]:
-        st.markdown("## 🔍 Security Findings Details")
-        security_findings = st.session_state.get('security_findings', [])
+        st.markdown("## 🔍 Security Findings - Comprehensive View")
         
-        if security_findings:
-            st.metric("Total Findings", len(security_findings))
-            df = pd.DataFrame([
-                {
-                    'ID': f.get('Id', '')[:16],
-                    'Title': f.get('Title', ''),
-                    'Severity': f.get('Severity', {}).get('Label', ''),
-                    'Resource': f.get('Resources', [{}])[0].get('Id', '')[:40],
-                    'Status': f.get('Compliance', {}).get('Status', '')
-                }
-                for f in security_findings[:50]
-            ])
-            st.dataframe(df, use_container_width=True, height=600, hide_index=True)
+        # Check if in demo mode
+        is_demo = st.session_state.get('demo_mode', True)
+        
+        # Fetch data from all security services
+        if is_demo:
+            st.info("📊 **DEMO MODE** - Showing sample security findings for demonstration purposes.")
         else:
-            if st.session_state.get('demo_mode', False):
-                st.info("📊 Showing sample security findings for demonstration purposes.")
-                demo_findings = [
-                    {'ID': 'SHUB-001', 'Title': 'S3 Bucket Public Access', 'Severity': 'CRITICAL', 'Resource': 'arn:aws:s3:::prod-bucket', 'Status': 'ACTIVE'},
-                    {'ID': 'SHUB-002', 'Title': 'Unencrypted EBS Volume', 'Severity': 'HIGH', 'Resource': 'arn:aws:ec2:vol-123', 'Status': 'ACTIVE'},
-                ]
-                df = pd.DataFrame(demo_findings)
-                st.dataframe(df, use_container_width=True, hide_index=True)
+            st.success("🔴 **LIVE MODE** - Fetching real-time data from AWS Security Services...")
+        
+        # Fetch from all sources
+        sec_hub_data = fetch_security_hub_findings(
+            (st.session_state.get('aws_clients') or {}).get('securityhub')
+        )
+        config_data = fetch_config_compliance(
+            (st.session_state.get('aws_clients') or {}).get('config')
+        )
+        guardduty_data = fetch_guardduty_findings(
+            (st.session_state.get('aws_clients') or {}).get('guardduty')
+        )
+        inspector_data = fetch_inspector_findings(
+            (st.session_state.get('aws_clients') or {}).get('inspector')
+        )
+        
+        # Summary Metrics
+        st.markdown("### 📊 Security Overview")
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            st.metric(
+                "Security Hub Findings",
+                sec_hub_data.get('total_findings', 0),
+                delta=f"{sec_hub_data.get('critical', 0)} critical"
+            )
+        
+        with col2:
+            st.metric(
+                "Config Compliance",
+                f"{config_data.get('compliance_rate', 0):.1f}%",
+                delta=f"{config_data.get('non_compliant', 0)} non-compliant"
+            )
+        
+        with col3:
+            st.metric(
+                "GuardDuty Threats",
+                guardduty_data.get('total_findings', 0),
+                delta=f"{guardduty_data.get('active_threats', 0)} active"
+            )
+        
+        with col4:
+            st.metric(
+                "Inspector Vulnerabilities",
+                inspector_data.get('total_vulnerabilities', 0),
+                delta=f"{inspector_data.get('critical', 0)} critical"
+            )
+        
+        with col5:
+            # Calculate overall security score
+            total_critical = (sec_hub_data.get('critical', 0) + 
+                            guardduty_data.get('active_threats', 0) + 
+                            inspector_data.get('critical', 0))
+            
+            if total_critical == 0:
+                security_score = 98
+            elif total_critical < 10:
+                security_score = 85
+            elif total_critical < 25:
+                security_score = 72
             else:
-                st.info("No security findings available. Connect to AWS to fetch findings.")
+                security_score = 60
+            
+            st.metric(
+                "Security Score",
+                f"{security_score}%",
+                delta="-3%" if total_critical > 10 else "+2%"
+            )
+        
+        st.markdown("---")
+        
+        # Tabbed view for different security services
+        sec_tabs = st.tabs([
+            "🛡️ Security Hub",
+            "⚙️ Config Rules",
+            "🚨 GuardDuty",
+            "🔬 Inspector",
+            "📈 Trends"
+        ])
+        
+        # Security Hub Tab
+        with sec_tabs[0]:
+            st.markdown("### 🛡️ AWS Security Hub Findings")
+            
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                # Severity breakdown chart
+                severity_data = sec_hub_data.get('findings_by_severity', {})
+                if severity_data:
+                    fig = go.Figure(data=[go.Bar(
+                        x=list(severity_data.keys()),
+                        y=list(severity_data.values()),
+                        marker_color=['#D32F2F', '#FF9800', '#FFC107', '#4CAF50', '#2196F3'],
+                        text=list(severity_data.values()),
+                        textposition='auto'
+                    )])
+                    fig.update_layout(
+                        title="Findings by Severity",
+                        xaxis_title="Severity",
+                        yaxis_title="Count",
+                        template='plotly_dark',
+                        height=300
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                st.markdown("#### Severity Breakdown")
+                for severity, count in severity_data.items():
+                    severity_color = {
+                        'CRITICAL': '🔴',
+                        'HIGH': '🟠',
+                        'MEDIUM': '🟡',
+                        'LOW': '🟢',
+                        'INFORMATIONAL': '🔵'
+                    }.get(severity, '⚪')
+                    st.metric(f"{severity_color} {severity}", count)
+            
+            # Compliance Standards
+            st.markdown("#### 📋 Compliance Standards Status")
+            compliance_standards = sec_hub_data.get('compliance_standards', {})
+            if compliance_standards:
+                cols = st.columns(len(compliance_standards))
+                for idx, (standard, score) in enumerate(compliance_standards.items()):
+                    with cols[idx]:
+                        delta_color = "normal" if score >= 90 else "inverse"
+                        st.metric(standard, f"{score}%", delta=f"{'✓' if score >= 90 else '⚠'}")
+            
+            # Findings Table
+            if sec_hub_data.get('findings'):
+                st.markdown("#### 🔍 Detailed Findings")
+                findings_df = pd.DataFrame([
+                    {
+                        'ID': f.get('Id', '')[:20] + '...',
+                        'Title': f.get('Title', ''),
+                        'Severity': f.get('Severity', {}).get('Label', 'UNKNOWN'),
+                        'Type': f.get('Types', [''])[0] if f.get('Types') else 'Unknown',
+                        'Resource': (f.get('Resources', [{}])[0].get('Id', '') if f.get('Resources') else '')[:50] + '...',
+                        'Status': f.get('Workflow', {}).get('Status', 'NEW')
+                    }
+                    for f in sec_hub_data['findings'][:50]
+                ])
+                st.dataframe(findings_df, use_container_width=True, height=400, hide_index=True)
+            elif is_demo:
+                st.info("💡 In demo mode. Real findings will appear here in live mode with AWS connection.")
+            else:
+                st.warning("⚠️ No active findings found. This is good news!")
+        
+        # Config Rules Tab
+        with sec_tabs[1]:
+            st.markdown("### ⚙️ AWS Config Compliance")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Compliance Rate", f"{config_data.get('compliance_rate', 0):.1f}%")
+            with col2:
+                st.metric("Resources Evaluated", config_data.get('resources_evaluated', 0))
+            with col3:
+                compliant = config_data.get('compliant', 0)
+                non_compliant = config_data.get('non_compliant', 0)
+                total = compliant + non_compliant if (compliant + non_compliant) > 0 else 1
+                st.metric("Non-Compliant Resources", non_compliant)
+            
+            # Compliance pie chart
+            if compliant or non_compliant:
+                fig = go.Figure(data=[go.Pie(
+                    labels=['Compliant', 'Non-Compliant'],
+                    values=[compliant, non_compliant],
+                    marker_colors=['#4CAF50', '#FF5252'],
+                    hole=0.4
+                )])
+                fig.update_layout(
+                    title="Compliance Status",
+                    template='plotly_dark',
+                    height=400
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            
+            if not is_demo and not (compliant or non_compliant):
+                st.info("📝 Connect to AWS and enable Config to see compliance data.")
+        
+        # GuardDuty Tab
+        with sec_tabs[2]:
+            st.markdown("### 🚨 AWS GuardDuty Threat Detection")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Total Findings", guardduty_data.get('total_findings', 0))
+            with col2:
+                st.metric("Active Threats", guardduty_data.get('active_threats', 0))
+            with col3:
+                st.metric("High Severity", guardduty_data.get('high_severity', 0))
+            with col4:
+                st.metric("Archived", guardduty_data.get('archived', 0))
+            
+            # Threat types breakdown
+            threat_types = guardduty_data.get('threat_types', {})
+            if threat_types:
+                st.markdown("#### 🎯 Threat Types Distribution")
+                fig = go.Figure(data=[go.Bar(
+                    x=list(threat_types.keys()),
+                    y=list(threat_types.values()),
+                    marker_color='#FF5252'
+                )])
+                fig.update_layout(
+                    xaxis_title="Threat Type",
+                    yaxis_title="Count",
+                    template='plotly_dark',
+                    height=300
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            
+            if not is_demo and guardduty_data.get('total_findings', 0) == 0:
+                st.success("✅ No active threats detected. Your environment is secure!")
+        
+        # Inspector Tab
+        with sec_tabs[3]:
+            st.markdown("### 🔬 AWS Inspector Vulnerability Scan")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Total Vulnerabilities", inspector_data.get('total_vulnerabilities', 0))
+            with col2:
+                st.metric("Critical", inspector_data.get('critical', 0))
+            with col3:
+                st.metric("High", inspector_data.get('high', 0))
+            with col4:
+                st.metric("Medium", inspector_data.get('medium', 0))
+            
+            # Vulnerability severity chart
+            vuln_data = {
+                'Critical': inspector_data.get('critical', 0),
+                'High': inspector_data.get('high', 0),
+                'Medium': inspector_data.get('medium', 0),
+                'Low': inspector_data.get('low', 0)
+            }
+            
+            if sum(vuln_data.values()) > 0:
+                fig = go.Figure(data=[go.Bar(
+                    x=list(vuln_data.keys()),
+                    y=list(vuln_data.values()),
+                    marker_color=['#D32F2F', '#FF9800', '#FFC107', '#4CAF50'],
+                    text=list(vuln_data.values()),
+                    textposition='auto'
+                )])
+                fig.update_layout(
+                    title="Vulnerabilities by Severity",
+                    xaxis_title="Severity",
+                    yaxis_title="Count",
+                    template='plotly_dark',
+                    height=300
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            
+            if not is_demo and inspector_data.get('total_vulnerabilities', 0) == 0:
+                st.success("✅ No vulnerabilities found. Great job!")
+        
+        # Trends Tab
+        with sec_tabs[4]:
+            st.markdown("### 📈 Security Trends (Last 30 Days)")
+            
+            if is_demo:
+                # Demo trend data
+                dates = pd.date_range(end=datetime.now(), periods=30, freq='D')
+                trend_data = pd.DataFrame({
+                    'Date': dates,
+                    'Security Hub': np.random.randint(900, 1300, 30),
+                    'GuardDuty': np.random.randint(70, 110, 30),
+                    'Inspector': np.random.randint(180, 250, 30)
+                })
+                
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=trend_data['Date'], y=trend_data['Security Hub'],
+                                        mode='lines+markers', name='Security Hub', line=dict(color='#2196F3')))
+                fig.add_trace(go.Scatter(x=trend_data['Date'], y=trend_data['GuardDuty'],
+                                        mode='lines+markers', name='GuardDuty', line=dict(color='#FF5252')))
+                fig.add_trace(go.Scatter(x=trend_data['Date'], y=trend_data['Inspector'],
+                                        mode='lines+markers', name='Inspector', line=dict(color='#4CAF50')))
+                
+                fig.update_layout(
+                    title="Security Findings Trend",
+                    xaxis_title="Date",
+                    yaxis_title="Findings Count",
+                    template='plotly_dark',
+                    height=400,
+                    hovermode='x unified'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                st.info("📊 Historical trend data will be available after running in live mode for 30+ days.")
+            else:
+                st.info("📊 Trend analysis requires historical data. Continue using the platform to build trend insights.")
+
     
     with tabs[8]:  # 💰 FinOps & Cost Management
         st.markdown("## 💰 FinOps & Cost Management")
