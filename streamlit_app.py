@@ -19,6 +19,7 @@ AI-Powered Multi-Cloud Compliance, FinOps, and Security Orchestration
 ✓ GitOps Integration with Version Control
 ✓ CI/CD Security Gate Integration
 ✓ FinOps Maturity Assessment
+✓ Demo/Live Mode Toggle - Realistic demo data that feels live! ⭐ NEW
 
 🔧 Integrated Technologies:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -32,8 +33,8 @@ Monitoring: CloudWatch, X-Ray, Prometheus, Grafana
 FinOps: Apptio Cloudability, CloudHealth, Snowflake
 ITSM: Jira, ServiceNow, PagerDuty
 
-Version: 5.0 Enterprise Edition
-Enterprise Edition | Production Ready
+Version: 6.0 Enterprise Edition - Demo/Live Mode
+Enterprise Edition | Production Ready | AWS re:Invent 2025 Ready
 """
 
 import streamlit as st 
@@ -607,7 +608,7 @@ def initialize_session_state():
     if 'initialized' not in st.session_state:
         st.session_state.initialized = True
         st.session_state.aws_connected = False
-        st.session_state.demo_mode = False
+        st.session_state.demo_mode = True  # ⭐ DEFAULT TO DEMO MODE - Realistic data that feels live!
         st.session_state.show_ai_panel = False
         st.session_state.validation_complete = False
         st.session_state.deployment_started = False
@@ -626,7 +627,7 @@ def initialize_session_state():
         'aws_connected': False,
         'claude_connected': False,
         'github_connected': False,
-        'demo_mode': False,  # 🆕 NEW: Demo/Live toggle
+        'demo_mode': True,  # ⭐ DEFAULT TO DEMO - Users experience realistic data immediately
         'aws_clients': None,
         'claude_client': None,
         'github_client': None,
@@ -6713,7 +6714,7 @@ def main():
     <div class="main-header">
         <h1>☁️ Cloud Compliance Canvas | Enterprise Platform</h1>
         <p>AI-Powered AWS Governance • Complete Security Monitoring • Advanced FinOps Intelligence • Automated Compliance</p>
-        <div class="company-badge">Enterprise Edition v5.0</div>
+        <div class="company-badge">Enterprise Edition v6.0 | Demo/Live Mode</div>
     </div>
     """, unsafe_allow_html=True)
     
