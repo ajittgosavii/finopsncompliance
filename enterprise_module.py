@@ -666,18 +666,142 @@ def get_integrated_dashboard_data():
             'renewable_energy_pct': 65.2
         }
     else:
-        # LIVE MODE - Fetch from real sources
+        # LIVE MODE - Return same structure with placeholder/zero values
+        # TODO: Connect to real AWS Cost Explorer, Security Hub, Config APIs
         try:
-            # This would integrate with actual data sources
-            # For now, return minimal real data structure
             return {
+                # Financial Metrics (placeholders - connect to AWS Cost Explorer)
                 'total_spend': 0,
                 'monthly_spend': 0,
-                'message': 'Connect to AWS Cost Explorer for live data'
+                'savings_realized': 0,
+                'savings_potential': 0,
+                'roi': 0,
+                'budget': 0,
+                'budget_utilization': 0,
+                'burn_rate_hourly': 0,
+                
+                # Trend Data (empty - connect to Cost Explorer history)
+                'spend_trend': [0, 0, 0, 0, 0, 0],
+                'savings_trend': [0, 0, 0, 0, 0, 0],
+                'months': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                
+                # Cost Breakdown (empty - connect to Cost Explorer)
+                'cost_by_service': {
+                    'EC2': 0,
+                    'RDS': 0,
+                    'S3': 0,
+                    'Lambda': 0,
+                    'CloudFront': 0,
+                    'Other': 0
+                },
+                
+                'cost_by_region': {
+                    'us-east-1': 0,
+                    'us-west-2': 0,
+                    'eu-west-1': 0,
+                    'ap-southeast-1': 0
+                },
+                
+                'cost_by_environment': {
+                    'Production': 0,
+                    'Development': 0,
+                    'Staging': 0,
+                    'Sandbox': 0
+                },
+                
+                # Department Breakdown (placeholder - connect to billing tags)
+                'departments': [
+                    {
+                        'name': 'No Data',
+                        'cost': 0,
+                        'budget': 0,
+                        'utilization': 0,
+                        'accounts': 0,
+                        'top_services': ['N/A'],
+                        'savings_potential': 0,
+                        'cost_change': 0
+                    }
+                ],
+                
+                # Security Impact (connect to Security Hub)
+                'security_findings': {
+                    'total_findings': 0,
+                    'critical': 0,
+                    'cost_at_risk': 0,
+                    'remediation_cost': 0,
+                    'cost_per_finding': 0
+                },
+                
+                # Compliance Metrics (connect to Config)
+                'compliance': {
+                    'overall_score': 0,
+                    'non_compliant_resources': 0,
+                    'potential_fines': 0,
+                    'compliance_cost': 0
+                },
+                
+                # Optimization Opportunities (connect to Compute Optimizer, Trusted Advisor)
+                'optimizations': [
+                    {
+                        'category': 'No Data Available',
+                        'resource_count': 0,
+                        'potential_savings': 0,
+                        'confidence': 'N/A',
+                        'effort': 'N/A'
+                    }
+                ],
+                
+                # Forecast (connect to Cost Explorer forecast)
+                'forecast_next_month': 0,
+                'forecast_next_quarter': 0,
+                'forecast_confidence': 0,
+                
+                # Anomalies (connect to Cost Anomaly Detection)
+                'anomalies': [],
+                
+                # Account Growth (connect to Organizations)
+                'accounts_managed': 0,
+                'accounts_added_month': 0,
+                'cost_per_account': 0,
+                
+                # Sustainability (connect to Customer Carbon Footprint Tool)
+                'carbon_footprint': 0,
+                'carbon_cost': 0,
+                'renewable_energy_pct': 0
             }
         except Exception as e:
             st.error(f"Error fetching live data: {str(e)}")
-            return {}
+            # Return empty structure on error to prevent crashes
+            return {
+                'total_spend': 0,
+                'monthly_spend': 0,
+                'savings_realized': 0,
+                'savings_potential': 0,
+                'roi': 0,
+                'budget': 0,
+                'budget_utilization': 0,
+                'burn_rate_hourly': 0,
+                'spend_trend': [0, 0, 0, 0, 0, 0],
+                'savings_trend': [0, 0, 0, 0, 0, 0],
+                'months': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                'cost_by_service': {'No Data': 0},
+                'cost_by_region': {'No Data': 0},
+                'cost_by_environment': {'No Data': 0},
+                'departments': [{'name': 'No Data', 'cost': 0, 'budget': 0, 'utilization': 0, 'accounts': 0, 'top_services': ['N/A'], 'savings_potential': 0, 'cost_change': 0}],
+                'security_findings': {'total_findings': 0, 'critical': 0, 'cost_at_risk': 0, 'remediation_cost': 0, 'cost_per_finding': 0},
+                'compliance': {'overall_score': 0, 'non_compliant_resources': 0, 'potential_fines': 0, 'compliance_cost': 0},
+                'optimizations': [{'category': 'No Data', 'resource_count': 0, 'potential_savings': 0, 'confidence': 'N/A', 'effort': 'N/A'}],
+                'forecast_next_month': 0,
+                'forecast_next_quarter': 0,
+                'forecast_confidence': 0,
+                'anomalies': [],
+                'accounts_managed': 0,
+                'accounts_added_month': 0,
+                'cost_per_account': 0,
+                'carbon_footprint': 0,
+                'carbon_cost': 0,
+                'renewable_energy_pct': 0
+            }
 
 def render_cfo_dashboard():
     """CFO Executive Dashboard"""
@@ -736,7 +860,25 @@ def render_enhanced_cfo_dashboard():
         st.info("📊 Demo Mode: Showing comprehensive sample financial data")
     else:
         st.title("💰 CFO Dashboard - Executive Financial Overview 🟢 LIVE MODE")
-        st.info("🔗 Connected to your AWS Cost Explorer and compliance systems")
+        # Check if we have real data or just placeholders
+        if data.get('monthly_spend', 0) == 0 and data.get('total_spend', 0) == 0:
+            st.warning("""
+            ⚠️ **LIVE MODE - Data Sources Not Connected**
+            
+            This dashboard is ready for live data but is currently showing placeholder values (zeros).
+            
+            **To connect real data, update the `get_integrated_dashboard_data()` function to integrate with:**
+            - AWS Cost Explorer (for spend, trends, forecasts)
+            - AWS Security Hub (for security findings)
+            - AWS Config (for compliance metrics)
+            - AWS Compute Optimizer / Trusted Advisor (for optimization opportunities)
+            - AWS Organizations (for account data)
+            - Customer Carbon Footprint Tool (for sustainability metrics)
+            
+            **Toggle to Demo Mode** in the sidebar to see sample data and explore all features.
+            """)
+        else:
+            st.info("🔗 Connected to your AWS Cost Explorer and compliance systems")
     
     # Get integrated data
     data = get_integrated_dashboard_data()
