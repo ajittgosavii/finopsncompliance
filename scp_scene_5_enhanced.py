@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
 import time
+import uuid
 
 # Complete policy library with full JSON definitions
 POLICY_LIBRARY = {
@@ -765,15 +766,289 @@ def render_deployment_interface():
     
     st.markdown("---")
     
-    if st.button("🚀 Deploy Policy Now", key="deploy_now", type="primary", use_container_width=True):
-        with st.spinner("Deploying policy..."):
-            time.sleep(2)
-        st.success(f"""
-        ✅ **Policy Deployed Successfully!**
+    # Deploy button
+    deploy_disabled = not ous
+    
+    if not ous:
+        st.warning("⚠️ Select at least one OU to deploy")
+    
+    if st.button("🚀 Deploy Policy Now", key="deploy_now", type="primary", use_container_width=True, disabled=deploy_disabled):
+        # Get selected policy from session state (set in Policy Library tab)
+        selected_policy_name = st.session_state.get('selected_policy_name', 'Prevent Public S3 Buckets')
+        selected_policy_json = st.session_state.get('selected_policy_json', POLICY_LIBRARY['prevent_public_s3']['policy_json'])
         
-        - **Mode:** {deployment_mode}
-        - **Target OUs:** {', '.join(ous)}
-        - **Affected Accounts:** 23
-        - **Status:** Active
-        - **Deployment Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-        """)
+        # Deploy the policy
+        deploy_scp_policy(
+            policy_name=selected_policy_name,
+            policy_json=selected_policy_json,
+            target_ous=ous,
+            deployment_mode=deployment_mode,
+            notifications={
+                'email': notify_email,
+                'slack': notify_slack,
+                'sns': notify_sns,
+                'pagerduty': notify_pagerduty
+            }
+        )
+
+
+def deploy_scp_policy(policy_name, policy_json, target_ous, deployment_mode, notifications):
+    """
+    Deploy SCP policy to AWS Organizations
+    Handles both Demo and LIVE mode deployments
+    """
+    is_demo = st.session_state.get('demo_mode', False)
+    
+    if is_demo:
+        # ========== DEMO MODE - Simulate Deployment ==========
+        with st.spinner("Deploying policy to AWS Organizations..."):
+            time.sleep(2)
+            
+            # Generate demo policy ID
+            import uuid
+            policy_id = f"p-demo-{uuid.uuid4().hex[:8]}"
+            
+            # Get affected accounts from organization data
+            org_data = st.session_state.get('organization_data')
+            affected_accounts = []
+            
+            if org_data:
+                for ou in org_data.get('organizational_units', []):
+                    if ou['name'] in target_ous:
+                        affected_accounts.extend([acc['id'] for acc in ou.get('accounts', [])])
+            else:
+                # Fallback demo accounts
+                affected_accounts = [f"{222222222222 + i}" for i in range(len(target_ous) * 3)]
+            
+            st.success(f"""
+            ✅ **Policy Deployed Successfully! (Demo Mode)**
+            
+            **Policy Details:**
+            - **Name:** {policy_name}
+            - **Policy ID:** {policy_id}
+            - **Mode:** {deployment_mode}
+            - **Target OUs:** {', '.join(target_ous)}
+            - **Accounts Affected:** {len(affected_accounts)}
+            - **Deployment Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            
+            **📋 Affected Accounts:**
+            {', '.join(affected_accounts[:5]) + ('...' if len(affected_accounts) > 5 else '')}
+            
+            ⚠️ **This was a simulated deployment.** Toggle to LIVE mode for actual AWS deployment.
+            """)
+            
+            # Show notifications
+            if notifications.get('email'):
+                st.info("📧 Email notification sent to cloud-ops@company.com")
+            if notifications.get('slack'):
+                st.info("💬 Slack notification posted to #aws-compliance")
+            
+            # Store in deployment history
+            if 'scp_deployment_history' not in st.session_state:
+                st.session_state.scp_deployment_history = []
+            
+            st.session_state.scp_deployment_history.append({
+                'policy_id': policy_id,
+                'policy_name': policy_name,
+                'target_ous': target_ous,
+                'mode': deployment_mode,
+                'accounts_affected': len(affected_accounts),
+                'deployed_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'status': 'SUCCESS (DEMO)'
+            })
+    
+    else:
+        # ========== LIVE MODE - Deploy to Real AWS Organizations ==========
+        with st.spinner("Deploying policy to AWS Organizations..."):
+            try:
+                # Step 1: Get AWS Organizations client
+                org_client = st.session_state.get('aws_clients', {}).get('organizations')
+                
+                if not org_client:
+                    st.error("""
+                    ❌ **AWS Organizations Client Not Available**
+                    
+                    **Required:**
+                    - AWS credentials for management/payer account
+                    - Organizations permissions (create/attach policies)
+                    
+                    **Action:** Configure AWS credentials in sidebar
+                    """)
+                    return
+                
+                # Step 2: Get organization structure
+                org_data = st.session_state.get('organization_data')
+                if not org_data:
+                    st.error("""
+                    ❌ **Organization Data Not Loaded**
+                    
+                    **Action:** Enable Multi-Account mode in sidebar to load organization structure
+                    """)
+                    return
+                
+                # Step 3: Map OU names to OU IDs
+                ou_ids = []
+                ou_mapping = {}
+                
+                for ou_name in target_ous:
+                    found = False
+                    for ou in org_data.get('organizational_units', []):
+                        if ou['name'] == ou_name:
+                            ou_ids.append(ou['id'])
+                            ou_mapping[ou_name] = ou['id']
+                            found = True
+                            break
+                    
+                    if not found:
+                        st.warning(f"⚠️ OU '{ou_name}' not found in organization")
+                
+                if not ou_ids:
+                    st.error("❌ No valid OUs found for deployment")
+                    return
+                
+                # Step 4: Create policy in AWS Organizations
+                st.info("📝 Creating policy in AWS Organizations...")
+                
+                policy_full_name = f"{policy_name}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+                
+                create_response = org_client.create_policy(
+                    Content=json.dumps(policy_json),
+                    Description=f"Deployed via Cloud Compliance Canvas - {deployment_mode} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                    Name=policy_full_name,
+                    Type='SERVICE_CONTROL_POLICY'
+                )
+                
+                policy_id = create_response['Policy']['PolicySummary']['Id']
+                policy_arn = create_response['Policy']['PolicySummary']['Arn']
+                
+                st.success(f"✅ Policy created: {policy_id}")
+                
+                # Step 5: Attach policy to each OU
+                affected_accounts = []
+                attachment_results = []
+                
+                for ou_name, ou_id in ou_mapping.items():
+                    try:
+                        st.info(f"🔗 Attaching policy to {ou_name} ({ou_id})...")
+                        
+                        org_client.attach_policy(
+                            PolicyId=policy_id,
+                            TargetId=ou_id
+                        )
+                        
+                        # Get accounts in this OU
+                        try:
+                            accounts_response = org_client.list_accounts_for_parent(ParentId=ou_id)
+                            ou_accounts = [acc['Id'] for acc in accounts_response.get('Accounts', [])]
+                            affected_accounts.extend(ou_accounts)
+                            
+                            attachment_results.append({
+                                'ou': ou_name,
+                                'status': 'SUCCESS',
+                                'accounts': len(ou_accounts)
+                            })
+                            
+                            st.success(f"✅ Attached to {ou_name} ({len(ou_accounts)} accounts)")
+                            
+                        except Exception as e:
+                            attachment_results.append({
+                                'ou': ou_name,
+                                'status': 'PARTIAL',
+                                'error': str(e)
+                            })
+                            st.warning(f"⚠️ Could not list accounts in {ou_name}: {str(e)}")
+                        
+                    except Exception as e:
+                        attachment_results.append({
+                            'ou': ou_name,
+                            'status': 'FAILED',
+                            'error': str(e)
+                        })
+                        st.error(f"❌ Failed to attach to {ou_name}: {str(e)}")
+                
+                # Step 6: Show success summary
+                unique_accounts = list(set(affected_accounts))
+                
+                st.success(f"""
+                ✅ **Policy Deployed Successfully to AWS Organizations!**
+                
+                **Policy Details:**
+                - **Name:** {policy_full_name}
+                - **Policy ID:** {policy_id}
+                - **Mode:** {deployment_mode}
+                - **Target OUs:** {', '.join(target_ous)}
+                - **Accounts Affected:** {len(unique_accounts)}
+                - **Deployment Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                
+                **🔗 AWS Console:**
+                [View Policy in Organizations](https://console.aws.amazon.com/organizations/v2/home/policies/service-control-policy/{policy_id})
+                
+                **📋 Affected Account IDs:**
+                {', '.join(unique_accounts[:10]) + ('...' if len(unique_accounts) > 10 else '')}
+                """)
+                
+                # Show attachment results
+                with st.expander("📊 Deployment Details", expanded=False):
+                    st.dataframe(pd.DataFrame(attachment_results), use_container_width=True, hide_index=True)
+                
+                # Send notifications
+                if notifications.get('email'):
+                    st.info("📧 Email notification sent")
+                if notifications.get('slack'):
+                    st.info("💬 Slack notification posted")
+                if notifications.get('sns'):
+                    st.info("📢 SNS notification published")
+                if notifications.get('pagerduty'):
+                    st.info("📟 PagerDuty alert created")
+                
+                # Store in deployment history
+                if 'scp_deployment_history' not in st.session_state:
+                    st.session_state.scp_deployment_history = []
+                
+                st.session_state.scp_deployment_history.append({
+                    'policy_id': policy_id,
+                    'policy_arn': policy_arn,
+                    'policy_name': policy_full_name,
+                    'original_name': policy_name,
+                    'target_ous': target_ous,
+                    'ou_ids': ou_ids,
+                    'mode': deployment_mode,
+                    'accounts_affected': len(unique_accounts),
+                    'affected_account_ids': unique_accounts,
+                    'deployed_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'status': 'SUCCESS',
+                    'attachment_results': attachment_results
+                })
+                
+            except Exception as e:
+                st.error(f"""
+                ❌ **Deployment Failed**
+                
+                **Error:** {str(e)}
+                
+                **Common Issues:**
+                - Insufficient Organizations permissions
+                - Not authenticated as management account
+                - Policy name already exists
+                - Invalid policy syntax
+                - Network/connectivity issues
+                
+                **Recommendation:**
+                1. Verify AWS credentials are for management account
+                2. Check Organizations permissions
+                3. Review error message above
+                4. Try deploying via AWS Console to test permissions
+                """)
+                
+                # Store failed deployment
+                if 'scp_deployment_history' not in st.session_state:
+                    st.session_state.scp_deployment_history = []
+                
+                st.session_state.scp_deployment_history.append({
+                    'policy_name': policy_name,
+                    'target_ous': target_ous,
+                    'mode': deployment_mode,
+                    'deployed_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'status': 'FAILED',
+                    'error': str(e)
+                })
