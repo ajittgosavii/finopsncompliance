@@ -52,14 +52,59 @@ from typing import Dict, List, Any, Optional, Tuple
 import time
 import hashlib
 import base64
-from account_lifecycle_enhanced import render_enhanced_account_lifecycle
-from scp_policy_engine import render_scp_policy_engine
-from pipeline_simulator import render_pipeline_simulator
-from ai_configuration_assistant_complete import render_complete_ai_assistant_scene
-from scp_scene_5_enhanced import render_scp_policy_engine_scene
-from ai_threat_scene_6_PRODUCTION import render_ai_threat_analysis_scene
-from finops_scene_7_complete import render_predictive_finops_scene
-from integration_scene_8_complete import render_enterprise_integration_scene
+# Try to import external modules, fall back to built-in versions if not available
+try:
+    from account_lifecycle_enhanced import render_enhanced_account_lifecycle
+    ACCOUNT_LIFECYCLE_AVAILABLE = True
+except ImportError:
+    ACCOUNT_LIFECYCLE_AVAILABLE = False
+    print("Note: account_lifecycle_enhanced.py not found - using built-in version")
+
+try:
+    from scp_policy_engine import render_scp_policy_engine
+    SCP_POLICY_ENGINE_AVAILABLE = True
+except ImportError:
+    SCP_POLICY_ENGINE_AVAILABLE = False
+    print("Note: scp_policy_engine.py not found - using built-in version")
+
+try:
+    from pipeline_simulator import render_pipeline_simulator
+    PIPELINE_SIMULATOR_AVAILABLE = True
+except ImportError:
+    PIPELINE_SIMULATOR_AVAILABLE = False
+    print("Note: pipeline_simulator.py not found - using built-in version")
+
+try:
+    from ai_configuration_assistant_complete import render_complete_ai_assistant_scene
+    AI_ASSISTANT_AVAILABLE = True
+except ImportError:
+    AI_ASSISTANT_AVAILABLE = False
+    print("Note: ai_configuration_assistant_complete.py not found - using built-in version")
+
+try:
+    from scp_scene_5_enhanced import render_scp_policy_engine_scene
+    SCP_SCENE_AVAILABLE = True
+except ImportError:
+    SCP_SCENE_AVAILABLE = False
+    print("Note: scp_scene_5_enhanced.py not found - using built-in version")
+
+try:
+    from ai_threat_scene_6_PRODUCTION import render_ai_threat_analysis_scene
+    AI_THREAT_AVAILABLE = True
+except ImportError:
+    AI_THREAT_AVAILABLE = False
+    print("Note: ai_threat_scene_6_PRODUCTION.py not found - using built-in version")
+
+try:
+    from finops_scene_7_complete import render_predictive_finops_scene
+    FINOPS_SCENE_AVAILABLE = True
+except ImportError:
+    FINOPS_SCENE_AVAILABLE = False
+    print("Note: finops_scene_7_complete.py not found - using built-in version")
+
+# ⚠️ IMPORTANT: Do NOT import render_enterprise_integration_scene from external file
+# Always use the built-in version defined in this file which properly handles demo_mode
+INTEGRATION_SCENE_EXTERNAL = False
 
 # Production AI Remediation Modules (optional - falls back to placeholder if not available)
 try:
@@ -609,7 +654,7 @@ def initialize_session_state():
     if 'initialized' not in st.session_state:
         st.session_state.initialized = True
         st.session_state.aws_connected = False
-        st.session_state.demo_mode = True  # ⭐ DEFAULT TO DEMO MODE - Realistic data that feels live!
+        st.session_state.demo_mode = False  # ⭐ DEFAULT TO LIVE MODE - Use real AWS data when available
         st.session_state.show_ai_panel = False
         st.session_state.validation_complete = False
         st.session_state.deployment_started = False
@@ -628,7 +673,7 @@ def initialize_session_state():
         'aws_connected': False,
         'claude_connected': False,
         'github_connected': False,
-        'demo_mode': True,  # ⭐ DEFAULT TO DEMO - Users experience realistic data immediately
+        'demo_mode': False,  # ⭐ DEFAULT TO LIVE - Use real AWS data when available
         'aws_clients': None,
         'claude_client': None,
         'github_client': None,
@@ -6791,7 +6836,7 @@ def save_integration_config(service_name: str, config: Dict[str, Any]):
 
 def test_integration_connection(service_name: str, config: Dict[str, Any]) -> tuple[bool, str]:
     """Test connection to integration service"""
-    is_demo = st.session_state.get('demo_mode', True)
+    is_demo = st.session_state.get('demo_mode', False)
     
     if is_demo:
         return True, f"✅ Demo mode: {service_name} connection simulated successfully"
@@ -6879,7 +6924,7 @@ def render_jira_plugin():
     """Jira Integration Plugin"""
     st.markdown("### 📋 Jira - Project Management")
     
-    is_demo = st.session_state.get('demo_mode', True)
+    is_demo = st.session_state.get('demo_mode', False)
     config = get_integration_config('Jira')
     
     if is_demo:
@@ -6944,7 +6989,7 @@ def render_servicenow_plugin():
     """ServiceNow Integration Plugin"""
     st.markdown("### 🎫 ServiceNow - ITSM Platform")
     
-    is_demo = st.session_state.get('demo_mode', True)
+    is_demo = st.session_state.get('demo_mode', False)
     config = get_integration_config('ServiceNow')
     
     if is_demo:
@@ -7011,7 +7056,7 @@ def render_slack_plugin():
     """Slack Integration Plugin"""
     st.markdown("### 💬 Slack - Team Communication")
     
-    is_demo = st.session_state.get('demo_mode', True)
+    is_demo = st.session_state.get('demo_mode', False)
     config = get_integration_config('Slack')
     
     if is_demo:
@@ -7082,7 +7127,7 @@ def render_github_plugin():
     """GitHub Integration Plugin"""
     st.markdown("### 🐙 GitHub - Source Control")
     
-    is_demo = st.session_state.get('demo_mode', True)
+    is_demo = st.session_state.get('demo_mode', False)
     config = get_integration_config('GitHub')
     
     if is_demo:
@@ -7154,7 +7199,7 @@ def render_pagerduty_plugin():
     """PagerDuty Integration Plugin"""
     st.markdown("### 🚨 PagerDuty - Incident Response")
     
-    is_demo = st.session_state.get('demo_mode', True)
+    is_demo = st.session_state.get('demo_mode', False)
     config = get_integration_config('PagerDuty')
     
     if is_demo:
@@ -7212,7 +7257,7 @@ def render_wizio_plugin():
     """Wiz.io Integration Plugin"""
     st.markdown("### 🔵 Wiz.io - Cloud Security")
     
-    is_demo = st.session_state.get('demo_mode', True)
+    is_demo = st.session_state.get('demo_mode', False)
     config = get_integration_config('Wiz.io')
     
     if is_demo:
@@ -7259,7 +7304,7 @@ def render_snyk_plugin():
     """Snyk Integration Plugin"""
     st.markdown("### 🔐 Snyk - DevSecOps")
     
-    is_demo = st.session_state.get('demo_mode', True)
+    is_demo = st.session_state.get('demo_mode', False)
     config = get_integration_config('Snyk')
     
     if is_demo:
@@ -7311,7 +7356,7 @@ def render_gitlab_plugin():
     """GitLab Integration Plugin"""
     st.markdown("### 🦊 GitLab - DevOps Platform")
     
-    is_demo = st.session_state.get('demo_mode', True)
+    is_demo = st.session_state.get('demo_mode', False)
     config = get_integration_config('GitLab')
     
     if is_demo:
@@ -7356,7 +7401,8 @@ def render_gitlab_plugin():
 
 def render_enterprise_integration_scene():
     """Main Enterprise Integrations Scene - Connected Enterprise Stack"""
-    is_demo = st.session_state.get('demo_mode', True)
+    # ⚠️ CRITICAL: Check demo_mode properly - default to False for LIVE mode
+    is_demo = st.session_state.get('demo_mode', False)
     
     st.markdown("## 🌐 Connected Enterprise Stack")
     
@@ -7707,7 +7753,7 @@ def main():
         st.markdown("## 🔍 Security Findings - Comprehensive View")
         
         # Check if in demo mode
-        is_demo = st.session_state.get('demo_mode', True)
+        is_demo = st.session_state.get('demo_mode', False)
         
         # Fetch data from all security services
         if is_demo:
@@ -8031,7 +8077,7 @@ def main():
             st.subheader("📈 Budget Tracking & Forecasting")
             
             # Check demo mode for data
-            is_demo = st.session_state.get('demo_mode', True)
+            is_demo = st.session_state.get('demo_mode', False)
             
             if is_demo:
                 # Demo mode data
@@ -8170,7 +8216,7 @@ def main():
             # Optimization Recommendations Implementation
             st.subheader("📊 Cost Optimization Recommendations")
             
-            is_demo = st.session_state.get('demo_mode', True)
+            is_demo = st.session_state.get('demo_mode', False)
             
             if is_demo:
                 total_savings = 285000  # $285K/month
