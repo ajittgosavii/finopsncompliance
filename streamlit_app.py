@@ -596,24 +596,69 @@ st.markdown("""
         color: #FF9900;
     }
     
-    /* ⭐ FIX: Make tab text white/visible on dark backgrounds */
-    .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
+    /* ⭐ COMPREHENSIVE TAB TEXT FIX - Multiple targeting strategies */
+    
+    /* Strategy 1: Direct button styling */
+    .stTabs [data-baseweb="tab-list"] button {
+        color: white !important;
+    }
+    
+    /* Strategy 2: All text elements inside tabs */
+    .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p,
+    .stTabs [data-baseweb="tab-list"] button div,
+    .stTabs [data-baseweb="tab-list"] button span,
+    .stTabs [data-baseweb="tab-list"] button p {
         color: white !important;
         font-weight: 600 !important;
     }
     
-    /* Active tab - brighter */
-    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] [data-testid="stMarkdownContainer"] p {
+    /* Strategy 3: Tab role elements */
+    div[data-baseweb="tab-list"] button[role="tab"] {
+        color: white !important;
+    }
+    
+    /* Strategy 4: Direct descendant selector */
+    .stTabs [data-baseweb="tab-list"] > button,
+    .stTabs [data-baseweb="tab-list"] > button > div {
+        color: white !important;
+    }
+    
+    /* Active tab - AWS orange (all strategies) */
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"],
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] *,
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] [data-testid="stMarkdownContainer"] p,
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] div,
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] span,
+    div[data-baseweb="tab-list"] button[role="tab"][aria-selected="true"] {
         color: #FF9900 !important;
         font-weight: bold !important;
     }
     
-    /* Tab hover effect */
-    .stTabs [data-baseweb="tab-list"] button:hover [data-testid="stMarkdownContainer"] p {
+    /* Tab hover effect (all strategies) */
+    .stTabs [data-baseweb="tab-list"] button:hover,
+    .stTabs [data-baseweb="tab-list"] button:hover *,
+    .stTabs [data-baseweb="tab-list"] button:hover [data-testid="stMarkdownContainer"] p,
+    .stTabs [data-baseweb="tab-list"] button:hover div,
+    .stTabs [data-baseweb="tab-list"] button:hover span {
         color: #FFB84D !important;
     }
     
-    /* Make sure tab panels have good contrast too */
+    /* Nuclear option - all tab content */
+    .stTabs * {
+        color: inherit !important;
+    }
+    
+    /* Ensure tab highlight bar is visible */
+    .stTabs [data-baseweb="tab-highlight"] {
+        background-color: #FF9900 !important;
+    }
+    
+    /* Tab border */
+    .stTabs [data-baseweb="tab-border"] {
+        background-color: rgba(255, 153, 0, 0.3) !important;
+    }
+    
+    /* Tab panel padding */
     .stTabs [data-baseweb="tab-panel"] {
         padding-top: 1rem;
     }
