@@ -595,102 +595,8 @@ st.markdown("""
     [data-testid="stTooltipIcon"] {
         color: #FF9900;
     }
-    
-    /* ⭐ ULTRA-AGGRESSIVE TAB FIX - JavaScript + CSS Combo */
-    
-    /* Nuclear option 1: Force ALL tabs to white */
-    .stTabs button,
-    .stTabs button *,
-    .stTabs [data-baseweb="tab-list"] button,
-    .stTabs [data-baseweb="tab-list"] button *,
-    div[data-baseweb="tab-list"] button,
-    div[data-baseweb="tab-list"] button *,
-    button[role="tab"],
-    button[role="tab"] * {
-        color: #FFFFFF !important;
-        font-weight: 600 !important;
-    }
-    
-    /* Active tab - orange */
-    .stTabs [aria-selected="true"],
-    .stTabs [aria-selected="true"] *,
-    .stTabs button[aria-selected="true"],
-    .stTabs button[aria-selected="true"] *,
-    button[role="tab"][aria-selected="true"],
-    button[role="tab"][aria-selected="true"] * {
-        color: #FF9900 !important;
-        font-weight: bold !important;
-    }
-    
-    /* Hover */
-    .stTabs button:hover,
-    .stTabs button:hover *,
-    button[role="tab"]:hover,
-    button[role="tab"]:hover * {
-        color: #FFB84D !important;
-    }
-    
-    /* Tab panel */
-    .stTabs [data-baseweb="tab-panel"] {
-        padding-top: 1rem;
-    }
 
 </style>
-
-<script>
-// JavaScript to force tab text color on load and DOM changes
-(function() {
-    function forceTabColors() {
-        // Find all tab buttons
-        const tabs = document.querySelectorAll('[data-baseweb="tab-list"] button, button[role="tab"], .stTabs button');
-        
-        tabs.forEach(tab => {
-            // Force white color on all elements
-            tab.style.color = '#FFFFFF';
-            tab.style.setProperty('color', '#FFFFFF', 'important');
-            
-            // Also force on all children
-            const children = tab.querySelectorAll('*');
-            children.forEach(child => {
-                child.style.color = '#FFFFFF';
-                child.style.setProperty('color', '#FFFFFF', 'important');
-            });
-            
-            // If it's the active tab, make it orange
-            if (tab.getAttribute('aria-selected') === 'true') {
-                tab.style.color = '#FF9900';
-                tab.style.setProperty('color', '#FF9900', 'important');
-                children.forEach(child => {
-                    child.style.color = '#FF9900';
-                    child.style.setProperty('color', '#FF9900', 'important');
-                });
-            }
-        });
-    }
-    
-    // Run immediately
-    forceTabColors();
-    
-    // Run after a short delay
-    setTimeout(forceTabColors, 100);
-    setTimeout(forceTabColors, 500);
-    setTimeout(forceTabColors, 1000);
-    
-    // Run on DOM changes
-    const observer = new MutationObserver(forceTabColors);
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['aria-selected']
-    });
-    
-    // Run on clicks
-    document.addEventListener('click', () => {
-        setTimeout(forceTabColors, 50);
-    });
-})();
-</script>
 
 """, unsafe_allow_html=True)
 
@@ -6800,55 +6706,6 @@ def main():
             return
     
     initialize_session_state()
-    
-    # ⭐ FORCE TAB TEXT VISIBILITY - Multiple injection methods
-    try:
-        import streamlit.components.v1 as components
-        components.html("""
-        <script>
-        (function() {
-            const style = document.createElement('style');
-            style.textContent = `
-                .stTabs button, .stTabs button *, button[role="tab"], button[role="tab"] * {
-                    color: #FFFFFF !important;
-                    font-weight: 600 !important;
-                }
-                .stTabs button[aria-selected="true"], .stTabs button[aria-selected="true"] * {
-                    color: #FF9900 !important;
-                    font-weight: bold !important;
-                }
-                .stTabs button:hover, .stTabs button:hover * {
-                    color: #FFB84D !important;
-                }
-            `;
-            document.head.appendChild(style);
-            
-            function forceColors() {
-                document.querySelectorAll('[data-baseweb="tab-list"] button, button[role="tab"]').forEach(btn => {
-                    btn.style.color = '#FFFFFF';
-                    btn.style.fontWeight = '600';
-                    btn.querySelectorAll('*').forEach(el => {
-                        el.style.color = '#FFFFFF';
-                        el.style.fontWeight = '600';
-                    });
-                    if (btn.getAttribute('aria-selected') === 'true') {
-                        btn.style.color = '#FF9900';
-                        btn.style.fontWeight = 'bold';
-                        btn.querySelectorAll('*').forEach(el => {
-                            el.style.color = '#FF9900';
-                            el.style.fontWeight = 'bold';
-                        });
-                    }
-                });
-            }
-            forceColors();
-            setInterval(forceColors, 100);
-            document.addEventListener('click', () => setTimeout(forceColors, 10));
-        })();
-        </script>
-        """, height=0)
-    except:
-        pass  # If components not available, CSS in header will still work
     
     # Render sidebar
     render_sidebar()
