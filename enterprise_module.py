@@ -1599,7 +1599,12 @@ def render_enhanced_cfo_dashboard():
         st.caption("Of total energy consumption")
     
     with col4:
-        carbon_per_dollar = data['carbon_footprint'] / (data['monthly_spend']/1000000)
+        # Safe division - avoid divide by zero
+        if data['monthly_spend'] > 0:
+            carbon_per_dollar = data['carbon_footprint'] / (data['monthly_spend']/1000000)
+        else:
+            carbon_per_dollar = 0
+        
         st.metric(
             "Carbon Efficiency",
             f"{carbon_per_dollar:.1f} kg/$K",
@@ -1653,13 +1658,37 @@ def render_enhanced_cfo_dashboard():
     # ========================================================================
     st.markdown("### 📋 Executive Summary")
     
+    # Calculate savings percentage safely
+    if data['monthly_spend'] > 0:
+        savings_pct_summary = (data['savings_realized']/data['monthly_spend']*100)
+    else:
+        savings_pct_summary = 0
+    
+    # Build recommendations based on available data
+    recommendations = [
+        "1. Implement quick-win optimizations → $270K/month savings",
+        f"2. Address critical security findings → Protect ${data['security_findings']['cost_at_risk']/1000:.0f}K at risk"
+    ]
+    
+    # Add anomaly recommendation if anomalies exist
+    if data['anomalies'] and len(data['anomalies']) > 0:
+        recommendations.append(f"3. Review {data['anomalies'][0]['department']} department's {data['anomalies'][0]['service']} spike")
+    
+    # Add dormant accounts recommendation
+    dormant_count = int(data['accounts_managed'] * 0.13)
+    if dormant_count > 0 and data['cost_per_account'] > 0:
+        dormant_savings = int(dormant_count * data['cost_per_account']/1000)
+        recommendations.append(f"4. Close {dormant_count} dormant accounts → ~${dormant_savings}K/month")
+    
+    recommendations_text = "\n        ".join(recommendations)
+    
     st.markdown(f"""
     <div style='background: #f8f9fa; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #667eea;'>
         <h4 style='margin-top: 0; color: #333;'>Financial Health: <span style='color: #4ECDC4;'>Strong</span></h4>
         
         **Key Highlights:**
         - Monthly spend: ${data['monthly_spend']/1000000:.1f}M (within budget at {data['budget_utilization']:.1f}% utilization)
-        - YTD savings: ${data['savings_realized']/1000:.0f}K ({(data['savings_realized']/data['monthly_spend']*100):.1f}% of spend)
+        - YTD savings: ${data['savings_realized']/1000:.0f}K ({savings_pct_summary:.1f}% of spend)
         - Optimization potential: ${data['savings_potential']/1000:.0f}K/month identified
         - ROI on cloud investments: {data['roi']}%
         
@@ -1669,10 +1698,7 @@ def render_enhanced_cfo_dashboard():
         - {len(data['anomalies'])} cost anomalies detected requiring attention
         
         **Recommendations:**
-        1. Implement quick-win optimizations → $270K/month savings
-        2. Address critical security findings → Protect ${data['security_findings']['cost_at_risk']/1000:.0f}K at risk
-        3. Review {data['anomalies'][0]['department']} department's {data['anomalies'][0]['service']} spike
-        4. Close {int(data['accounts_managed'] * 0.13)} dormant accounts → ~${int(data['accounts_managed'] * 0.13 * data['cost_per_account']/1000)}K/month
+        {recommendations_text}
     </div>
     """, unsafe_allow_html=True)
     
