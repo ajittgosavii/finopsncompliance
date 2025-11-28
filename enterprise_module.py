@@ -1928,6 +1928,10 @@ def render_realtime_costs():
         st.session_state.enterprise_page = None
         st.rerun()
     
+    # CRITICAL: Reinitialize cost_monitor to pick up mode changes
+    # This ensures the monitor uses the current demo_mode setting
+    st.session_state.cost_monitor = RealTimeCostMonitor()
+    
     # Check mode
     is_demo = st.session_state.get('demo_mode', False)
     
