@@ -1984,7 +1984,7 @@ def render_enhanced_scp_violations():
     """Render detailed SCP violations with AI remediation"""
     st.markdown("### 🔒 Service Control Policy Violations")
     
-    scps = fetch_scp_policies(st.session_state.get('aws_clients', {}).get('organizations'))
+    scps = fetch_scp_policies((st.session_state.get('aws_clients') or {}).get('organizations'))
     
     # Summary metrics
     total_violations = sum(scp.get('Violations', 0) for scp in scps)
@@ -3179,7 +3179,7 @@ def render_overall_score_card(score: float, sec_hub_data: Dict = None):
         if st.session_state.get('aws_connected'):
             # Get actual account count
             try:
-                orgs_client = st.session_state.get('aws_clients', {}).get('organizations')
+                orgs_client = (st.session_state.get('aws_clients') or {}).get('organizations')
                 if orgs_client:
                     accounts = get_account_list(orgs_client)
                     active_count = len([a for a in accounts if a.get('Status') == 'ACTIVE'])
@@ -5278,7 +5278,7 @@ def render_inspector_vulnerability_dashboard():
     st.markdown("## 🔬 AWS Inspector - OS Vulnerability Management")
     
     # Fetch Inspector data
-    inspector_data = fetch_inspector_findings(st.session_state.get('aws_clients', {}).get('inspector'))
+    inspector_data = fetch_inspector_findings((st.session_state.get('aws_clients') or {}).get('inspector'))
     
     # Debug mode - show raw data
     if st.session_state.get('debug_mode', False):
@@ -5660,10 +5660,10 @@ def render_inspector_vulnerability_dashboard():
 def render_overview_dashboard():
     """Render overview dashboard tab"""
     # Fetch data
-    sec_hub = fetch_security_hub_findings(st.session_state.get('aws_clients', {}).get('securityhub'))
-    config = fetch_config_compliance(st.session_state.get('aws_clients', {}).get('config'))
-    guardduty = fetch_guardduty_findings(st.session_state.get('aws_clients', {}).get('guardduty'))
-    inspector = fetch_inspector_findings(st.session_state.get('aws_clients', {}).get('inspector'))
+    sec_hub = fetch_security_hub_findings((st.session_state.get('aws_clients') or {}).get('securityhub'))
+    config = fetch_config_compliance((st.session_state.get('aws_clients') or {}).get('config'))
+    guardduty = fetch_guardduty_findings((st.session_state.get('aws_clients') or {}).get('guardduty'))
+    inspector = fetch_inspector_findings((st.session_state.get('aws_clients') or {}).get('inspector'))
     
     # Debug mode - show raw data
     if st.session_state.get('debug_mode', False):
@@ -6419,7 +6419,7 @@ def render_account_lifecycle_tab():
         col1, col2 = st.columns([2, 1])
         
         with col1:
-            accounts = get_account_list(st.session_state.get('aws_clients', {}).get('organizations'))
+            accounts = get_account_list((st.session_state.get('aws_clients') or {}).get('organizations'))
             account_options = {f"{acc['Name']} ({acc['Id']})": acc['Id'] for acc in accounts}
             
             selected_account = st.selectbox("Select Account to Offboard", list(account_options.keys()))
@@ -6466,7 +6466,7 @@ def render_account_lifecycle_tab():
     with lifecycle_tabs[2]:
         st.markdown("### 📊 Active AWS Accounts")
         
-        accounts = get_account_list(st.session_state.get('aws_clients', {}).get('organizations'))
+        accounts = get_account_list((st.session_state.get('aws_clients') or {}).get('organizations'))
         
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -6723,7 +6723,7 @@ def main():
     
     # Fetch Security Hub data
     sec_hub_data = fetch_security_hub_findings(
-        st.session_state.get('aws_clients', {}).get('securityhub')
+        (st.session_state.get('aws_clients') or {}).get('securityhub')
     )
     
     # Calculate and display overall score
