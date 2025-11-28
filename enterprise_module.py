@@ -1301,10 +1301,16 @@ def render_enhanced_cfo_dashboard():
     with col2:
         st.markdown("#### 🔮 Forecast")
         
+        # Safe calculation of forecast change percentage
+        if data['monthly_spend'] > 0:
+            forecast_change_pct = ((data['forecast_next_month']/data['monthly_spend']-1)*100)
+        else:
+            forecast_change_pct = 0
+        
         st.metric(
             "Next Month",
             f"${data['forecast_next_month']/1000000:.2f}M",
-            f"+{((data['forecast_next_month']/data['monthly_spend']-1)*100):.1f}%"
+            f"+{forecast_change_pct:.1f}%"
         )
         
         st.metric(
@@ -1477,21 +1483,33 @@ def render_enhanced_cfo_dashboard():
     # ROI comparison
     col1, col2 = st.columns(2)
     
+    # Calculate security ROI safely
+    if data['security_findings']['remediation_cost'] > 0:
+        security_roi = (data['security_findings']['cost_at_risk']/data['security_findings']['remediation_cost']*100-100)
+    else:
+        security_roi = 0
+    
     with col1:
         st.info(f"""
         **💡 Security ROI Analysis**
         - Investment: ${data['security_findings']['remediation_cost']:,}
         - Risk Reduction: ${data['security_findings']['cost_at_risk']:,}
-        - ROI: {(data['security_findings']['cost_at_risk']/data['security_findings']['remediation_cost']*100-100):.0f}%
+        - ROI: {security_roi:.0f}%
         - Payback Period: ~2.3 months
         """)
+    
+    # Calculate compliance risk mitigation safely
+    if data['compliance']['compliance_cost'] > 0:
+        risk_mitigation = (data['compliance']['potential_fines']/data['compliance']['compliance_cost'])
+    else:
+        risk_mitigation = 0
     
     with col2:
         st.info(f"""
         **📊 Compliance Investment**
         - Monthly Cost: ${data['compliance']['compliance_cost']:,}
         - Avoided Fines: ${data['compliance']['potential_fines']:,}
-        - Risk Mitigation: {(data['compliance']['potential_fines']/data['compliance']['compliance_cost']):.1f}x
+        - Risk Mitigation: {risk_mitigation:.1f}x
         - Score: {data['compliance']['overall_score']}%
         """)
     
