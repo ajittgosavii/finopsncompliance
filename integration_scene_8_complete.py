@@ -23,10 +23,19 @@ import time
 def render_enterprise_integration_scene():
     """
     Complete Enterprise Integration scene matching video script Scene 8
+    UPDATED: Now supports both Demo and Live modes
     """
     
+    # ⚠️ CRITICAL: Check demo_mode - default to False for LIVE mode
+    is_demo = st.session_state.get('demo_mode', False)
+    
     st.markdown("## 🔗 Enterprise Integration Hub")
-    st.markdown("*Connected ecosystem for seamless automation*")
+    
+    # Show mode indicator
+    if is_demo:
+        st.markdown("*Connected ecosystem for seamless automation* 🟠 **DEMO MODE**")
+    else:
+        st.markdown("*Connected ecosystem for seamless automation* 🟢 **LIVE MODE**")
     
     st.markdown("---")
     
@@ -41,27 +50,77 @@ def render_enterprise_integration_scene():
     # Integration grid showing all connected systems
     st.markdown("#### 🔌 Active Integrations")
     
+    # Define integration data with both demo and live stat keys
+    integration_data = {
+        "Jira": {"icon": "🎫", "category": "Project Management", "demo_stats": "2,847 tickets created", "color": "#0052CC"},
+        "Slack": {"icon": "💬", "category": "Team Communication", "demo_stats": "18,424 notifications sent", "color": "#4A154B"},
+        "ServiceNow": {"icon": "🎟️", "category": "ITSM Platform", "demo_stats": "1,234 incidents tracked", "color": "#62D84E"},
+        "Wiz.io": {"icon": "🛡️", "category": "Cloud Security", "demo_stats": "5,892 findings synced", "color": "#6B4FBB"},
+        "Snyk": {"icon": "🔒", "category": "DevSecOps", "demo_stats": "3,421 vulnerabilities tracked", "color": "#4C4A73"},
+        "GitHub": {"icon": "🐙", "category": "Source Control", "demo_stats": "847 repos monitored", "color": "#181717"},
+        "GitLab": {"icon": "🦊", "category": "DevOps Platform", "demo_stats": "524 pipelines integrated", "color": "#FC6D26"},
+        "PagerDuty": {"icon": "📟", "category": "Incident Response", "demo_stats": "342 alerts routed", "color": "#06AC38"}
+    }
+    
     col_int1, col_int2, col_int3, col_int4 = st.columns(4)
     
+    # Get integration status from session state (for live mode)
+    integrations = st.session_state.get('integrations', {})
+    
+    integration_names = list(integration_data.keys())
+    
     with col_int1:
-        render_integration_card("Jira", "🎫", "Project Management", "Connected", "2,847 tickets created", "#0052CC")
-        st.markdown("")
-        render_integration_card("Slack", "💬", "Team Communication", "Connected", "18,424 notifications sent", "#4A154B")
+        for name in ["Jira", "Slack"]:
+            info = integration_data[name]
+            if is_demo:
+                status = "Connected"
+                metric = info["demo_stats"]
+            else:
+                # Live mode - get from session state
+                config = integrations.get(name, {})
+                status = "Connected" if config.get('enabled', False) else "Disconnected"
+                metric = config.get('stats', "No data")
+            render_integration_card(name, info["icon"], info["category"], status, metric, info["color"])
+            st.markdown("")
     
     with col_int2:
-        render_integration_card("ServiceNow", "🎟️", "ITSM Platform", "Connected", "1,234 incidents tracked", "#62D84E")
-        st.markdown("")
-        render_integration_card("Wiz.io", "🛡️", "Cloud Security", "Connected", "5,892 findings synced", "#6B4FBB")
+        for name in ["ServiceNow", "Wiz.io"]:
+            info = integration_data[name]
+            if is_demo:
+                status = "Connected"
+                metric = info["demo_stats"]
+            else:
+                config = integrations.get(name, {})
+                status = "Connected" if config.get('enabled', False) else "Disconnected"
+                metric = config.get('stats', "No data")
+            render_integration_card(name, info["icon"], info["category"], status, metric, info["color"])
+            st.markdown("")
     
     with col_int3:
-        render_integration_card("Snyk", "🔒", "DevSecOps", "Connected", "3,421 vulnerabilities tracked", "#4C4A73")
-        st.markdown("")
-        render_integration_card("GitHub", "🐙", "Source Control", "Connected", "847 repos monitored", "#181717")
+        for name in ["Snyk", "GitHub"]:
+            info = integration_data[name]
+            if is_demo:
+                status = "Connected"
+                metric = info["demo_stats"]
+            else:
+                config = integrations.get(name, {})
+                status = "Connected" if config.get('enabled', False) else "Disconnected"
+                metric = config.get('stats', "No data")
+            render_integration_card(name, info["icon"], info["category"], status, metric, info["color"])
+            st.markdown("")
     
     with col_int4:
-        render_integration_card("GitLab", "🦊", "DevOps Platform", "Connected", "524 pipelines integrated", "#FC6D26")
-        st.markdown("")
-        render_integration_card("PagerDuty", "📟", "Incident Response", "Connected", "342 alerts routed", "#06AC38")
+        for name in ["GitLab", "PagerDuty"]:
+            info = integration_data[name]
+            if is_demo:
+                status = "Connected"
+                metric = info["demo_stats"]
+            else:
+                config = integrations.get(name, {})
+                status = "Connected" if config.get('enabled', False) else "Disconnected"
+                metric = config.get('stats', "No data")
+            render_integration_card(name, info["icon"], info["category"], status, metric, info["color"])
+            st.markdown("")
     
     st.markdown("---")
     
