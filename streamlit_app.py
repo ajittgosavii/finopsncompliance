@@ -8775,14 +8775,14 @@ def main():
         "🔍 KICS Scanning"
     ])
     
-    with guardrail_tabs[0]:
-        render_scp_policy_engine_scene()
-    
-    with guardrail_tabs[1]:
-        render_enhanced_opa_violations()
-    
-    with guardrail_tabs[2]:
-        render_enhanced_kics_findings()
+        with guardrail_tabs[0]:
+            render_scp_policy_engine_scene()
+        
+        with guardrail_tabs[1]:
+            render_opa_policies_tab_with_deployment()
+        
+        with guardrail_tabs[2]:
+            render_kics_scanning_tab_with_deployment()
     
     with tabs[4]:  # 🤖 AI Remediation tab
         st.markdown("## 🤖 AI-Powered Remediation")
