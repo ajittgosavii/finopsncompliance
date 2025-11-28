@@ -3970,91 +3970,100 @@ def render_service_status_grid():
         services = {}
         
         if st.session_state.get('aws_connected'):
-            # Security Hub
+            # Security Hub - Check if it has actual findings
             sec_hub_data = st.session_state.get('security_hub_data', {})
+            sec_hub_findings = sec_hub_data.get('total_findings', 0) if sec_hub_data else 0
             services['Security Hub'] = {
-                'status': 'active',
-                'accounts': st.session_state.get('sec_hub_accounts', 'All'),
-                'findings': sec_hub_data.get('total_findings', 0) if sec_hub_data else 0
+                'status': 'active' if sec_hub_findings > 0 else 'inactive',
+                'accounts': st.session_state.get('sec_hub_accounts', 'All') if sec_hub_findings > 0 else 'N/A',
+                'findings': sec_hub_findings
             }
             
-            # AWS Config
+            # AWS Config - Check if it has rules
             config_data = st.session_state.get('config_data', {})
+            config_rules = config_data.get('total_rules', 0) if config_data else 0
             services['AWS Config'] = {
-                'status': 'active',
-                'accounts': st.session_state.get('config_accounts', 'All'),
-                'rules': config_data.get('total_rules', 0) if config_data else 0
+                'status': 'active' if config_rules > 0 else 'inactive',
+                'accounts': st.session_state.get('config_accounts', 'All') if config_rules > 0 else 'N/A',
+                'rules': config_rules
             }
             
-            # GuardDuty
+            # GuardDuty - Check if it has threats
             guardduty_data = st.session_state.get('guardduty_data', {})
+            guardduty_threats = guardduty_data.get('total_findings', 0) if guardduty_data else 0
             services['GuardDuty'] = {
-                'status': 'active',
-                'accounts': st.session_state.get('guardduty_accounts', 'All'),
-                'threats': guardduty_data.get('active_threats', 0) if guardduty_data else 0
+                'status': 'active' if guardduty_threats > 0 else 'inactive',
+                'accounts': st.session_state.get('guardduty_accounts', 'All') if guardduty_threats > 0 else 'N/A',
+                'threats': guardduty_threats
             }
             
-            # Inspector
+            # Inspector - Check if it has findings
             inspector_data = st.session_state.get('inspector_data', {})
+            inspector_vulns = inspector_data.get('total_findings', 0) if inspector_data else 0
             services['Inspector'] = {
-                'status': 'active',
-                'accounts': st.session_state.get('inspector_accounts', 'All'),
-                'vulns': inspector_data.get('total_findings', 0) if inspector_data else 0
+                'status': 'active' if inspector_vulns > 0 else 'inactive',
+                'accounts': st.session_state.get('inspector_accounts', 'Active') if inspector_vulns > 0 else 'N/A',
+                'vulns': inspector_vulns
             }
             
-            # CloudTrail
+            # CloudTrail - Check if it has events
+            cloudtrail_events = st.session_state.get('cloudtrail_events', 'N/A')
+            has_cloudtrail = cloudtrail_events != 'N/A' and cloudtrail_events != 0
             services['CloudTrail'] = {
-                'status': 'active',
-                'accounts': 'All',
-                'events': st.session_state.get('cloudtrail_events', 'N/A')
+                'status': 'active' if has_cloudtrail else 'inactive',
+                'accounts': 'All' if has_cloudtrail else 'N/A',
+                'events': cloudtrail_events if has_cloudtrail else 0
             }
             
-            # Service Control Policies
+            # Service Control Policies - Check if has policies
             scp_data = st.session_state.get('scp_data', {})
+            scp_count = len(scp_data.get('policies', []))
             services['Service Control Policies'] = {
-                'status': 'active',
-                'policies': len(scp_data.get('policies', [])),
+                'status': 'active' if scp_count > 0 else 'inactive',
+                'policies': scp_count,
                 'violations': sum(p.get('Violations', 0) for p in scp_data.get('policies', []))
             }
             
-            # OPA Policies
+            # OPA Policies - Check if has policies
             opa_data = st.session_state.get('opa_data', {})
+            opa_count = len(opa_data.get('policies', []))
             services['OPA Policies'] = {
-                'status': 'active',
-                'policies': len(opa_data.get('policies', [])),
+                'status': 'active' if opa_count > 0 else 'inactive',
+                'policies': opa_count,
                 'violations': sum(p.get('Violations', 0) for p in opa_data.get('policies', []))
             }
             
-            # KICS Scanning
+            # KICS Scanning - Check if has scans
             kics_data = st.session_state.get('kics_data', {})
+            kics_scans = kics_data.get('total_scans', 0)
             services['KICS Scanning'] = {
-                'status': 'active',
-                'scans': kics_data.get('total_scans', 0),
+                'status': 'active' if kics_scans > 0 else 'inactive',
+                'scans': kics_scans,
                 'issues': kics_data.get('total_issues', 0)
             }
             
-            # Cost Explorer (FinOps)
+            # Cost Explorer (FinOps) - Use service_status
             ce_status = st.session_state.service_status.get('Cost Explorer', 'inactive')
             services['Cost Explorer'] = {
                 'status': ce_status.lower() if isinstance(ce_status, str) else 'inactive',
-                'region': 'us-east-1',
-                'enabled': ce_status == 'Active'
+                'region': 'us-east-1' if ce_status.lower() == 'active' else 'N/A',
+                'enabled': ce_status == 'active'
             }
             
-            # Cost Anomaly Detection (FinOps)
+            # Cost Anomaly Detection (FinOps) - Use service_status
             anomaly_status = st.session_state.service_status.get('Cost Anomaly Detection', 'inactive')
             services['Cost Anomaly Detection'] = {
                 'status': anomaly_status.lower() if isinstance(anomaly_status, str) else 'inactive',
-                'monitors': st.session_state.get('anomaly_monitors', 0),
-                'anomalies': st.session_state.get('recent_anomalies', 0)
+                'monitors': st.session_state.get('anomaly_monitors', 0) if anomaly_status.lower() == 'active' else 0,
+                'anomalies': st.session_state.get('recent_anomalies', 0) if anomaly_status.lower() == 'active' else 0
             }
             
-            # Compute Optimizer (FinOps)
+            # Compute Optimizer (FinOps) - Use service_status
             optimizer_status = st.session_state.service_status.get('Compute Optimizer', 'inactive')
             services['Compute Optimizer'] = {
                 'status': optimizer_status.lower() if isinstance(optimizer_status, str) else 'inactive',
-                'recommendations': st.session_state.get('optimization_count', 0),
-                'savings': f"${st.session_state.get('potential_savings', 0):.0f}"
+                'recommendations': st.session_state.get('optimization_count', 0) if optimizer_status.lower() == 'active' else 0,
+                'savings': f"${st.session_state.get('potential_savings', 0):.0f}" if optimizer_status.lower() == 'active' else '$0'
             }
         else:
             # Not connected - show inactive
