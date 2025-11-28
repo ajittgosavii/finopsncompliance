@@ -1544,27 +1544,59 @@ def render_enhanced_cfo_dashboard():
         
         st.dataframe(pd.DataFrame(opt_display), use_container_width=True, hide_index=True)
         
-        # Quick wins
+        # Quick wins vs Strategic initiatives (Dynamic from data)
         col1, col2 = st.columns(2)
         
+        # Categorize optimizations by effort level
+        quick_wins = [opt for opt in data['optimizations'] if opt.get('effort') == 'Low']
+        strategic = [opt for opt in data['optimizations'] if opt.get('effort') in ['Medium', 'High']]
+        
         with col1:
-            st.success("""
+            # Build quick wins text dynamically
+            if quick_wins:
+                quick_text = "\n            ".join([
+                    f"- {opt['category']}: {opt['resource_count']} resources → ${opt['potential_savings']/1000:.0f}K/mo"
+                    for opt in quick_wins
+                ])
+                total_quick = sum(opt['potential_savings'] for opt in quick_wins)
+                
+                st.success(f"""
             **🎯 Quick Wins (This Month)**
-            - Right-size 234 over-provisioned instances → $185K/mo
-            - Delete 567 old snapshots → $23K/mo  
-            - Stop 123 idle resources → $62K/mo
+            {quick_text}
             
-            **Total Quick Wins: $270K/month savings**
+            **Total Quick Wins: ${total_quick/1000:.0f}K/month savings**
+            """)
+            else:
+                st.info("""
+            **🎯 Quick Wins (This Month)**
+            
+            No low-effort optimizations identified at this time.
+            
+            Check back after enabling AWS Compute Optimizer.
             """)
         
         with col2:
-            st.warning("""
+            # Build strategic initiatives text dynamically
+            if strategic:
+                strategic_text = "\n            ".join([
+                    f"- {opt['category']}: {opt['resource_count']} resources → ${opt['potential_savings']/1000:.0f}K/mo"
+                    for opt in strategic
+                ])
+                total_strategic = sum(opt['potential_savings'] for opt in strategic)
+                
+                st.warning(f"""
             **📅 Strategic Initiatives (This Quarter)**
-            - Purchase Reserved Instances → $125K/mo
-            - Implement S3 lifecycle policies → $78K/mo
-            - Migrate to Graviton instances → $95K/mo
+            {strategic_text}
             
-            **Total Strategic: $298K/month savings**
+            **Total Strategic: ${total_strategic/1000:.0f}K/month savings**
+            """)
+            else:
+                st.info("""
+            **📅 Strategic Initiatives (This Quarter)**
+            
+            No medium/high-effort optimizations identified at this time.
+            
+            Check back after enabling AWS Compute Optimizer.
             """)
         
         st.markdown("---")
