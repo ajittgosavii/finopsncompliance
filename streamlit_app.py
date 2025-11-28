@@ -595,6 +595,28 @@ st.markdown("""
     [data-testid="stTooltipIcon"] {
         color: #FF9900;
     }
+    
+    /* ⭐ FIX: Make tab text white/visible on dark backgrounds */
+    .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
+        color: white !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Active tab - brighter */
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] [data-testid="stMarkdownContainer"] p {
+        color: #FF9900 !important;
+        font-weight: bold !important;
+    }
+    
+    /* Tab hover effect */
+    .stTabs [data-baseweb="tab-list"] button:hover [data-testid="stMarkdownContainer"] p {
+        color: #FFB84D !important;
+    }
+    
+    /* Make sure tab panels have good contrast too */
+    .stTabs [data-baseweb="tab-panel"] {
+        padding-top: 1rem;
+    }
 
 </style>
 """, unsafe_allow_html=True)
