@@ -1097,6 +1097,15 @@ def initialize_session_state():
         'kics_results': [],
         'tech_guardrails': {},
         
+        # OPA Deployment
+        'selected_opa_policy_name': None,
+        'selected_opa_policy_id': None,
+        'selected_opa_policy_rego': None,
+        
+        # KICS Deployment
+        'selected_kics_profile': None,
+        'selected_kics_config': None,
+        
         # AI & Remediation
         'ai_analysis_cache': {},
         'ai_insights': [],
@@ -2671,6 +2680,719 @@ def fetch_kics_results() -> Dict[str, Any]:
 
 # Insert after the existing fetch_scp_policies, fetch_opa_policies, fetch_kics_results functions
 
+# ============================================================================
+# OPA AND KICS DEPLOYMENT FUNCTIONS
+# Insert these after fetch_kics_results() function (around line 2682)
+# ============================================================================
+
+def render_opa_policies_tab_with_deployment():
+    """OPA Policies tab with violations AND deployment capabilities"""
+    
+    # Create sub-tabs for OPA
+    opa_tabs = st.tabs([
+        "📊 Violations",
+        "📚 Policy Library",
+        "🚀 Deploy"
+    ])
+    
+    with opa_tabs[0]:
+        # EXISTING VIOLATIONS VIEW - Keep your current code
+        render_opa_violations_view()
+    
+    with opa_tabs[1]:
+        # NEW: Policy Library
+        render_opa_policy_library()
+    
+    with opa_tabs[2]:
+        # NEW: Deployment Interface
+        render_opa_deployment_interface()
+
+
+def render_opa_violations_view():
+    """Render OPA violations - existing functionality"""
+    st.markdown("### 🎯 Open Policy Agent (OPA) Policy Violations")
+    
+    opa_policies = fetch_opa_policies()
+    
+    # Summary metrics
+    total_violations = sum(policy['Violations'] for policy in opa_policies)
+    total_policies = len(opa_policies)
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Policies", total_policies)
+    with col2:
+        st.metric("Active Policies", len([p for p in opa_policies if p['Status'] == 'ACTIVE']))
+    with col3:
+        st.metric("Total Violations", total_violations, delta="-7 today" if total_violations > 0 else None, delta_color="inverse")
+    with col4:
+        st.metric("Policy Coverage", "K8s, Terraform, API GW, Docker")
+    
+    st.markdown("---")
+    
+    # Display each policy
+    for policy in opa_policies:
+        status_icon = "✅" if policy['Violations'] == 0 else "⚠️"
+        
+        st.markdown(f"""
+        <div class='policy-card' style='border-left: 5px solid {"#4CAF50" if policy["Violations"] == 0 else "#FF9900"}'>
+            <h4>{status_icon} {policy['PolicyName']}</h4>
+            <p>{policy['Description']}</p>
+            <p><strong>Type:</strong> {policy['Type']} | 
+               <strong>Status:</strong> {policy['Status']} | 
+               <strong>Violations:</strong> {policy['Violations']} |
+               <small>Last Evaluated: {policy['LastEvaluated'][:19]}</small></p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Show violations if any (keep existing violation display logic)
+        if policy['Violations'] > 0 and policy.get('ViolationDetails'):
+            with st.expander(f"🚨 View {policy['Violations']} Violations"):
+                for violation in policy['ViolationDetails'][:3]:  # Show first 3
+                    st.markdown(f"**{violation.get('Resource', 'N/A')}:** {violation.get('Issue', 'N/A')}")
+
+
+def render_opa_policy_library():
+    """OPA policy library for selection and deployment"""
+    st.markdown("### 📚 OPA Policy Library")
+    
+    st.info("Select a policy to deploy from the library")
+    
+    # Define policy library
+    OPA_POLICY_LIBRARY = {
+        'require-resource-tags': {
+            'name': 'Require Resource Tags',
+            'description': 'Enforce mandatory tags on all AWS resources (Environment, Owner, CostCenter)',
+            'severity': 'Medium',
+            'category': 'Governance',
+            'rego': '''package aws.tags
+
+deny[msg] {
+    input.resource.type == "aws_s3_bucket"
+    not input.resource.tags.Environment
+    msg := "S3 buckets must have Environment tag"
+}
+
+deny[msg] {
+    input.resource.type == "aws_s3_bucket"
+    not input.resource.tags.Owner
+    msg := "S3 buckets must have Owner tag"
+}
+
+deny[msg] {
+    input.resource.type == "aws_ec2_instance"
+    not input.resource.tags.CostCenter
+    msg := "EC2 instances must have CostCenter tag"
+}'''
+        },
+        'prevent-privileged-containers': {
+            'name': 'Prevent Privileged Containers',
+            'description': 'Block Kubernetes pods running with privileged security context',
+            'severity': 'High',
+            'category': 'Security',
+            'rego': '''package kubernetes.security
+
+deny[msg] {
+    input.kind == "Pod"
+    input.spec.containers[_].securityContext.privileged == true
+    msg := "Containers cannot run in privileged mode"
+}
+
+deny[msg] {
+    input.kind == "Deployment"
+    input.spec.template.spec.containers[_].securityContext.privileged == true
+    msg := "Deployment containers cannot run in privileged mode"
+}'''
+        },
+        'enforce-naming-convention': {
+            'name': 'Enforce Naming Convention',
+            'description': 'Enforce standard naming patterns for resources (format: name-environment)',
+            'severity': 'Low',
+            'category': 'Standards',
+            'rego': '''package aws.naming
+
+deny[msg] {
+    input.resource.type == "aws_s3_bucket"
+    not re_match("^[a-z0-9-]+-(dev|staging|prod)$", input.resource.name)
+    msg := "S3 bucket names must follow pattern: name-(dev|staging|prod)"
+}
+
+deny[msg] {
+    input.resource.type == "aws_lambda_function"
+    not re_match("^[a-z0-9-]+-(dev|staging|prod)$", input.resource.name)
+    msg := "Lambda function names must follow pattern: name-(dev|staging|prod)"
+}'''
+        },
+        'require-encryption': {
+            'name': 'Require Encryption at Rest',
+            'description': 'Enforce encryption for storage resources (S3, EBS, RDS)',
+            'severity': 'Critical',
+            'category': 'Security',
+            'rego': '''package aws.encryption
+
+deny[msg] {
+    input.resource.type == "aws_s3_bucket"
+    not input.resource.config.server_side_encryption
+    msg := "S3 buckets must have server-side encryption enabled"
+}
+
+deny[msg] {
+    input.resource.type == "aws_rds_instance"
+    not input.resource.config.storage_encrypted
+    msg := "RDS instances must have storage encryption enabled"
+}
+
+deny[msg] {
+    input.resource.type == "aws_ebs_volume"
+    not input.resource.config.encrypted
+    msg := "EBS volumes must be encrypted"
+}'''
+        }
+    }
+    
+    # Display policies
+    for policy_id, policy in OPA_POLICY_LIBRARY.items():
+        severity_color = {
+            'Critical': '#ff4444',
+            'High': '#FF9900',
+            'Medium': '#ffbb33',
+            'Low': '#00C851'
+        }.get(policy['severity'], '#gray')
+        
+        with st.expander(f"📋 {policy['name']} [{policy['severity']}]"):
+            col1, col2 = st.columns([3, 1])
+            
+            with col1:
+                st.markdown(f"**Category:** {policy['category']}")
+                st.markdown(f"**Severity:** <span style='color: {severity_color}; font-weight: bold;'>{policy['severity']}</span>", unsafe_allow_html=True)
+                st.markdown(f"**Description:** {policy['description']}")
+                
+                with st.expander("👁️ View Policy Code"):
+                    st.code(policy['rego'], language='python')
+            
+            with col2:
+                st.markdown("**Actions:**")
+                if st.button("✅ Select", key=f"select_opa_{policy_id}", use_container_width=True, type="primary"):
+                    st.session_state.selected_opa_policy_name = policy['name']
+                    st.session_state.selected_opa_policy_id = policy_id
+                    st.session_state.selected_opa_policy_rego = policy['rego']
+                    st.session_state.selected_opa_policy_description = policy['description']
+                    st.success(f"✅ Selected: {policy['name']}")
+                    st.rerun()
+
+
+def render_opa_deployment_interface():
+    """OPA deployment interface"""
+    st.markdown("### 🚀 Deploy OPA Policy")
+    
+    # Check if policy selected
+    if not st.session_state.get('selected_opa_policy_name'):
+        st.info("👈 Please select a policy from the Policy Library tab first")
+        return
+    
+    # Show selected policy
+    st.success(f"**Selected Policy:** {st.session_state.selected_opa_policy_name}")
+    st.markdown(f"*{st.session_state.get('selected_opa_policy_description', '')}*")
+    
+    st.markdown("---")
+    
+    # Deployment targets
+    st.markdown("**Deployment Targets:**")
+    
+    targets = st.multiselect(
+        "Select where to deploy this policy",
+        [
+            "Lambda Authorizer (API Gateway)",
+            "S3 Storage (Centralized Policies)",
+            "OPA Server (REST API)",
+            "Parameter Store (Encrypted Storage)"
+        ],
+        default=["S3 Storage (Centralized Policies)"],
+        key="opa_deploy_targets",
+        help="Choose one or more deployment destinations"
+    )
+    
+    # Configuration based on targets
+    show_aws_config = any(t in targets for t in ["Lambda Authorizer (API Gateway)", "S3 Storage (Centralized Policies)", "Parameter Store (Encrypted Storage)"])
+    
+    if show_aws_config:
+        st.markdown("**AWS Configuration:**")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            regions = st.multiselect(
+                "Deployment Regions",
+                ["us-east-1", "us-east-2", "us-west-1", "us-west-2", "eu-west-1", "eu-central-1", "ap-southeast-1"],
+                default=["us-east-1"],
+                key="opa_regions"
+            )
+        
+        with col2:
+            if "S3 Storage (Centralized Policies)" in targets:
+                bucket = st.text_input("S3 Bucket Name", "opa-policies-bucket", key="opa_bucket")
+    
+    if "OPA Server (REST API)" in targets:
+        st.markdown("**OPA Server Configuration:**")
+        endpoints = st.text_area(
+            "OPA Server Endpoints (one per line)",
+            "http://opa-server-1:8181\nhttp://opa-server-2:8181",
+            key="opa_endpoints",
+            help="Enter your OPA server REST API endpoints"
+        )
+    
+    # Deployment button
+    st.markdown("---")
+    
+    deploy_disabled = len(targets) == 0
+    
+    if deploy_disabled:
+        st.warning("⚠️ Please select at least one deployment target")
+    
+    if st.button(
+        "🚀 Deploy OPA Policy", 
+        type="primary", 
+        use_container_width=True, 
+        key="deploy_opa_button",
+        disabled=deploy_disabled
+    ):
+        handle_opa_deployment(targets, st.session_state.selected_opa_policy_name)
+
+
+def handle_opa_deployment(targets, policy_name):
+    """Handle OPA policy deployment"""
+    is_demo = st.session_state.get('demo_mode', False)
+    
+    if is_demo:
+        # DEMO MODE
+        with st.spinner("Deploying OPA policy..."):
+            import time
+            time.sleep(2)
+        
+        deployment_id = f"opa-demo-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        
+        st.success(f"""
+        ✅ **Policy Deployed Successfully! (Demo Mode)**
+        
+        **Policy Details:**
+        - **Name:** {policy_name}
+        - **Deployment ID:** {deployment_id}
+        - **Targets:** {len(targets)}
+        - **Timestamp:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        
+        **Deployed To:**
+        """)
+        
+        # Show per-target results
+        for idx, target in enumerate(targets, 1):
+            clean_target = target.split('(')[0].strip()
+            st.info(f"**{idx}.** ✅ {clean_target}")
+        
+        st.markdown("---")
+        st.warning("⚠️ **Note:** This was a simulated deployment. Toggle to LIVE mode in the sidebar for actual AWS deployment.")
+        
+    else:
+        # LIVE MODE
+        st.info("📝 **LIVE Mode Deployment**")
+        st.markdown("Ready to deploy to real AWS infrastructure!")
+        
+        with st.expander("🔧 Deployment Configuration"):
+            st.json({
+                'policy_name': policy_name,
+                'policy_id': st.session_state.get('selected_opa_policy_id'),
+                'targets': targets,
+                'regions': st.session_state.get('opa_regions', ['us-east-1']),
+                'bucket': st.session_state.get('opa_bucket'),
+                'mode': 'LIVE',
+                'timestamp': datetime.now().isoformat()
+            })
+        
+        st.info("""
+        **Next Steps for LIVE Deployment:**
+        1. Integrate with `opa_deployment.py` module
+        2. Call `deploy_opa_policy()` function
+        3. Handle AWS API responses
+        4. Show deployment results
+        """)
+
+
+# ============================================================================
+# KICS DEPLOYMENT FUNCTIONS
+# ============================================================================
+
+def render_kics_scanning_tab_with_deployment():
+    """KICS Scanning tab with results AND deployment capabilities"""
+    
+    # Create sub-tabs for KICS
+    kics_tabs = st.tabs([
+        "📊 Scan Results",
+        "⚙️ Configuration",
+        "🚀 Deploy"
+    ])
+    
+    with kics_tabs[0]:
+        # EXISTING SCAN RESULTS VIEW - Keep your current code
+        render_kics_results_view()
+    
+    with kics_tabs[1]:
+        # NEW: Scan Configuration
+        render_kics_configuration()
+    
+    with kics_tabs[2]:
+        # NEW: Deployment Interface
+        render_kics_deployment_interface()
+
+
+def render_kics_results_view():
+    """Render KICS scan results - existing functionality"""
+    st.markdown("### 🔍 KICS - Infrastructure as Code Security")
+    
+    kics_data = fetch_kics_results()
+    
+    # Summary metrics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Scans", kics_data['total_scans'])
+    with col2:
+        st.metric("Files Scanned", kics_data['files_scanned'])
+    with col3:
+        st.metric("Total Issues", kics_data['total_issues'], delta="-8 this week", delta_color="inverse")
+    with col4:
+        st.metric("Scan Duration", kics_data['scan_duration'])
+    
+    # Severity breakdown
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Critical", kics_data['critical'], delta_color="inverse")
+    with col2:
+        st.metric("High", kics_data['high'], delta_color="inverse")
+    with col3:
+        st.metric("Medium", kics_data['medium'])
+    with col4:
+        st.metric("Low", kics_data['low'])
+    
+    st.markdown("---")
+    
+    # Detailed findings
+    st.markdown("#### 🚨 Detailed Security Findings")
+    
+    # Filter by severity
+    severity_filter = st.multiselect(
+        "Filter by Severity",
+        ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
+        default=["CRITICAL", "HIGH"],
+        key="kics_severity_filter"
+    )
+    
+    findings = [f for f in kics_data.get('detailed_findings', []) if f['severity'] in severity_filter]
+    
+    if len(findings) > 0:
+        st.info(f"Showing {len(findings)} findings (filtered by {', '.join(severity_filter)})")
+        
+        # Show first 5 findings
+        for finding in findings[:5]:
+            with st.expander(f"🚨 [{finding['severity']}] {finding['id']}: {finding['title']}"):
+                st.markdown(f"**File:** `{finding['file_path']}`")
+                st.markdown(f"**Issue:** {finding['description']}")
+                st.markdown(f"**Remediation:** {finding['remediation']}")
+    else:
+        st.success("✅ No security issues found in selected severity levels!")
+
+
+def render_kics_configuration():
+    """KICS scan configuration profiles"""
+    st.markdown("### ⚙️ Scan Configuration Profiles")
+    
+    st.info("Select a pre-configured scan profile or create a custom one")
+    
+    # Scan profiles
+    KICS_PROFILES = {
+        'terraform-aws': {
+            'name': 'Terraform + AWS Infrastructure',
+            'description': 'Scan Terraform and CloudFormation files for AWS misconfigurations',
+            'paths': ['./terraform', './cloudformation', './modules'],
+            'types': ['Terraform', 'CloudFormation', 'Ansible'],
+            'fail_on': 'high',
+            'icon': '🏗️'
+        },
+        'kubernetes': {
+            'name': 'Kubernetes Manifests',
+            'description': 'Scan Kubernetes YAML files and Helm charts for security issues',
+            'paths': ['./k8s', './kubernetes', './helm', './manifests'],
+            'types': ['Kubernetes', 'Helm'],
+            'fail_on': 'medium',
+            'icon': '☸️'
+        },
+        'docker': {
+            'name': 'Docker & Containers',
+            'description': 'Scan Dockerfiles and docker-compose files for container security',
+            'paths': ['./docker', './Dockerfile', './**/Dockerfile'],
+            'types': ['Docker', 'DockerCompose'],
+            'fail_on': 'high',
+            'icon': '🐳'
+        },
+        'multi-cloud': {
+            'name': 'Multi-Cloud Infrastructure',
+            'description': 'Comprehensive scan across AWS, Azure, GCP, and Alibaba Cloud',
+            'paths': ['./infrastructure', './iac', './terraform'],
+            'types': ['Terraform', 'CloudFormation', 'AzureResourceManager', 'GoogleDeploymentManager'],
+            'fail_on': 'high',
+            'icon': '☁️'
+        }
+    }
+    
+    # Display profiles
+    for profile_id, profile in KICS_PROFILES.items():
+        with st.expander(f"{profile['icon']} {profile['name']}"):
+            col1, col2 = st.columns([3, 1])
+            
+            with col1:
+                st.markdown(f"**Description:** {profile['description']}")
+                st.markdown(f"**Scan Paths:** {', '.join(profile['paths'])}")
+                st.markdown(f"**File Types:** {', '.join(profile['types'])}")
+                st.markdown(f"**Fail Build On:** `{profile['fail_on']}` severity or higher")
+            
+            with col2:
+                st.markdown("**Actions:**")
+                if st.button("✅ Select", key=f"select_kics_{profile_id}", use_container_width=True, type="primary"):
+                    st.session_state.selected_kics_profile = profile_id
+                    st.session_state.selected_kics_config = profile
+                    st.success(f"✅ Selected!")
+                    st.rerun()
+
+
+def render_kics_deployment_interface():
+    """KICS deployment interface"""
+    st.markdown("### 🚀 Deploy KICS Scanning Infrastructure")
+    
+    # Scan configuration
+    st.markdown("**Scan Configuration:**")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        scan_name = st.text_input(
+            "Scan Configuration Name",
+            value=st.session_state.get('selected_kics_profile', 'production-scan'),
+            key="kics_scan_name",
+            help="Unique identifier for this scan configuration"
+        )
+        
+        repo_url = st.text_input(
+            "Repository URL",
+            "https://github.com/company/terraform-infrastructure",
+            key="kics_repo_url",
+            help="Git repository to scan"
+        )
+    
+    with col2:
+        scan_paths = st.text_input(
+            "Scan Paths (comma-separated)",
+            "./terraform, ./cloudformation",
+            key="kics_scan_paths",
+            help="Directories to scan in the repository"
+        )
+        
+        fail_on = st.selectbox(
+            "Fail Build On",
+            ["critical", "high", "medium", "low", "info"],
+            index=1,  # Default to 'high'
+            key="kics_fail_on",
+            help="Severity level that will fail the build/scan"
+        )
+    
+    # Deployment targets
+    st.markdown("**Deployment Targets:**")
+    
+    targets = st.multiselect(
+        "Select where to deploy KICS scanning",
+        [
+            "GitHub Action (CI/CD Workflow)",
+            "Lambda Scanner (Serverless)",
+            "CodePipeline (AWS Native CI/CD)",
+            "Scheduled Scan (EventBridge)"
+        ],
+        default=["GitHub Action (CI/CD Workflow)"],
+        key="kics_deploy_targets",
+        help="Choose one or more deployment targets for running KICS scans"
+    )
+    
+    # GitHub Action configuration
+    if "GitHub Action (CI/CD Workflow)" in targets:
+        st.markdown("**GitHub Action Configuration:**")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            branches = st.text_input(
+                "Monitor Branches",
+                "main, develop",
+                key="kics_branches",
+                help="Branches to monitor for changes"
+            )
+        with col2:
+            schedule = st.text_input(
+                "Scan Schedule (cron)",
+                "0 2 * * *",
+                key="kics_schedule",
+                help="Daily at 2 AM UTC"
+            )
+    
+    # AWS configuration
+    show_aws_config = any(t in targets for t in [
+        "Lambda Scanner (Serverless)",
+        "CodePipeline (AWS Native CI/CD)",
+        "Scheduled Scan (EventBridge)"
+    ])
+    
+    if show_aws_config:
+        st.markdown("**AWS Configuration:**")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            output_bucket = st.text_input(
+                "Results S3 Bucket",
+                "kics-scan-results",
+                key="kics_bucket",
+                help="S3 bucket for storing scan results"
+            )
+        with col2:
+            region = st.selectbox(
+                "Deployment Region",
+                ["us-east-1", "us-east-2", "us-west-1", "us-west-2", "eu-west-1"],
+                key="kics_region"
+            )
+    
+    # Deploy button
+    st.markdown("---")
+    
+    deploy_disabled = len(targets) == 0
+    
+    if deploy_disabled:
+        st.warning("⚠️ Please select at least one deployment target")
+    
+    if st.button(
+        "🚀 Deploy KICS Scanning",
+        type="primary",
+        use_container_width=True,
+        key="deploy_kics_button",
+        disabled=deploy_disabled
+    ):
+        handle_kics_deployment(targets, scan_name, repo_url, scan_paths, fail_on)
+
+
+def handle_kics_deployment(targets, scan_name, repo_url, scan_paths, fail_on):
+    """Handle KICS deployment"""
+    is_demo = st.session_state.get('demo_mode', False)
+    
+    if is_demo:
+        # DEMO MODE
+        with st.spinner("Deploying KICS scanning infrastructure..."):
+            import time
+            time.sleep(2)
+        
+        deployment_id = f"kics-demo-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        
+        st.success(f"""
+        ✅ **KICS Scanning Deployed Successfully! (Demo Mode)**
+        
+        **Scan Configuration:**
+        - **Name:** {scan_name}
+        - **Repository:** {repo_url}
+        - **Deployment ID:** {deployment_id}
+        - **Targets:** {len(targets)}
+        - **Timestamp:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        
+        **Deployed To:**
+        """)
+        
+        # Show per-target results
+        for idx, target in enumerate(targets, 1):
+            clean_target = target.split('(')[0].strip()
+            st.info(f"**{idx}.** ✅ {clean_target}")
+        
+        # If GitHub Action selected, show workflow
+        if "GitHub Action (CI/CD Workflow)" in targets:
+            st.markdown("---")
+            st.markdown("### 📄 Generated GitHub Workflow")
+            
+            workflow_yaml = f'''name: KICS Security Scan
+
+on:
+  push:
+    branches: [{st.session_state.get('kics_branches', 'main, develop')}]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '{st.session_state.get('kics_schedule', '0 2 * * *')}'
+
+jobs:
+  kics-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Run KICS Scan
+        uses: checkmarx/kics-github-action@v1.7
+        with:
+          path: '{scan_paths}'
+          output_formats: 'json,sarif'
+          fail_on: '{fail_on}'
+          output_path: 'kics-results'
+      
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: kics-results/results.sarif
+        if: always()
+      
+      - name: Upload Results Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: kics-results
+          path: kics-results/
+        if: always()
+'''
+            
+            st.code(workflow_yaml, language='yaml')
+            
+            st.info("""
+            **📋 Next Steps:**
+            1. Copy the workflow YAML above
+            2. Create `.github/workflows/kics-scan.yml` in your repository
+            3. Commit and push to GitHub
+            4. Scans will run automatically on push/PR and scheduled times
+            """)
+        
+        st.markdown("---")
+        st.warning("⚠️ **Note:** This was a simulated deployment. Toggle to LIVE mode in the sidebar for actual AWS deployment.")
+        
+    else:
+        # LIVE MODE
+        st.info("📝 **LIVE Mode Deployment**")
+        st.markdown("Ready to deploy to real infrastructure!")
+        
+        with st.expander("🔧 Deployment Configuration"):
+            st.json({
+                'scan_name': scan_name,
+                'repo_url': repo_url,
+                'scan_paths': scan_paths,
+                'fail_on': fail_on,
+                'targets': targets,
+                'branches': st.session_state.get('kics_branches'),
+                'schedule': st.session_state.get('kics_schedule'),
+                'output_bucket': st.session_state.get('kics_bucket'),
+                'region': st.session_state.get('kics_region'),
+                'mode': 'LIVE',
+                'timestamp': datetime.now().isoformat()
+            })
+        
+        st.info("""
+        **Next Steps for LIVE Deployment:**
+        1. Integrate with `kics_deployment.py` module
+        2. Call `deploy_kics_scanning()` function
+        3. Handle AWS API responses / GitHub API for workflow creation
+        4. Show deployment results and verify scanning is active
+        """)
 def render_enhanced_scp_violations():
     """Render detailed SCP violations with AI remediation"""
     st.markdown("### 🔒 Service Control Policy Violations")
@@ -4366,479 +5088,15 @@ def render_policy_guardrails():
     with guardrail_tabs[0]:
             render_scp_policy_engine()
     # OPA Tab
+    # OPA Tab - Enhanced with Deployment
     with guardrail_tabs[1]:
-        st.markdown("### 🎯 Open Policy Agent (OPA) Policies")
-        
-        opa_policies = fetch_opa_policies()
-        
-        # Summary metrics
-        total_violations = sum(policy['Violations'] for policy in opa_policies)
-        total_policies = len(opa_policies)
-        
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total Policies", total_policies)
-        with col2:
-            st.metric("Active Policies", len([p for p in opa_policies if p['Status'] == 'ACTIVE']))
-        with col3:
-            st.metric("Total Violations", total_violations, delta="-7 today" if total_violations > 0 else None, delta_color="inverse")
-        with col4:
-            st.metric("Policy Coverage", "K8s, Terraform, API GW, Docker")
-        
-        st.markdown("---")
-        
-        # Display each policy
-        for policy in opa_policies:
-            status_icon = "✅" if policy['Violations'] == 0 else "⚠️"
-            
-            st.markdown(f"""
-            <div class='policy-card' style='border-left: 5px solid {"#4CAF50" if policy["Violations"] == 0 else "#FF9900"}'>
-                <h4>{status_icon} {policy['PolicyName']}</h4>
-                <p>{policy['Description']}</p>
-                <p><strong>Type:</strong> {policy['Type']} | 
-                   <strong>Status:</strong> {policy['Status']} | 
-                   <strong>Violations:</strong> {policy['Violations']} |
-                   <small>Last Evaluated: {policy['LastEvaluated'][:19]}</small></p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Show violations if any
-            if policy['Violations'] > 0 and policy.get('ViolationDetails'):
-                st.markdown(f"#### 🚨 Violation Details for {policy['PolicyName']}")
-                
-                for idx, violation in enumerate(policy['ViolationDetails']):
-                    severity_color = {
-                        'CRITICAL': '#ff4444',
-                        'HIGH': '#FF9900',
-                        'MEDIUM': '#ffbb33',
-                        'LOW': '#00C851'
-                    }.get(violation.get('Severity', 'UNKNOWN'), '#gray')
-                    
-                    # Build title based on resource type
-                    if 'Cluster' in violation:
-                        title = f"{violation.get('Cluster', 'N/A')} / {violation.get('Namespace', 'N/A')} / {violation.get('Resource', 'N/A')}"
-                    elif 'Repository' in violation:
-                        title = f"{violation.get('Repository', 'N/A')} / {violation.get('FilePath', 'N/A')}"
-                    elif 'Image' in violation:
-                        title = f"{violation.get('Image', 'N/A')} ({violation.get('Registry', 'N/A')})"
-                    else:
-                        title = f"{violation.get('Resource', 'N/A')}"
-                    
-                    with st.expander(f"🚨 [{violation.get('Severity', 'UNKNOWN')}] {title}"):
-                        col1, col2 = st.columns([2, 1])
-                        
-                        with col1:
-                            st.markdown(f"""
-                            **Account:** {violation.get('AccountName', 'N/A')} (`{violation.get('AccountId', 'N/A')}`)  
-                            **Severity:** <span style='color: {severity_color}; font-weight: bold;'>{violation.get('Severity', 'UNKNOWN')}</span>  
-                            **Resource Type:** {violation.get('ResourceType', 'N/A')}  
-                            **Issue:** {violation.get('Issue', 'N/A')}  
-                            **Timestamp:** {violation.get('Timestamp', 'N/A')[:19] if violation.get('Timestamp') else 'N/A'}  
-                            """, unsafe_allow_html=True)
-                            
-                            # Add specific details based on type
-                            if 'Cluster' in violation:
-                                st.markdown(f"""
-                                **Cluster:** {violation.get('Cluster', 'N/A')}  
-                                **Namespace:** {violation.get('Namespace', 'N/A')}  
-                                **Resource:** {violation.get('Resource', 'N/A')}  
-                                """)
-                            elif 'Repository' in violation:
-                                st.markdown(f"""
-                                **Repository:** {violation.get('Repository', 'N/A')}  
-                                **File Path:** `{violation.get('FilePath', 'N/A')}`  
-                                **Resource:** {violation.get('Resource', 'N/A')}  
-                                """)
-                            elif 'Image' in violation:
-                                st.markdown(f"""
-                                **Registry:** {violation.get('Registry', 'N/A')}  
-                                **Repository:** {violation.get('Repository', 'N/A')}  
-                                **Image:** {violation.get('Image', 'N/A')}  
-                                """)
-                            elif 'Endpoint' in violation:
-                                st.markdown(f"""
-                                **Region:** {violation.get('Region', 'N/A')}  
-                                **Endpoint:** `{violation.get('Endpoint', 'N/A')}`  
-                                """)
-                            
-                            st.markdown(f"""
-                            **Description:**  
-                            {violation.get('Description', 'No description available')}
-                            
-                            **Recommended Remediation:**  
-                            {violation.get('Remediation', 'No remediation guidance available')}
-                            """)
-                        
-                        with col2:
-                            st.markdown("**Quick Actions:**")
-                            
-                            if st.button(f"🤖 AI Analysis", key=f"opa_ai_{policy['PolicyName']}_{idx}", use_container_width=True):
-                                with st.spinner("Analyzing with Claude AI..."):
-                                    time.sleep(1)
-                                    st.session_state[f'opa_analysis_{policy["PolicyName"]}_{idx}'] = f"""
-**🤖 AI Analysis for OPA Violation**
+        render_opa_policies_tab_with_deployment()
 
-**Risk Assessment:**
-{violation.get('Severity', 'UNKNOWN')}-severity {violation.get('ResourceType', 'resource')} misconfiguration detected.
-
-**Impact Analysis:**
-- **Resource:** {violation.get('Resource', 'N/A')}
-- **Issue:** {violation.get('Issue', 'N/A')}
-- **Security Impact:** Potential {
-    'system compromise and data breach' if violation.get('Severity') == 'CRITICAL' else
-    'privilege escalation or data exposure' if violation.get('Severity') == 'HIGH' else
-    'security control bypass'
-}
-
-**Context:**
-Policy "{policy['PolicyName']}" enforces: {policy['Description']}
-
-**Detailed Remediation:**
-1. **Immediate:** {violation.get('Remediation', 'N/A')}
-2. **Verify:** Test changes in dev/staging environment
-3. **Deploy:** Apply to production with monitoring
-4. **Prevent:** Add pre-commit hooks or CI/CD gates
-
-**Best Practices:**
-- Use policy-as-code in version control
-- Implement automated testing
-- Enable continuous compliance monitoring
-
-**Estimated Time:** 20-40 minutes
-**Automation:** Available via Terraform/Kubectl
-                                    """
-                            
-                            if st.button(f"💻 Generate Fix", key=f"opa_script_{policy['PolicyName']}_{idx}", use_container_width=True):
-                                with st.spinner("Generating remediation..."):
-                                    time.sleep(1)
-                                    # Generate appropriate script based on resource type
-                                    if 'Cluster' in violation:
-                                        script_lang = 'yaml'
-                                        resource_name = violation.get('Resource', 'N/A')
-                                        namespace = violation.get('Namespace', 'default')
-                                        remediation = violation.get('Remediation', 'Apply security best practices')
-                                        script = f"""# Kubernetes Remediation for {resource_name}
-# {remediation}
-
-apiVersion: v1
-kind: Pod
-metadata:
-  name: {resource_name.split(': ')[1] if ': ' in resource_name else 'pod-name'}
-  namespace: {namespace}
-spec:
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1000
-  containers:
-  - name: app
-    image: your-image:tag
-    securityContext:
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      capabilities:
-        drop:
-        - ALL
-    resources:
-      limits:
-        cpu: "1"
-        memory: "512Mi"
-      requests:
-        cpu: "100m"
-        memory: "128Mi"
-"""
-                                    elif 'Repository' in violation and 'terraform' in violation.get('Repository', '').lower():
-                                        script_lang = 'hcl'
-                                        resource_name = violation.get('Resource', 'N/A')
-                                        remediation = violation.get('Remediation', 'Apply security best practices')
-                                        resource_parts = resource_name.split('.')
-                                        resource_type = resource_parts[0] if len(resource_parts) > 0 else 'resource_type'
-                                        resource_id = resource_parts[1] if len(resource_parts) > 1 else 'resource_id'
-                                        script = f"""# Terraform Remediation for {resource_name}
-# {remediation}
-
-resource "{resource_type}" "{resource_id}" {{
-  # ... existing configuration ...
-  
-  tags = {{
-    Environment  = "production"
-    Owner        = "platform-team"
-    CostCenter   = "engineering"
-    Compliance   = "required"
-    DataClass    = "confidential"
-  }}
-  
-  # Apply encryption where applicable
-  encrypted = true
-  
-  # Add backup configuration
-  backup_retention_period = 7
-}}
-"""
-                                    else:
-                                        script_lang = 'bash'
-                                        resource_name = violation.get('Resource', 'resource')
-                                        remediation = violation.get('Remediation', 'Apply fix')
-                                        script = f"""# Remediation Script
-# {remediation}
-
-# Update resource configuration
-echo "Remediating {resource_name}..."
-
-# Apply fix
-# {remediation}
-
-echo "Remediation complete"
-"""
-                                    st.session_state[f'opa_script_{policy["PolicyName"]}_{idx}'] = {'code': script, 'lang': script_lang}
-                            
-                            if st.button(f"🚀 Auto-Remediate", key=f"opa_deploy_{policy['PolicyName']}_{idx}", use_container_width=True, type="primary"):
-                                with st.spinner("Applying remediation..."):
-                                    time.sleep(2)
-                                    st.success(f"✅ Remediation applied to {violation.get('Resource', 'resource')}")
-                        
-                        # Show AI analysis if generated
-                        if f'opa_analysis_{policy["PolicyName"]}_{idx}' in st.session_state:
-                            st.markdown("---")
-                            st.markdown(st.session_state[f'opa_analysis_{policy["PolicyName"]}_{idx}'])
-                        
-                        # Show script if generated
-                        if f'opa_script_{policy["PolicyName"]}_{idx}' in st.session_state:
-                            script_data = st.session_state[f'opa_script_{policy["PolicyName"]}_{idx}']
-                            # Verify script_data is a dictionary with required keys
-                            if isinstance(script_data, dict) and 'code' in script_data and 'lang' in script_data:
-                                st.markdown("---")
-                                st.markdown("**Generated Remediation:**")
-                                st.code(script_data['code'], language=script_data['lang'])
-                
-                st.markdown("---")
     
-    # KICS Tab
+    # KICS Tab - Enhanced with Deployment
     with guardrail_tabs[2]:
-        st.markdown("### 🔍 KICS - Infrastructure as Code Security")
-        
-        kics_data = fetch_kics_results()
-        
-        # Summary metrics
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total Scans", kics_data['total_scans'])
-        with col2:
-            st.metric("Files Scanned", kics_data['files_scanned'])
-        with col3:
-            st.metric("Total Issues", kics_data['total_issues'], delta="-8 this week", delta_color="inverse")
-        with col4:
-            st.metric("Scan Duration", kics_data['scan_duration'])
-        
-        # Severity breakdown
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Critical", kics_data['critical'], delta_color="inverse")
-        with col2:
-            st.metric("High", kics_data['high'], delta_color="inverse")
-        with col3:
-            st.metric("Medium", kics_data['medium'])
-        with col4:
-            st.metric("Low", kics_data['low'])
-        
-        st.markdown("---")
-        
-        # Detailed findings
-        st.markdown("#### 🚨 Detailed Security Findings")
-        
-        # Filter by severity
-        severity_filter = st.multiselect(
-            "Filter by Severity",
-            ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
-            default=["CRITICAL", "HIGH"]
-        )
-        
-        findings = [f for f in kics_data.get('detailed_findings', []) if f['severity'] in severity_filter]
-        
-        st.info(f"Showing {len(findings)} findings (filtered by {', '.join(severity_filter)})")
-        
-        for finding in findings:
-            severity_color = {
-                'CRITICAL': '#ff4444',
-                'HIGH': '#FF9900',
-                'MEDIUM': '#ffbb33',
-                'LOW': '#00C851'
-            }.get(finding['severity'], '#gray')
-            
-            with st.expander(f"🚨 [{finding['severity']}] {finding['id']}: {finding['title']}"):
-                col1, col2 = st.columns([2, 1])
-                
-                with col1:
-                    st.markdown(f"""
-                    **Finding ID:** {finding['id']}  
-                    **Severity:** <span style='color: {severity_color}; font-weight: bold;'>{finding['severity']}</span>  
-                    **Category:** {finding['category']}  
-                    **CWE:** {finding.get('cwe', 'N/A')}  
-                    
-                    **Account:** {finding['AccountName']} (`{finding['AccountId']}`)  
-                    **Repository:** {finding['repository']}  
-                    **File Path:** `{finding['file_path']}` (Line {finding['line_number']})  
-                    **Resource:** `{finding['resource']}`  
-                    
-                    **Timestamp:** {finding['timestamp'][:19]}  
-                    
-                    **Description:**  
-                    {finding['description']}
-                    
-                    **Code Snippet:**
-                    ```
-{finding['code_snippet']}
-                    ```
-                    
-                    **Recommended Remediation:**  
-                    {finding['remediation']}
-                    """, unsafe_allow_html=True)
-                
-                with col2:
-                    st.markdown("**Quick Actions:**")
-                    
-                    if st.button(f"🤖 AI Analysis", key=f"kics_ai_{finding['id']}", use_container_width=True):
-                        with st.spinner("Analyzing with Claude AI..."):
-                            time.sleep(1)
-                            st.session_state[f'kics_analysis_{finding["id"]}'] = f"""
-**🤖 AI Analysis for KICS Finding {finding['id']}**
+        render_kics_scanning_tab_with_deployment()
 
-**Security Risk:**
-{finding['severity']}-severity {finding['category']} violation in Infrastructure as Code.
-
-**CWE Classification:** {finding.get('cwe', 'Not classified')}
-
-**Impact Assessment:**
-- **Exposure:** {finding['description']}
-- **Attack Vector:** {'Direct credential compromise' if finding['category'] == 'Exposed Secrets' else
-                      'Data breach via unencrypted storage' if finding['category'] == 'Missing Encryption' else
-                      'Unauthorized access and privilege escalation'}
-- **Compliance Risk:** {'CRITICAL - Violates PCI DSS, HIPAA, SOC 2' if finding['severity'] == 'CRITICAL' else
-                        'HIGH - May violate compliance requirements' if finding['severity'] == 'HIGH' else
-                        'MEDIUM - Should be addressed for best practices'}
-
-**Root Cause Analysis:**
-File: `{finding['file_path']}` (Line {finding['line_number']})
-```
-{finding['code_snippet']}
-```
-
-**Detailed Remediation Steps:**
-1. **Update Code:** {finding['remediation']}
-2. **Test Changes:** Validate in development environment
-3. **Security Scan:** Re-run KICS to verify fix
-4. **Deploy:** Apply changes via CI/CD pipeline
-5. **Monitor:** Track for regression in future scans
-
-**Prevention Strategies:**
-- Add KICS to pre-commit hooks
-- Integrate KICS into CI/CD pipeline
-- Use infrastructure templates with security built-in
-- Implement peer review for IaC changes
-
-**Estimated Remediation Time:** 15-30 minutes
-**Risk if Unaddressed:** {
-    'CRITICAL - Immediate exploitation possible' if finding['severity'] == 'CRITICAL' else
-    'HIGH - Exploitation likely within 30 days' if finding['severity'] == 'HIGH' else
-    'MEDIUM - Should address in next sprint'
-}
-                            """
-                    
-                    if st.button(f"💻 Generate Fix", key=f"kics_script_{finding['id']}", use_container_width=True):
-                        with st.spinner("Generating fix..."):
-                            time.sleep(1)
-                            # Generate fix based on finding type
-                            if 'terraform' in finding['file_path'].lower():
-                                fix_code = f"""# Fixed Terraform Configuration
-# File: {finding['file_path']}
-# Issue: {finding['title']}
-
-{finding['code_snippet'].replace('# Missing', '').strip()}
-
-# REMEDIATION APPLIED:
-# {finding['remediation']}
-"""
-                            elif 'dockerfile' in finding['file_path'].lower():
-                                fix_code = f"""# Fixed Dockerfile
-# File: {finding['file_path']}
-# Issue: {finding['title']}
-
-# BEFORE (INSECURE):
-# {finding['code_snippet']}
-
-# AFTER (SECURE):
-# Use AWS SDK with IAM roles instead of hardcoded credentials
-# Credentials will be provided via ECS task role or EC2 instance profile
-# Remove any ENV variables containing credentials
-"""
-                            else:
-                                fix_code = f"""# Remediation for {finding['file_path']}
-# Issue: {finding['title']}
-
-# Current code (line {finding['line_number']}):
-{finding['code_snippet']}
-
-# Recommended fix:
-# {finding['remediation']}
-"""
-                            st.session_state[f'kics_script_{finding["id"]}'] = fix_code
-                    
-                    if st.button(f"🔗 Create PR", key=f"kics_pr_{finding['id']}", use_container_width=True):
-                        st.info("Creating GitHub pull request...")
-                        time.sleep(1)
-                        st.success(f"✅ PR created: {finding['repository']}#42")
-                    
-                    if st.button(f"✅ Mark Resolved", key=f"kics_resolve_{finding['id']}", use_container_width=True, type="primary"):
-                        st.success("✅ Marked as resolved")
-                
-                # Show AI analysis if generated
-                if f'kics_analysis_{finding["id"]}' in st.session_state:
-                    st.markdown("---")
-                    st.markdown(st.session_state[f'kics_analysis_{finding["id"]}'])
-                
-                # Show fix if generated
-                if f'kics_script_{finding["id"]}' in st.session_state:
-                    st.markdown("---")
-                    st.markdown("**Generated Fix:**")
-                    st.code(st.session_state[f'kics_script_{finding["id"]}'], language='python')
-        
-        st.markdown("---")
-        
-        # Charts section
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("#### Issues by Severity")
-            severity_data = pd.DataFrame({
-                'Severity': ['Critical', 'High', 'Medium', 'Low'],
-                'Count': [kics_data['critical'], kics_data['high'], 
-                         kics_data['medium'], kics_data['low']]
-            })
-            
-            fig = px.bar(
-                severity_data,
-                x='Severity',
-                y='Count',
-                color='Severity',
-                color_discrete_map={
-                    'Critical': '#F44336',
-                    'High': '#FF9900',
-                    'Medium': '#FFC107',
-                    'Low': '#4CAF50'
-                }
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            st.markdown("#### Issues by Category")
-            category_df = pd.DataFrame(
-                list(kics_data['issues_by_category'].items()),
-                columns=['Category', 'Count']
-            )
-            
-            fig = px.pie(category_df, values='Count', names='Category', hole=0.4)
-            st.plotly_chart(fig, use_container_width=True)
-    
-    # GitHub Advanced Security Tab
     with guardrail_tabs[3]:
         st.markdown("### 🔐 GitHub Advanced Security (GHAS)")
         st.markdown("""
