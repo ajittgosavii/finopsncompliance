@@ -199,6 +199,412 @@ except ImportError:
 # import yaml
 
 # ============================================================================
+# ENTERPRISE MULTI-ACCOUNT & MULTI-REGION EXTENSION
+# ============================================================================
+
+class OrganizationManager:
+    """Manages AWS Organizations multi-account structure"""
+    
+    @staticmethod
+    def get_demo_organization():
+        """Return demo organization structure with accounts and OUs"""
+        return {
+            'organization_id': 'o-demo123456',
+            'master_account_id': '111111111111',
+            'organizational_units': [
+                {
+                    'id': 'ou-prod-12345',
+                    'name': 'Production',
+                    'parent_id': 'r-root',
+                    'accounts': [
+                        {'id': '222222222222', 'name': 'Production-App1', 'email': 'aws+prod-app1@company.com', 'status': 'ACTIVE'},
+                        {'id': '333333333333', 'name': 'Production-App2', 'email': 'aws+prod-app2@company.com', 'status': 'ACTIVE'},
+                        {'id': '444444444444', 'name': 'Production-Database', 'email': 'aws+prod-db@company.com', 'status': 'ACTIVE'},
+                        {'id': '555555555555', 'name': 'Production-API', 'email': 'aws+prod-api@company.com', 'status': 'ACTIVE'},
+                    ]
+                },
+                {
+                    'id': 'ou-dev-12345',
+                    'name': 'Development',
+                    'parent_id': 'r-root',
+                    'accounts': [
+                        {'id': '666666666666', 'name': 'Development-App1', 'email': 'aws+dev-app1@company.com', 'status': 'ACTIVE'},
+                        {'id': '777777777777', 'name': 'Development-App2', 'email': 'aws+dev-app2@company.com', 'status': 'ACTIVE'},
+                        {'id': '888888888888', 'name': 'Development-Test', 'email': 'aws+dev-test@company.com', 'status': 'ACTIVE'},
+                    ]
+                },
+                {
+                    'id': 'ou-sandbox-12345',
+                    'name': 'Sandbox',
+                    'parent_id': 'r-root',
+                    'accounts': [
+                        {'id': '999999999999', 'name': 'Sandbox-Experimental', 'email': 'aws+sandbox1@company.com', 'status': 'ACTIVE'},
+                        {'id': '101010101010', 'name': 'Sandbox-Training', 'email': 'aws+sandbox2@company.com', 'status': 'ACTIVE'},
+                    ]
+                },
+                {
+                    'id': 'ou-security-12345',
+                    'name': 'Security',
+                    'parent_id': 'r-root',
+                    'accounts': [
+                        {'id': '121212121212', 'name': 'Security-Monitoring', 'email': 'aws+security@company.com', 'status': 'ACTIVE'},
+                        {'id': '131313131313', 'name': 'Logging-Archive', 'email': 'aws+logging@company.com', 'status': 'ACTIVE'},
+                    ]
+                }
+            ]
+        }
+    
+    @staticmethod
+    def get_live_organization(org_client):
+        """Fetch real AWS Organization structure"""
+        try:
+            # Get organization details
+            org = org_client.describe_organization()
+            
+            # List all accounts
+            accounts_response = org_client.list_accounts()
+            accounts = accounts_response.get('Accounts', [])
+            
+            # List organizational units
+            roots = org_client.list_roots()
+            root_id = roots['Roots'][0]['Id'] if roots.get('Roots') else None
+            
+            ous = []
+            if root_id:
+                ous_response = org_client.list_organizational_units_for_parent(ParentId=root_id)
+                
+                for ou in ous_response.get('OrganizationalUnits', []):
+                    ou_id = ou['Id']
+                    ou_name = ou['Name']
+                    
+                    # Get accounts in this OU
+                    ou_accounts = []
+                    try:
+                        accounts_in_ou = org_client.list_accounts_for_parent(ParentId=ou_id)
+                        ou_accounts = accounts_in_ou.get('Accounts', [])
+                    except:
+                        pass
+                    
+                    ous.append({
+                        'id': ou_id,
+                        'name': ou_name,
+                        'parent_id': root_id,
+                        'accounts': [
+                            {
+                                'id': acc['Id'],
+                                'name': acc['Name'],
+                                'email': acc['Email'],
+                                'status': acc['Status']
+                            }
+                            for acc in ou_accounts
+                        ]
+                    })
+            
+            return {
+                'organization_id': org['Organization']['Id'],
+                'master_account_id': org['Organization']['MasterAccountId'],
+                'organizational_units': ous,
+                'all_accounts': [
+                    {
+                        'id': acc['Id'],
+                        'name': acc['Name'],
+                        'email': acc['Email'],
+                        'status': acc['Status']
+                    }
+                    for acc in accounts
+                ]
+            }
+        except Exception as e:
+            st.error(f"Error fetching organization: {str(e)}")
+            return None
+
+class MultiAccountDataAggregator:
+    """Aggregates data across multiple accounts and regions"""
+    
+    @staticmethod
+    def aggregate_security_hub_findings(findings_by_account):
+        """Aggregate Security Hub findings from multiple accounts"""
+        aggregated = {
+            'total_findings': 0,
+            'critical': 0,
+            'high': 0,
+            'medium': 0,
+            'low': 0,
+            'informational': 0,
+            'findings_by_severity': {'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0, 'INFORMATIONAL': 0},
+            'findings_by_account': {},
+            'compliance_standards': {},
+            'auto_remediated': 0,
+            'findings': []
+        }
+        
+        for account_id, findings_data in findings_by_account.items():
+            aggregated['total_findings'] += findings_data.get('total_findings', 0)
+            aggregated['critical'] += findings_data.get('critical', 0)
+            aggregated['high'] += findings_data.get('high', 0)
+            aggregated['medium'] += findings_data.get('medium', 0)
+            aggregated['low'] += findings_data.get('low', 0)
+            aggregated['informational'] += findings_data.get('informational', 0)
+            aggregated['auto_remediated'] += findings_data.get('auto_remediated', 0)
+            
+            # Aggregate severity counts
+            for severity, count in findings_data.get('findings_by_severity', {}).items():
+                aggregated['findings_by_severity'][severity] += count
+            
+            # Store per-account data
+            aggregated['findings_by_account'][account_id] = {
+                'total': findings_data.get('total_findings', 0),
+                'critical': findings_data.get('critical', 0),
+                'high': findings_data.get('high', 0),
+                'account_name': findings_data.get('account_name', account_id)
+            }
+            
+            # Extend findings list
+            for finding in findings_data.get('findings', []):
+                finding['AccountId'] = account_id
+                aggregated['findings'].append(finding)
+        
+        return aggregated
+    
+    @staticmethod
+    def aggregate_config_compliance(compliance_by_account):
+        """Aggregate AWS Config compliance from multiple accounts"""
+        total_compliant = 0
+        total_non_compliant = 0
+        
+        aggregated = {
+            'compliance_rate': 0,
+            'resources_evaluated': 0,
+            'compliant': 0,
+            'non_compliant': 0,
+            'compliance_by_account': {}
+        }
+        
+        for account_id, compliance_data in compliance_by_account.items():
+            total_compliant += compliance_data.get('compliant', 0)
+            total_non_compliant += compliance_data.get('non_compliant', 0)
+            
+            aggregated['compliance_by_account'][account_id] = {
+                'rate': compliance_data.get('compliance_rate', 0),
+                'compliant': compliance_data.get('compliant', 0),
+                'non_compliant': compliance_data.get('non_compliant', 0),
+                'account_name': compliance_data.get('account_name', account_id)
+            }
+        
+        total_resources = total_compliant + total_non_compliant
+        aggregated['resources_evaluated'] = total_resources
+        aggregated['compliant'] = total_compliant
+        aggregated['non_compliant'] = total_non_compliant
+        aggregated['compliance_rate'] = (total_compliant / total_resources * 100) if total_resources > 0 else 0
+        
+        return aggregated
+
+class CrossAccountRoleAssumer:
+    """Handles cross-account role assumption"""
+    
+    @staticmethod
+    def assume_role(account_id, role_name='CloudComplianceCanvasRole', session_name=None):
+        """Assume role in target account"""
+        try:
+            sts_client = boto3.client('sts')
+            
+            if session_name is None:
+                session_name = f'ComplianceCanvas-{account_id}-{int(time.time())}'
+            
+            response = sts_client.assume_role(
+                RoleArn=f'arn:aws:iam::{account_id}:role/{role_name}',
+                RoleSessionName=session_name,
+                DurationSeconds=3600
+            )
+            
+            return boto3.Session(
+                aws_access_key_id=response['Credentials']['AccessKeyId'],
+                aws_secret_access_key=response['Credentials']['SecretAccessKey'],
+                aws_session_token=response['Credentials']['SessionToken']
+            )
+        except Exception as e:
+            st.warning(f"⚠️ Could not assume role in account {account_id}: {str(e)}")
+            return None
+
+# Multi-region support
+AWS_REGIONS = {
+    'us-east-1': 'US East (N. Virginia)',
+    'us-east-2': 'US East (Ohio)',
+    'us-west-1': 'US West (N. California)',
+    'us-west-2': 'US West (Oregon)',
+    'eu-west-1': 'Europe (Ireland)',
+    'eu-west-2': 'Europe (London)',
+    'eu-central-1': 'Europe (Frankfurt)',
+    'ap-southeast-1': 'Asia Pacific (Singapore)',
+    'ap-southeast-2': 'Asia Pacific (Sydney)',
+    'ap-northeast-1': 'Asia Pacific (Tokyo)',
+    'ap-south-1': 'Asia Pacific (Mumbai)',
+    'ca-central-1': 'Canada (Central)',
+    'sa-east-1': 'South America (São Paulo)'
+}
+
+def get_default_regions():
+    """Get commonly monitored regions"""
+    return ['us-east-1', 'us-west-2', 'eu-west-1']
+
+def generate_demo_findings_for_account(account_id, account_name):
+    """Generate demo Security Hub findings for a specific account"""
+    # Vary findings based on account type
+    if 'Production' in account_name:
+        base_findings = 1000
+        critical_ratio = 0.02
+        high_ratio = 0.10
+    elif 'Development' in account_name:
+        base_findings = 500
+        critical_ratio = 0.05
+        high_ratio = 0.15
+    elif 'Sandbox' in account_name:
+        base_findings = 200
+        critical_ratio = 0.10
+        high_ratio = 0.20
+    else:  # Security/Logging
+        base_findings = 100
+        critical_ratio = 0.01
+        high_ratio = 0.05
+    
+    # Add randomness
+    total_findings = base_findings + random.randint(-100, 100)
+    critical = int(total_findings * critical_ratio) + random.randint(0, 5)
+    high = int(total_findings * high_ratio) + random.randint(0, 20)
+    medium = int(total_findings * 0.30) + random.randint(0, 50)
+    low = max(0, total_findings - critical - high - medium)
+    informational = random.randint(50, 200)
+    
+    return {
+        'account_id': account_id,
+        'account_name': account_name,
+        'total_findings': total_findings,
+        'critical': critical,
+        'high': high,
+        'medium': medium,
+        'low': low,
+        'informational': informational,
+        'findings_by_severity': {
+            'CRITICAL': critical,
+            'HIGH': high,
+            'MEDIUM': medium,
+            'LOW': low,
+            'INFORMATIONAL': informational
+        },
+        'compliance_standards': {
+            'AWS Foundational Security': round(85 + random.uniform(-10, 10), 1),
+            'CIS AWS Foundations': round(90 + random.uniform(-10, 8), 1),
+            'PCI DSS': round(87 + random.uniform(-8, 10), 1)
+        },
+        'auto_remediated': random.randint(20, 100),
+        'findings': []
+    }
+
+def generate_demo_config_for_account(account_id, account_name):
+    """Generate demo AWS Config compliance for a specific account"""
+    total_rules = random.randint(100, 200)
+    compliance_rate = 85 + random.uniform(-10, 12)
+    compliant = int(total_rules * (compliance_rate / 100))
+    non_compliant = total_rules - compliant
+    
+    return {
+        'account_id': account_id,
+        'account_name': account_name,
+        'compliance_rate': round(compliance_rate, 1),
+        'resources_evaluated': total_rules,
+        'compliant': compliant,
+        'non_compliant': non_compliant
+    }
+
+class SCPDeployer:
+    """Handles SCP deployment to multiple accounts/OUs"""
+    
+    @staticmethod
+    def deploy_scp_demo(policy_name, policy_document, target_type, targets):
+        """Simulate SCP deployment in demo mode"""
+        import uuid
+        
+        policy_id = f"p-demo-{uuid.uuid4().hex[:8]}"
+        
+        # Simulate deployment delay
+        time.sleep(1)
+        
+        result = {
+            'policy_id': policy_id,
+            'policy_name': policy_name,
+            'target_type': target_type,
+            'targets': targets,
+            'status': 'SUCCESS',
+            'deployed_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'affected_accounts': []
+        }
+        
+        # Calculate affected accounts
+        org_data = st.session_state.get('organization_data')
+        if org_data:
+            if target_type == 'OU':
+                for ou in org_data['organizational_units']:
+                    if ou['name'] in targets or ou['id'] in targets:
+                        result['affected_accounts'].extend([acc['id'] for acc in ou['accounts']])
+            elif target_type == 'Account':
+                result['affected_accounts'] = targets
+            elif target_type == 'Organization':
+                for ou in org_data['organizational_units']:
+                    result['affected_accounts'].extend([acc['id'] for acc in ou['accounts']])
+        
+        return result
+    
+    @staticmethod
+    def deploy_scp_live(org_client, policy_name, policy_document, target_type, targets):
+        """Deploy SCP to AWS Organizations"""
+        try:
+            # 1. Create the policy
+            response = org_client.create_policy(
+                Content=json.dumps(policy_document),
+                Description=f"Deployed from Cloud Compliance Canvas - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                Name=policy_name,
+                Type='SERVICE_CONTROL_POLICY'
+            )
+            
+            policy_id = response['Policy']['PolicySummary']['Id']
+            
+            # 2. Attach to targets
+            affected_accounts = []
+            
+            for target in targets:
+                try:
+                    org_client.attach_policy(
+                        PolicyId=policy_id,
+                        TargetId=target
+                    )
+                    
+                    # Get accounts affected by this target
+                    if target_type == 'OU':
+                        accounts_in_ou = org_client.list_accounts_for_parent(ParentId=target)
+                        affected_accounts.extend([acc['Id'] for acc in accounts_in_ou.get('Accounts', [])])
+                    elif target_type == 'Account':
+                        affected_accounts.append(target)
+                        
+                except Exception as e:
+                    st.error(f"Failed to attach policy to {target}: {str(e)}")
+            
+            return {
+                'policy_id': policy_id,
+                'policy_name': policy_name,
+                'target_type': target_type,
+                'targets': targets,
+                'status': 'SUCCESS',
+                'deployed_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'affected_accounts': list(set(affected_accounts))
+            }
+            
+        except Exception as e:
+            return {
+                'status': 'FAILED',
+                'error': str(e)
+            }
+
+# ============================================================================
 # PAGE CONFIGURATION
 # ============================================================================
 
@@ -741,6 +1147,13 @@ def initialize_session_state():
         
         # Service status
         'service_status': {},
+        
+        # 🆕 ENTERPRISE MULTI-ACCOUNT & MULTI-REGION
+        'multi_account_enabled': False,
+        'selected_ous': [],
+        'selected_regions': ['us-east-1'],
+        'organization_data': None,
+        'scp_deployment_history': [],
     }
     
     # Initialize defaults
@@ -990,9 +1403,14 @@ def get_claude_client(api_key: str):
 # ============================================================================
 
 def fetch_security_hub_findings(client) -> Dict[str, Any]:
-    """Fetch Security Hub findings with comprehensive analysis"""
+    """Fetch Security Hub findings - multi-account aware"""
     
-    # 🆕 CHECK DEMO MODE FIRST
+    # 🆕 CHECK MULTI-ACCOUNT MODE FIRST
+    if st.session_state.get('multi_account_enabled', False):
+        return fetch_security_hub_multi_account()
+    
+    # Single account mode
+    # 🆕 CHECK DEMO MODE
     if st.session_state.get('demo_mode', False):
         return {
             'total_findings': 1247,
@@ -1051,24 +1469,21 @@ def fetch_security_hub_findings(client) -> Dict[str, Any]:
         
         # Calculate compliance standards if available
         compliance_standards = {}
-        if findings:
-            # Sample calculation - you can enhance this based on actual compliance data
-            compliance_standards = {
-                'AWS Foundational Security': 85.0,
-                'CIS AWS Foundations': 90.0,
-                'PCI DSS': 88.0
-            }
+        # TODO: In production, fetch real compliance standards from Security Hub
+        # For now, only calculate if we have standards data from actual AWS API
+        # Don't hardcode - let it be empty until properly integrated
         
         return {
             'total_findings': len(findings),
             'findings_by_severity': severity_counts,
-            'compliance_standards': compliance_standards,
+            'compliance_standards': compliance_standards,  # Empty unless real data from AWS
             'findings': findings,
             'critical': severity_counts['CRITICAL'],
             'high': severity_counts['HIGH'],
             'medium': severity_counts['MEDIUM'],
             'low': severity_counts['LOW'],
-            'informational': severity_counts['INFORMATIONAL']
+            'informational': severity_counts['INFORMATIONAL'],
+            'auto_remediated': 0  # TODO: Fetch from actual remediation tracking
         }
     except ClientError as e:
         error_code = e.response['Error']['Code']
@@ -1115,6 +1530,89 @@ def fetch_security_hub_findings(client) -> Dict[str, Any]:
     except Exception as e:
         st.error(f"Unexpected error fetching Security Hub findings: {str(e)}")
         return {}
+
+
+def fetch_security_hub_multi_account():
+    """Fetch Security Hub findings from multiple accounts - enterprise mode"""
+    selected_accounts = st.session_state.get('selected_accounts', [])
+    selected_regions = st.session_state.get('selected_regions', ['us-east-1'])
+    is_demo = st.session_state.get('demo_mode', False)
+    org_data = st.session_state.get('organization_data')
+    
+    if not selected_accounts:
+        st.warning("⚠️ No accounts selected for monitoring")
+        return {'total_findings': 0, 'findings_by_account': {}}
+    
+    findings_by_account = {}
+    
+    if is_demo:
+        # DEMO MODE - Generate demo data for each selected account
+        for ou in org_data.get('organizational_units', []):
+            for account in ou['accounts']:
+                if account['id'] in selected_accounts:
+                    findings_by_account[account['id']] = generate_demo_findings_for_account(
+                        account['id'],
+                        account['name']
+                    )
+    else:
+        # LIVE MODE - Fetch from real AWS accounts
+        for account_id in selected_accounts:
+            # Assume role in this account
+            account_session = CrossAccountRoleAssumer.assume_role(account_id)
+            
+            if account_session:
+                account_findings = {
+                    'total_findings': 0,
+                    'critical': 0,
+                    'high': 0,
+                    'medium': 0,
+                    'low': 0,
+                    'informational': 0,
+                    'findings_by_severity': {'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0, 'INFORMATIONAL': 0},
+                    'findings': [],
+                    'auto_remediated': 0,
+                    'account_name': account_id
+                }
+                
+                # Fetch findings from each region
+                for region in selected_regions:
+                    try:
+                        sh_client = account_session.client('securityhub', region_name=region)
+                        
+                        response = sh_client.get_findings(
+                            Filters={'RecordState': [{'Value': 'ACTIVE', 'Comparison': 'EQUALS'}]},
+                            MaxResults=100
+                        )
+                        
+                        findings = response.get('Findings', [])
+                        
+                        # Count findings by severity
+                        for finding in findings:
+                            severity = finding.get('Severity', {}).get('Label', 'INFORMATIONAL')
+                            account_findings['findings_by_severity'][severity] = \
+                                account_findings['findings_by_severity'].get(severity, 0) + 1
+                            
+                            if severity == 'CRITICAL':
+                                account_findings['critical'] += 1
+                            elif severity == 'HIGH':
+                                account_findings['high'] += 1
+                            elif severity == 'MEDIUM':
+                                account_findings['medium'] += 1
+                            elif severity == 'LOW':
+                                account_findings['low'] += 1
+                            else:
+                                account_findings['informational'] += 1
+                        
+                        account_findings['total_findings'] += len(findings)
+                        account_findings['findings'].extend(findings)
+                        
+                    except Exception as e:
+                        st.warning(f"⚠️ Failed to fetch findings from account {account_id} in {region}: {str(e)}")
+                
+                findings_by_account[account_id] = account_findings
+    
+    # Aggregate all account findings
+    return MultiAccountDataAggregator.aggregate_security_hub_findings(findings_by_account)
 
 def fetch_config_compliance(client) -> Dict[str, Any]:
     """Fetch AWS Config compliance data"""
@@ -5287,6 +5785,138 @@ def render_remediation_dashboard():
 # SIDEBAR
 # ============================================================================
 
+# ============================================================================
+# ENTERPRISE MULTI-ACCOUNT SIDEBAR
+# ============================================================================
+
+def render_enterprise_multi_account_sidebar():
+    """Render enterprise multi-account management sidebar"""
+    
+    st.markdown("### 🏢 Enterprise Multi-Account")
+    
+    # Enable/disable multi-account mode
+    multi_account_enabled = st.checkbox(
+        "Enable Multi-Account Mode",
+        value=st.session_state.get('multi_account_enabled', False),
+        help="Monitor and manage multiple AWS accounts across your organization"
+    )
+    st.session_state.multi_account_enabled = multi_account_enabled
+    
+    if not multi_account_enabled:
+        # Reset selections when disabled
+        st.session_state.selected_accounts = []
+        st.session_state.selected_ous = []
+        st.session_state.selected_regions = ['us-east-1']
+        st.caption("Enable to monitor multiple accounts and regions")
+        return
+    
+    # Get organization structure
+    is_demo = st.session_state.get('demo_mode', False)
+    
+    if is_demo:
+        org_data = OrganizationManager.get_demo_organization()
+    else:
+        # Try to get real organization
+        org_client = (st.session_state.get('aws_clients') or {}).get('organizations')
+        if org_client:
+            org_data = OrganizationManager.get_live_organization(org_client)
+        else:
+            st.warning("⚠️ Organizations API not available. Connect to AWS first.")
+            org_data = None
+    
+    if not org_data:
+        st.error("❌ Could not load organization structure")
+        return
+    
+    # Store in session state
+    st.session_state.organization_data = org_data
+    
+    # OU Selection
+    st.markdown("#### 📂 Organizational Units")
+    
+    ou_names = [ou['name'] for ou in org_data['organizational_units']]
+    
+    selected_ous = st.multiselect(
+        "Select OUs to Monitor",
+        options=ou_names,
+        default=st.session_state.get('selected_ous', [ou_names[0]] if ou_names else []),
+        help="Select which organizational units to include",
+        key="ou_selector"
+    )
+    st.session_state.selected_ous = selected_ous
+    
+    # Get accounts in selected OUs
+    accounts_in_selected_ous = []
+    for ou in org_data['organizational_units']:
+        if ou['name'] in selected_ous:
+            accounts_in_selected_ous.extend(ou['accounts'])
+    
+    # Account Selection
+    if accounts_in_selected_ous:
+        st.markdown("#### 🏦 Accounts")
+        
+        account_options = [f"{acc['id']} - {acc['name']}" for acc in accounts_in_selected_ous]
+        
+        # Select all / Clear buttons
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Select All", key="select_all_accounts", use_container_width=True):
+                st.session_state.temp_select_all = [f"{acc['id']} - {acc['name']}" for acc in accounts_in_selected_ous]
+                st.rerun()
+        with col2:
+            if st.button("Clear", key="clear_accounts", use_container_width=True):
+                st.session_state.temp_select_all = []
+                st.rerun()
+        
+        selected_accounts_display = st.multiselect(
+            "Specific Accounts (optional)",
+            options=account_options,
+            default=st.session_state.get('temp_select_all', []),
+            help="Leave empty to include all accounts in selected OUs",
+            key="account_selector"
+        )
+        
+        # Extract account IDs
+        if selected_accounts_display:
+            selected_account_ids = [opt.split(' - ')[0] for opt in selected_accounts_display]
+        else:
+            # If nothing specifically selected, use all accounts in selected OUs
+            selected_account_ids = [acc['id'] for acc in accounts_in_selected_ous]
+        
+        st.session_state.selected_accounts = selected_account_ids
+    else:
+        st.session_state.selected_accounts = []
+    
+    # Region Selection
+    st.markdown("#### 🌍 Regions")
+    
+    selected_regions = st.multiselect(
+        "Monitor Regions",
+        options=list(AWS_REGIONS.keys()),
+        default=st.session_state.get('selected_regions', get_default_regions()),
+        format_func=lambda x: f"{x} - {AWS_REGIONS[x]}",
+        help="Select which AWS regions to scan",
+        key="region_selector"
+    )
+    st.session_state.selected_regions = selected_regions
+    
+    # Summary
+    if st.session_state.selected_accounts and st.session_state.selected_regions:
+        account_count = len(st.session_state.selected_accounts)
+        region_count = len(st.session_state.selected_regions)
+        total_sources = account_count * region_count
+        
+        st.success(f"""
+**📊 Monitoring Scope:**
+- **{account_count}** accounts
+- **{region_count}** regions  
+- **{total_sources}** total data sources
+        """)
+
+# ============================================================================
+# SIDEBAR RENDERING
+# ============================================================================
+
 def render_sidebar():
     """Render sidebar with configuration and quick actions"""
     with st.sidebar:
@@ -5332,6 +5962,11 @@ def render_sidebar():
                 st.success("✅ Live Mode: Connected to AWS")
             else:
                 st.error("❌ Live Mode: Not connected")
+        
+        st.markdown("---")
+        
+        # 🆕 ENTERPRISE MULTI-ACCOUNT SIDEBAR
+        render_enterprise_multi_account_sidebar()
         
         st.markdown("---")
         
@@ -5879,6 +6514,55 @@ def render_overview_dashboard():
                 'findings_sample': sec_hub.get('findings', [])[:2] if sec_hub.get('findings') else []
             })
     
+    # 🆕 MULTI-ACCOUNT BREAKDOWN
+    if st.session_state.get('multi_account_enabled', False):
+        st.markdown("## 🏢 Multi-Account Security Overview")
+        
+        # Show monitoring scope
+        account_count = len(st.session_state.get('selected_accounts', []))
+        region_count = len(st.session_state.get('selected_regions', []))
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Accounts Monitored", account_count)
+        with col2:
+            st.metric("Regions Scanned", region_count)
+        with col3:
+            st.metric("Total Data Sources", account_count * region_count)
+        
+        # Show findings by account
+        if sec_hub.get('findings_by_account'):
+            st.markdown("### 📊 Security Findings by Account")
+            
+            account_data = []
+            org_data = st.session_state.get('organization_data')
+            
+            for account_id, data in sec_hub['findings_by_account'].items():
+                # Get account name
+                account_name = data.get('account_name', account_id)
+                
+                account_data.append({
+                    'Account': account_name,
+                    'Account ID': account_id,
+                    'Total Findings': data['total'],
+                    'Critical': data['critical'],
+                    'High': data['high'],
+                    'Risk Score': data['critical'] * 10 + data['high'] * 5
+                })
+            
+            # Sort by risk score
+            account_data.sort(key=lambda x: x['Risk Score'], reverse=True)
+            
+            df = pd.DataFrame(account_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+            
+            # Risk indicator
+            high_risk_accounts = len([a for a in account_data if a['Critical'] > 0])
+            if high_risk_accounts > 0:
+                st.error(f"⚠️ **{high_risk_accounts} accounts** have critical security findings requiring immediate attention")
+        
+        st.markdown("---")
+    
     # Detection metrics
     render_detection_metrics(sec_hub, config, guardduty, inspector)
     
@@ -5890,6 +6574,24 @@ def render_overview_dashboard():
         # Compliance standards
         if sec_hub.get('compliance_standards'):
             render_compliance_standards_chart(sec_hub['compliance_standards'])
+        else:
+            # Show placeholder in LIVE mode when no compliance data
+            is_demo = st.session_state.get('demo_mode', False)
+            if not is_demo:
+                st.markdown("### 📊 Compliance Framework Scores")
+                st.info("""
+                📊 **Compliance Framework Scores**
+                
+                Compliance framework scores will appear here once Security Hub compliance
+                standards are enabled and data is available.
+                
+                To enable:
+                1. Enable compliance standards in AWS Security Hub
+                2. Allow time for initial assessment (24-48 hours)
+                3. Data will automatically populate here
+                
+                Or toggle to Demo Mode to see sample compliance scores.
+                """)
     
     with col2:
         # Severity distribution
