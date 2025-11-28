@@ -337,51 +337,105 @@ class ControlTowerManager:
                 }
 
 class RealTimeCostMonitor:
-    """Real-time cost monitoring"""
+    """Real-time cost monitoring with Demo/Live mode support"""
     
     def get_current_hourly_cost(self):
-        return {
-            'total': 118.64,
-            'by_service': {
-                'EC2': 45.30,
-                'RDS': 25.80,
-                'S3': 12.45,
-                'Lambda': 8.20,
-                'Other': 26.89
-            },
-            'burn_rate': {
-                'hourly': 118.64,
-                'daily': 2847.36,
-                'monthly_projection': 85421.00
+        """Get current hourly cost - respects demo/live mode"""
+        is_demo = st.session_state.get('demo_mode', False)
+        
+        if is_demo:
+            # DEMO MODE - Sample data
+            return {
+                'total': 118.64,
+                'by_service': {
+                    'EC2': 45.30,
+                    'RDS': 25.80,
+                    'S3': 12.45,
+                    'Lambda': 8.20,
+                    'Other': 26.89
+                },
+                'burn_rate': {
+                    'hourly': 118.64,
+                    'daily': 2847.36,
+                    'monthly_projection': 85421.00
+                }
             }
-        }
+        else:
+            # LIVE MODE - Return zeros or fetch from AWS
+            # TODO: Integrate with AWS Cost Explorer for real-time data
+            return {
+                'total': 0,
+                'by_service': {
+                    'EC2': 0,
+                    'RDS': 0,
+                    'S3': 0,
+                    'Lambda': 0,
+                    'Other': 0
+                },
+                'burn_rate': {
+                    'hourly': 0,
+                    'daily': 0,
+                    'monthly_projection': 0
+                }
+            }
     
     def detect_anomalies(self):
-        return [
-            {
-                'service': 'EC2',
-                'region': 'us-east-1',
-                'current_cost': 2847.50,
-                'expected_cost': 1800.00,
-                'increase_pct': 58.2,
-                'confidence': 'HIGH',
-                'root_cause': '15 new m5.2xlarge instances launched'
-            }
-        ]
+        """Detect cost anomalies - respects demo/live mode"""
+        is_demo = st.session_state.get('demo_mode', False)
+        
+        if is_demo:
+            # DEMO MODE - Sample anomaly
+            return [
+                {
+                    'service': 'EC2',
+                    'region': 'us-east-1',
+                    'current_cost': 2847.50,
+                    'expected_cost': 1800.00,
+                    'increase_pct': 58.2,
+                    'confidence': 'HIGH',
+                    'root_cause': '15 new m5.2xlarge instances launched'
+                }
+            ]
+        else:
+            # LIVE MODE - Return empty or fetch from AWS Cost Anomaly Detection
+            # TODO: Integrate with AWS Cost Anomaly Detection API
+            return []
     
     def get_budget_status(self):
-        return {
-            'monthly_budget': 100000,
-            'current_spend': 85421,
-            'utilization_pct': 85.4
-        }
+        """Get budget status - respects demo/live mode"""
+        is_demo = st.session_state.get('demo_mode', False)
+        
+        if is_demo:
+            # DEMO MODE - Sample budget data
+            return {
+                'monthly_budget': 100000,
+                'current_spend': 85421,
+                'utilization_pct': 85.4
+            }
+        else:
+            # LIVE MODE - Return zeros or fetch from AWS Budgets
+            # TODO: Integrate with AWS Budgets API
+            return {
+                'monthly_budget': 0,
+                'current_spend': 0,
+                'utilization_pct': 0
+            }
     
     def get_chargeback_data(self):
-        return [
-            {'department': 'Engineering', 'cost': 45000, 'budget': 50000, 'utilization': '90%'},
-            {'department': 'Product', 'cost': 23000, 'budget': 25000, 'utilization': '92%'},
-            {'department': 'Data Science', 'cost': 18000, 'budget': 20000, 'utilization': '90%'},
-        ]
+        """Get chargeback data - respects demo/live mode"""
+        is_demo = st.session_state.get('demo_mode', False)
+        
+        if is_demo:
+            # DEMO MODE - Sample chargeback data
+            return [
+                {'department': 'Engineering', 'cost': 45000, 'budget': 50000, 'utilization': '90%'},
+                {'department': 'Product', 'cost': 23000, 'budget': 25000, 'utilization': '92%'},
+                {'department': 'Data Science', 'cost': 18000, 'budget': 20000, 'utilization': '90%'},
+            ]
+        else:
+            # LIVE MODE - Return empty or fetch from AWS Cost Explorer with tags
+            # TODO: Integrate with AWS Cost Explorer using cost allocation tags
+            return []
 
 # ============================================================================
 # ENTERPRISE UI FUNCTIONS
@@ -1874,23 +1928,50 @@ def render_realtime_costs():
         st.session_state.enterprise_page = None
         st.rerun()
     
-    st.title("💸 Real-Time Cost Operations")
+    # Check mode
+    is_demo = st.session_state.get('demo_mode', False)
+    
+    # Title with mode indicator
+    if is_demo:
+        st.title("💸 Real-Time Cost Operations 🟠 DEMO MODE")
+        st.info("📊 Demo Mode: Showing sample real-time cost data")
+    else:
+        st.title("💸 Real-Time Cost Operations 🟢 LIVE MODE")
     
     cost_data = st.session_state.cost_monitor.get_current_hourly_cost()
     anomalies = st.session_state.cost_monitor.detect_anomalies()
     
+    # Show warning in LIVE mode if no data
+    if not is_demo and cost_data['total'] == 0:
+        st.warning("""
+        ⚠️ **LIVE MODE - Real-Time Data Not Connected**
+        
+        This dashboard is ready for real-time cost monitoring but is currently showing zeros.
+        
+        **To connect real data, integrate with:**
+        - AWS Cost Explorer (for hourly/daily spend)
+        - AWS Cost Anomaly Detection (for anomaly alerts)
+        - CloudWatch Metrics (for real-time usage)
+        
+        **Toggle to Demo Mode** in the sidebar to see sample data.
+        """)
+    
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Hourly Burn Rate", f"${cost_data['burn_rate']['hourly']:.2f}/hr", "+12.3%")
+        delta = "+12.3%" if is_demo else None
+        st.metric("Hourly Burn Rate", f"${cost_data['burn_rate']['hourly']:.2f}/hr", delta)
     with col2:
         st.metric("Today's Spend", f"${cost_data['burn_rate']['daily']:,.2f}")
     with col3:
-        st.metric("Monthly Projection", f"${cost_data['burn_rate']['monthly_projection']:,.0f}", "+8.5%")
+        delta = "+8.5%" if is_demo else None
+        st.metric("Monthly Projection", f"${cost_data['burn_rate']['monthly_projection']:,.0f}", delta)
     
     if anomalies:
         st.markdown("### ⚠️ Cost Anomalies Detected (Real-Time)")
         for a in anomalies:
             st.warning(f"🚨 **{a['service']}** in {a['region']}: +{a['increase_pct']:.1f}% increase - {a['root_cause']}")
+    elif not is_demo:
+        st.success("✅ No cost anomalies detected")
 
 def check_enterprise_routing():
     """Check if enterprise page is requested and route accordingly"""
