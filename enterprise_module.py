@@ -1224,7 +1224,12 @@ def render_enhanced_cfo_dashboard():
         st.caption("YTD cost optimizations")
     
     with col3:
-        savings_pct = (data['savings_realized'] / data['monthly_spend'] * 100)
+        # Safe division - avoid divide by zero
+        if data['monthly_spend'] > 0:
+            savings_pct = (data['savings_realized'] / data['monthly_spend'] * 100)
+        else:
+            savings_pct = 0
+        
         st.metric(
             "Savings Rate",
             f"{savings_pct:.1f}%",
