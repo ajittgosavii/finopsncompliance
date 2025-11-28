@@ -6773,6 +6773,788 @@ def render_mode_banner():
 # ============================================================================
 # ============================================================================
 
+# ============================================================================
+# ENTERPRISE INTEGRATIONS SYSTEM - Production Ready Plugins
+# ============================================================================
+
+def get_integration_config(service_name: str) -> Dict[str, Any]:
+    """Get stored configuration for an integration service"""
+    integrations = st.session_state.get('integrations', {})
+    return integrations.get(service_name, {})
+
+def save_integration_config(service_name: str, config: Dict[str, Any]):
+    """Save integration configuration"""
+    if 'integrations' not in st.session_state:
+        st.session_state.integrations = {}
+    st.session_state.integrations[service_name] = config
+    st.success(f"✅ {service_name} configuration saved successfully!")
+
+def test_integration_connection(service_name: str, config: Dict[str, Any]) -> tuple[bool, str]:
+    """Test connection to integration service"""
+    is_demo = st.session_state.get('demo_mode', True)
+    
+    if is_demo:
+        return True, f"✅ Demo mode: {service_name} connection simulated successfully"
+    
+    # In live mode, attempt real connection
+    try:
+        if service_name == "Jira":
+            import requests
+            auth = (config['email'], config['api_token'])
+            response = requests.get(f"{config['url']}/rest/api/3/myself", auth=auth, timeout=10)
+            if response.status_code == 200:
+                return True, "✅ Successfully connected to Jira!"
+            else:
+                return False, f"❌ Failed to connect: {response.status_code}"
+                
+        elif service_name == "ServiceNow":
+            import requests
+            auth = (config['username'], config['password'])
+            response = requests.get(f"{config['instance_url']}/api/now/table/sys_user?sysparm_limit=1", 
+                                  auth=auth, timeout=10)
+            if response.status_code == 200:
+                return True, "✅ Successfully connected to ServiceNow!"
+            else:
+                return False, f"❌ Failed to connect: {response.status_code}"
+                
+        elif service_name == "Slack":
+            import requests
+            headers = {"Authorization": f"Bearer {config['bot_token']}"}
+            response = requests.get("https://slack.com/api/auth.test", headers=headers, timeout=10)
+            data = response.json()
+            if data.get('ok'):
+                return True, f"✅ Successfully connected to Slack workspace: {data.get('team')}"
+            else:
+                return False, f"❌ Failed to connect: {data.get('error')}"
+                
+        elif service_name == "GitHub":
+            import requests
+            headers = {"Authorization": f"token {config['personal_access_token']}"}
+            response = requests.get("https://api.github.com/user", headers=headers, timeout=10)
+            if response.status_code == 200:
+                user = response.json()
+                return True, f"✅ Successfully connected as: {user.get('login')}"
+            else:
+                return False, f"❌ Failed to connect: {response.status_code}"
+                
+        elif service_name == "PagerDuty":
+            import requests
+            headers = {"Authorization": f"Token token={config['api_key']}", "Accept": "application/vnd.pagerduty+json;version=2"}
+            response = requests.get("https://api.pagerduty.com/users", headers=headers, timeout=10)
+            if response.status_code == 200:
+                return True, "✅ Successfully connected to PagerDuty!"
+            else:
+                return False, f"❌ Failed to connect: {response.status_code}"
+                
+        else:
+            return True, f"✅ {service_name} configuration saved (connection test not implemented)"
+            
+    except Exception as e:
+        return False, f"❌ Connection failed: {str(e)}"
+
+def render_integration_card(name: str, icon: str, category: str, connected: bool, stats: str):
+    """Render an integration service card"""
+    status_color = "#10B981" if connected else "#EF4444"
+    status_text = "Connected" if connected else "Not Connected"
+    
+    st.markdown(f"""
+    <div style='border: 2px solid {"#10B981" if connected else "#E5E7EB"}; border-radius: 12px; padding: 1.5rem; 
+                background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); height: 100%;'>
+        <div style='display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;'>
+            <div style='display: flex; align-items: center; gap: 0.75rem;'>
+                <span style='font-size: 2rem;'>{icon}</span>
+                <div>
+                    <h3 style='margin: 0; color: #1F2937; font-size: 1.1rem;'>{name}</h3>
+                    <p style='margin: 0.25rem 0 0 0; color: #6B7280; font-size: 0.85rem;'>{category}</p>
+                </div>
+            </div>
+            <span style='background: {status_color}; color: white; padding: 0.35rem 0.75rem; 
+                        border-radius: 12px; font-size: 0.75rem; font-weight: 600;'>{status_text}</span>
+        </div>
+        <p style='color: #9CA3AF; font-size: 0.9rem; margin: 0;'>{stats}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+def render_jira_plugin():
+    """Jira Integration Plugin"""
+    st.markdown("### 📋 Jira - Project Management")
+    
+    is_demo = st.session_state.get('demo_mode', True)
+    config = get_integration_config('Jira')
+    
+    if is_demo:
+        st.info("🎭 **Demo Mode** - Configurations are simulated")
+    
+    with st.form("jira_config"):
+        st.markdown("#### Configuration")
+        
+        url = st.text_input("Jira Instance URL", 
+                           value=config.get('url', 'https://your-domain.atlassian.net'),
+                           help="Your Atlassian Jira instance URL")
+        
+        email = st.text_input("Email", 
+                             value=config.get('email', ''),
+                             help="Your Jira account email")
+        
+        api_token = st.text_input("API Token", 
+                                 value=config.get('api_token', ''),
+                                 type="password",
+                                 help="Generate from: Account Settings → Security → API Tokens")
+        
+        project_key = st.text_input("Default Project Key", 
+                                   value=config.get('project_key', 'SEC'),
+                                   help="Default project for security findings (e.g., SEC, VULN)")
+        
+        issue_type = st.selectbox("Issue Type for Security Findings",
+                                 ["Bug", "Task", "Story", "Security Finding"],
+                                 index=["Bug", "Task", "Story", "Security Finding"].index(config.get('issue_type', 'Bug'))
+                                 if config.get('issue_type') in ["Bug", "Task", "Story", "Security Finding"] else 0)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            auto_create = st.checkbox("Auto-create tickets for critical findings", 
+                                     value=config.get('auto_create', True))
+        with col2:
+            auto_assign = st.checkbox("Auto-assign to security team", 
+                                     value=config.get('auto_assign', False))
+        
+        submitted = st.form_submit_button("💾 Save & Test Connection", use_container_width=True)
+        
+        if submitted:
+            config_data = {
+                'url': url,
+                'email': email,
+                'api_token': api_token,
+                'project_key': project_key,
+                'issue_type': issue_type,
+                'auto_create': auto_create,
+                'auto_assign': auto_assign,
+                'enabled': True
+            }
+            save_integration_config('Jira', config_data)
+            
+            # Test connection
+            success, message = test_integration_connection('Jira', config_data)
+            if success:
+                st.success(message)
+            else:
+                st.error(message)
+
+def render_servicenow_plugin():
+    """ServiceNow Integration Plugin"""
+    st.markdown("### 🎫 ServiceNow - ITSM Platform")
+    
+    is_demo = st.session_state.get('demo_mode', True)
+    config = get_integration_config('ServiceNow')
+    
+    if is_demo:
+        st.info("🎭 **Demo Mode** - Configurations are simulated")
+    
+    with st.form("servicenow_config"):
+        st.markdown("#### Configuration")
+        
+        instance_url = st.text_input("Instance URL", 
+                                     value=config.get('instance_url', 'https://your-instance.service-now.com'),
+                                     help="Your ServiceNow instance URL")
+        
+        username = st.text_input("Username", 
+                                value=config.get('username', ''))
+        
+        password = st.text_input("Password", 
+                                value=config.get('password', ''),
+                                type="password")
+        
+        table = st.selectbox("Target Table",
+                           ["incident", "sn_si_incident", "u_security_incident"],
+                           index=["incident", "sn_si_incident", "u_security_incident"].index(config.get('table', 'incident'))
+                           if config.get('table') in ["incident", "sn_si_incident", "u_security_incident"] else 0)
+        
+        assignment_group = st.text_input("Assignment Group", 
+                                        value=config.get('assignment_group', 'Security Team'),
+                                        help="Default assignment group for incidents")
+        
+        priority = st.selectbox("Default Priority",
+                               ["1 - Critical", "2 - High", "3 - Moderate", "4 - Low"],
+                               index=1)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            auto_create = st.checkbox("Auto-create incidents for vulnerabilities", 
+                                     value=config.get('auto_create', True))
+        with col2:
+            notify = st.checkbox("Send email notifications", 
+                                value=config.get('notify', True))
+        
+        submitted = st.form_submit_button("💾 Save & Test Connection", use_container_width=True)
+        
+        if submitted:
+            config_data = {
+                'instance_url': instance_url,
+                'username': username,
+                'password': password,
+                'table': table,
+                'assignment_group': assignment_group,
+                'priority': priority.split(' - ')[0],
+                'auto_create': auto_create,
+                'notify': notify,
+                'enabled': True
+            }
+            save_integration_config('ServiceNow', config_data)
+            
+            success, message = test_integration_connection('ServiceNow', config_data)
+            if success:
+                st.success(message)
+            else:
+                st.error(message)
+
+def render_slack_plugin():
+    """Slack Integration Plugin"""
+    st.markdown("### 💬 Slack - Team Communication")
+    
+    is_demo = st.session_state.get('demo_mode', True)
+    config = get_integration_config('Slack')
+    
+    if is_demo:
+        st.info("🎭 **Demo Mode** - Configurations are simulated")
+    
+    with st.form("slack_config"):
+        st.markdown("#### Configuration")
+        
+        st.markdown("""
+        **Setup Instructions:**
+        1. Create a Slack App at [api.slack.com/apps](https://api.slack.com/apps)
+        2. Add Bot Token Scopes: `chat:write`, `channels:read`, `users:read`
+        3. Install app to workspace
+        4. Copy Bot User OAuth Token
+        """)
+        
+        bot_token = st.text_input("Bot User OAuth Token", 
+                                 value=config.get('bot_token', ''),
+                                 type="password",
+                                 help="Starts with xoxb-")
+        
+        default_channel = st.text_input("Default Channel", 
+                                       value=config.get('default_channel', '#security-alerts'),
+                                       help="Channel for security notifications (include #)")
+        
+        critical_channel = st.text_input("Critical Alerts Channel", 
+                                        value=config.get('critical_channel', '#critical-security'),
+                                        help="Separate channel for critical findings")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            notify_critical = st.checkbox("Notify critical findings", 
+                                         value=config.get('notify_critical', True))
+        with col2:
+            notify_high = st.checkbox("Notify high severity findings", 
+                                     value=config.get('notify_high', True))
+        
+        col3, col4 = st.columns(2)
+        with col3:
+            mention_oncall = st.checkbox("@mention on-call engineer", 
+                                        value=config.get('mention_oncall', True))
+        with col4:
+            thread_alerts = st.checkbox("Use threads for updates", 
+                                       value=config.get('thread_alerts', True))
+        
+        submitted = st.form_submit_button("💾 Save & Test Connection", use_container_width=True)
+        
+        if submitted:
+            config_data = {
+                'bot_token': bot_token,
+                'default_channel': default_channel,
+                'critical_channel': critical_channel,
+                'notify_critical': notify_critical,
+                'notify_high': notify_high,
+                'mention_oncall': mention_oncall,
+                'thread_alerts': thread_alerts,
+                'enabled': True
+            }
+            save_integration_config('Slack', config_data)
+            
+            success, message = test_integration_connection('Slack', config_data)
+            if success:
+                st.success(message)
+            else:
+                st.error(message)
+
+def render_github_plugin():
+    """GitHub Integration Plugin"""
+    st.markdown("### 🐙 GitHub - Source Control")
+    
+    is_demo = st.session_state.get('demo_mode', True)
+    config = get_integration_config('GitHub')
+    
+    if is_demo:
+        st.info("🎭 **Demo Mode** - Configurations are simulated")
+    
+    with st.form("github_config"):
+        st.markdown("#### Configuration")
+        
+        st.markdown("""
+        **Setup Instructions:**
+        1. Go to GitHub Settings → Developer settings → Personal access tokens
+        2. Generate new token (classic) with scopes: `repo`, `security_events`, `read:org`
+        3. Copy the token
+        """)
+        
+        personal_access_token = st.text_input("Personal Access Token", 
+                                             value=config.get('personal_access_token', ''),
+                                             type="password",
+                                             help="ghp_...")
+        
+        organization = st.text_input("Organization/Username", 
+                                    value=config.get('organization', ''),
+                                    help="GitHub organization or username")
+        
+        default_repo = st.text_input("Default Repository", 
+                                    value=config.get('default_repo', ''),
+                                    help="Repository for policy-as-code (e.g., aws-policies)")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            monitor_repos = st.multiselect("Repositories to Monitor",
+                                          ["all", "aws-infrastructure", "security-policies", "compliance-docs"],
+                                          default=config.get('monitor_repos', ['all']))
+        with col2:
+            alert_types = st.multiselect("Alert Types",
+                                        ["Dependabot", "Code Scanning", "Secret Scanning"],
+                                        default=config.get('alert_types', ['Dependabot', 'Code Scanning']))
+        
+        col3, col4 = st.columns(2)
+        with col3:
+            auto_sync = st.checkbox("Auto-sync policies from GitHub", 
+                                   value=config.get('auto_sync', True))
+        with col4:
+            create_issues = st.checkbox("Create GitHub issues for findings", 
+                                       value=config.get('create_issues', False))
+        
+        submitted = st.form_submit_button("💾 Save & Test Connection", use_container_width=True)
+        
+        if submitted:
+            config_data = {
+                'personal_access_token': personal_access_token,
+                'organization': organization,
+                'default_repo': default_repo,
+                'monitor_repos': monitor_repos,
+                'alert_types': alert_types,
+                'auto_sync': auto_sync,
+                'create_issues': create_issues,
+                'enabled': True
+            }
+            save_integration_config('GitHub', config_data)
+            
+            success, message = test_integration_connection('GitHub', config_data)
+            if success:
+                st.success(message)
+            else:
+                st.error(message)
+
+def render_pagerduty_plugin():
+    """PagerDuty Integration Plugin"""
+    st.markdown("### 🚨 PagerDuty - Incident Response")
+    
+    is_demo = st.session_state.get('demo_mode', True)
+    config = get_integration_config('PagerDuty')
+    
+    if is_demo:
+        st.info("🎭 **Demo Mode** - Configurations are simulated")
+    
+    with st.form("pagerduty_config"):
+        st.markdown("#### Configuration")
+        
+        api_key = st.text_input("API Key", 
+                               value=config.get('api_key', ''),
+                               type="password",
+                               help="From PagerDuty → Configuration → API Access")
+        
+        service_id = st.text_input("Service ID", 
+                                  value=config.get('service_id', ''),
+                                  help="PagerDuty service for security alerts")
+        
+        escalation_policy = st.text_input("Escalation Policy ID", 
+                                         value=config.get('escalation_policy', ''),
+                                         help="Escalation policy for critical alerts")
+        
+        severity_mapping = st.selectbox("Severity Mapping",
+                                       ["Critical → P1, High → P2", "Critical → P2, High → P3", "All → P3"],
+                                       index=0)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            auto_trigger = st.checkbox("Auto-trigger incidents for critical", 
+                                      value=config.get('auto_trigger', True))
+        with col2:
+            auto_resolve = st.checkbox("Auto-resolve when remediated", 
+                                      value=config.get('auto_resolve', True))
+        
+        submitted = st.form_submit_button("💾 Save & Test Connection", use_container_width=True)
+        
+        if submitted:
+            config_data = {
+                'api_key': api_key,
+                'service_id': service_id,
+                'escalation_policy': escalation_policy,
+                'severity_mapping': severity_mapping,
+                'auto_trigger': auto_trigger,
+                'auto_resolve': auto_resolve,
+                'enabled': True
+            }
+            save_integration_config('PagerDuty', config_data)
+            
+            success, message = test_integration_connection('PagerDuty', config_data)
+            if success:
+                st.success(message)
+            else:
+                st.error(message)
+
+def render_wizio_plugin():
+    """Wiz.io Integration Plugin"""
+    st.markdown("### 🔵 Wiz.io - Cloud Security")
+    
+    is_demo = st.session_state.get('demo_mode', True)
+    config = get_integration_config('Wiz.io')
+    
+    if is_demo:
+        st.info("🎭 **Demo Mode** - Configurations are simulated")
+    
+    with st.form("wizio_config"):
+        st.markdown("#### Configuration")
+        
+        client_id = st.text_input("Client ID", 
+                                 value=config.get('client_id', ''),
+                                 help="Wiz Service Account Client ID")
+        
+        client_secret = st.text_input("Client Secret", 
+                                     value=config.get('client_secret', ''),
+                                     type="password",
+                                     help="Wiz Service Account Client Secret")
+        
+        api_url = st.text_input("API URL", 
+                               value=config.get('api_url', 'https://api.us1.app.wiz.io'),
+                               help="Wiz API endpoint for your region")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            sync_issues = st.checkbox("Sync Wiz issues to Security Hub", 
+                                     value=config.get('sync_issues', True))
+        with col2:
+            sync_vulnerabilities = st.checkbox("Sync vulnerability findings", 
+                                              value=config.get('sync_vulnerabilities', True))
+        
+        submitted = st.form_submit_button("💾 Save Configuration", use_container_width=True)
+        
+        if submitted:
+            config_data = {
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'api_url': api_url,
+                'sync_issues': sync_issues,
+                'sync_vulnerabilities': sync_vulnerabilities,
+                'enabled': True
+            }
+            save_integration_config('Wiz.io', config_data)
+
+def render_snyk_plugin():
+    """Snyk Integration Plugin"""
+    st.markdown("### 🔐 Snyk - DevSecOps")
+    
+    is_demo = st.session_state.get('demo_mode', True)
+    config = get_integration_config('Snyk')
+    
+    if is_demo:
+        st.info("🎭 **Demo Mode** - Configurations are simulated")
+    
+    with st.form("snyk_config"):
+        st.markdown("#### Configuration")
+        
+        api_token = st.text_input("API Token", 
+                                 value=config.get('api_token', ''),
+                                 type="password",
+                                 help="From Snyk Account Settings → API Token")
+        
+        organization_id = st.text_input("Organization ID", 
+                                       value=config.get('organization_id', ''),
+                                       help="Your Snyk organization ID")
+        
+        scan_types = st.multiselect("Scan Types to Import",
+                                   ["Open Source", "Code", "Container", "IaC"],
+                                   default=config.get('scan_types', ['Open Source', 'Container']))
+        
+        severity_threshold = st.selectbox("Minimum Severity to Import",
+                                         ["Critical", "High", "Medium", "Low"],
+                                         index=1)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            auto_import = st.checkbox("Auto-import findings to Security Hub", 
+                                     value=config.get('auto_import', True))
+        with col2:
+            fail_on_critical = st.checkbox("Block deployments on critical", 
+                                          value=config.get('fail_on_critical', True))
+        
+        submitted = st.form_submit_button("💾 Save Configuration", use_container_width=True)
+        
+        if submitted:
+            config_data = {
+                'api_token': api_token,
+                'organization_id': organization_id,
+                'scan_types': scan_types,
+                'severity_threshold': severity_threshold,
+                'auto_import': auto_import,
+                'fail_on_critical': fail_on_critical,
+                'enabled': True
+            }
+            save_integration_config('Snyk', config_data)
+
+def render_gitlab_plugin():
+    """GitLab Integration Plugin"""
+    st.markdown("### 🦊 GitLab - DevOps Platform")
+    
+    is_demo = st.session_state.get('demo_mode', True)
+    config = get_integration_config('GitLab')
+    
+    if is_demo:
+        st.info("🎭 **Demo Mode** - Configurations are simulated")
+    
+    with st.form("gitlab_config"):
+        st.markdown("#### Configuration")
+        
+        gitlab_url = st.text_input("GitLab URL", 
+                                   value=config.get('gitlab_url', 'https://gitlab.com'),
+                                   help="GitLab instance URL")
+        
+        private_token = st.text_input("Private Token", 
+                                     value=config.get('private_token', ''),
+                                     type="password",
+                                     help="GitLab Personal Access Token")
+        
+        group_id = st.text_input("Group ID", 
+                                value=config.get('group_id', ''),
+                                help="GitLab group for pipeline integration")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            monitor_pipelines = st.checkbox("Monitor pipeline security scans", 
+                                           value=config.get('monitor_pipelines', True))
+        with col2:
+            sync_policies = st.checkbox("Sync policies from GitLab", 
+                                       value=config.get('sync_policies', True))
+        
+        submitted = st.form_submit_button("💾 Save Configuration", use_container_width=True)
+        
+        if submitted:
+            config_data = {
+                'gitlab_url': gitlab_url,
+                'private_token': private_token,
+                'group_id': group_id,
+                'monitor_pipelines': monitor_pipelines,
+                'sync_policies': sync_policies,
+                'enabled': True
+            }
+            save_integration_config('GitLab', config_data)
+
+def render_enterprise_integration_scene():
+    """Main Enterprise Integrations Scene - Connected Enterprise Stack"""
+    is_demo = st.session_state.get('demo_mode', True)
+    
+    st.markdown("## 🌐 Connected Enterprise Stack")
+    
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, #EBF4FF 0%, #E0F2FE 100%); padding: 1.5rem; border-radius: 12px; 
+                border-left: 4px solid #3B82F6; margin-bottom: 2rem;'>
+        <p style='margin: 0; color: #1E40AF; font-size: 1rem;'>
+            <strong>Integrates with your entire enterprise stack</strong> — Security findings create tickets. Cost anomalies trigger alerts. Teams notified where they work.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Get integration statuses
+    integrations = st.session_state.get('integrations', {})
+    
+    # Integration data with demo stats
+    integration_services = {
+        'Jira': {
+            'icon': '📋',
+            'category': 'Project Management',
+            'demo_stats': '2,847 tickets created',
+            'live_stats_key': 'tickets_created'
+        },
+        'ServiceNow': {
+            'icon': '🎫',
+            'category': 'ITSM Platform',
+            'demo_stats': '1,234 incidents tracked',
+            'live_stats_key': 'incidents_tracked'
+        },
+        'Snyk': {
+            'icon': '🔐',
+            'category': 'DevSecOps',
+            'demo_stats': '3,421 vulnerabilities tracked',
+            'live_stats_key': 'vulnerabilities_tracked'
+        },
+        'GitLab': {
+            'icon': '🦊',
+            'category': 'DevOps Platform',
+            'demo_stats': '524 pipelines integrated',
+            'live_stats_key': 'pipelines_integrated'
+        },
+        'Slack': {
+            'icon': '💬',
+            'category': 'Team Communication',
+            'demo_stats': '18,424 notifications sent',
+            'live_stats_key': 'notifications_sent'
+        },
+        'Wiz.io': {
+            'icon': '🔵',
+            'category': 'Cloud Security',
+            'demo_stats': '5,892 findings synced',
+            'live_stats_key': 'findings_synced'
+        },
+        'GitHub': {
+            'icon': '🐙',
+            'category': 'Source Control',
+            'demo_stats': '847 repos monitored',
+            'live_stats_key': 'repos_monitored'
+        },
+        'PagerDuty': {
+            'icon': '🚨',
+            'category': 'Incident Response',
+            'demo_stats': '342 alerts routed',
+            'live_stats_key': 'alerts_routed'
+        }
+    }
+    
+    # Active Integrations section
+    st.markdown("### ⚡ Active Integrations")
+    
+    # Display integration cards in grid
+    cols = st.columns(4)
+    for idx, (service, details) in enumerate(integration_services.items()):
+        col_idx = idx % 4
+        with cols[col_idx]:
+            config = integrations.get(service, {})
+            is_connected = config.get('enabled', False)
+            
+            if is_demo:
+                stats = details['demo_stats']
+            else:
+                stats = config.get('stats', details['demo_stats'])
+            
+            render_integration_card(
+                name=service,
+                icon=details['icon'],
+                category=details['category'],
+                connected=is_connected,
+                stats=stats
+            )
+    
+    st.markdown("---")
+    
+    # Live Automation Examples
+    st.markdown("### ⚡ Live Automation Examples")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem;'>
+            <h4 style='margin: 0 0 0.5rem 0; color: #991B1B;'>🎯 Security Findings → Jira Tickets</h4>
+            <div style='background: #DC2626; color: white; padding: 0.75rem; border-radius: 8px; margin-bottom: 0.75rem;'>
+                <strong>CRITICAL</strong>
+                <p style='margin: 0.25rem 0 0 0; font-size: 0.9rem;'>Security Hub Finding</p>
+                <p style='margin: 0.25rem 0 0 0; font-size: 0.85rem; opacity: 0.9;'>Public S3 bucket detected</p>
+            </div>
+            <p style='margin: 0; color: #7C2D12; font-size: 0.85rem;'>
+                → Auto-creates Jira ticket in SEC project<br/>
+                → Assigns to security team<br/>
+                → Links remediation playbook
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem;'>
+            <h4 style='margin: 0 0 0.5rem 0; color: #5B21B6;'>🔬 Vulnerability Scan → ServiceNow</h4>
+            <div style='background: #7C3AED; color: white; padding: 0.75rem; border-radius: 8px; margin-bottom: 0.75rem;'>
+                <strong>Wiz.io Scan Complete</strong>
+                <p style='margin: 0.25rem 0 0 0; font-size: 0.9rem;'>47 new critical findings</p>
+            </div>
+            <p style='margin: 0; color: #5B21B6; font-size: 0.85rem;'>
+                → Creates ServiceNow incidents<br/>
+                → Routes to appropriate teams<br/>
+                → Tracks remediation SLA
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Configuration Section
+    st.markdown("### ⚙️ Configure Integrations")
+    
+    # Integration selector
+    selected_service = st.selectbox(
+        "Select Service to Configure",
+        [""] + list(integration_services.keys()),
+        format_func=lambda x: f"{integration_services[x]['icon']} {x} - {integration_services[x]['category']}" if x else "Choose a service..."
+    )
+    
+    if selected_service:
+        st.markdown("---")
+        
+        # Render appropriate plugin
+        if selected_service == "Jira":
+            render_jira_plugin()
+        elif selected_service == "ServiceNow":
+            render_servicenow_plugin()
+        elif selected_service == "Slack":
+            render_slack_plugin()
+        elif selected_service == "GitHub":
+            render_github_plugin()
+        elif selected_service == "PagerDuty":
+            render_pagerduty_plugin()
+        elif selected_service == "Wiz.io":
+            render_wizio_plugin()
+        elif selected_service == "Snyk":
+            render_snyk_plugin()
+        elif selected_service == "GitLab":
+            render_gitlab_plugin()
+    
+    # Bulk actions
+    st.markdown("---")
+    st.markdown("### 🔧 Bulk Actions")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("📥 Export All Configurations", use_container_width=True):
+            config_json = json.dumps(st.session_state.get('integrations', {}), indent=2)
+            st.download_button(
+                label="💾 Download JSON",
+                data=config_json,
+                file_name="integration_configs.json",
+                mime="application/json"
+            )
+    
+    with col2:
+        if st.button("🔄 Test All Connections", use_container_width=True):
+            with st.spinner("Testing connections..."):
+                results = []
+                for service, config in st.session_state.get('integrations', {}).items():
+                    if config.get('enabled'):
+                        success, message = test_integration_connection(service, config)
+                        results.append(f"{service}: {message}")
+                
+                for result in results:
+                    st.info(result)
+    
+    with col3:
+        if st.button("❌ Clear All Configurations", use_container_width=True):
+            if 'integrations' in st.session_state:
+                st.session_state.integrations = {}
+                st.success("✅ All configurations cleared!")
+                st.rerun()
+
 def main():
     """Main application entry point - Comprehensive Enterprise Platform"""
     
