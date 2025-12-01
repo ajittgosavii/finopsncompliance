@@ -24,10 +24,30 @@ from datetime import datetime
 from typing import Dict, List, Optional
 import json
 
-# Import our MERGED remediation engines
-from windows_server_remediation_MERGED_ENHANCED import WindowsServerRemediator
-from linux_distribution_remediation_MERGED_ENHANCED import LinuxEC2Connector, LinuxDistributionRemediator
-from eks_remediation_complete import EKSConnector, EKSRemediationEngine
+# Import our MERGED remediation engines with error handling
+WINDOWS_AVAILABLE = False
+LINUX_AVAILABLE = False
+EKS_AVAILABLE = False
+
+try:
+    from windows_server_remediation_MERGED_ENHANCED import WindowsServerRemediator
+    WINDOWS_AVAILABLE = True
+except ImportError:
+    WindowsServerRemediator = None
+
+try:
+    from linux_distribution_remediation_MERGED_ENHANCED import LinuxEC2Connector, LinuxDistributionRemediator
+    LINUX_AVAILABLE = True
+except ImportError:
+    LinuxEC2Connector = None
+    LinuxDistributionRemediator = None
+
+try:
+    from eks_remediation_complete import EKSConnector, EKSRemediationEngine
+    EKS_AVAILABLE = True
+except ImportError:
+    EKSConnector = None
+    EKSRemediationEngine = None
 
 # Optional ML features
 try:
@@ -47,7 +67,10 @@ class UnifiedRemediationDashboard:
         self.aws_region = aws_region
         
         # Initialize remediation engines (MERGED versions)
-        self.windows_remediator = WindowsServerRemediator()
+        if WINDOWS_AVAILABLE:
+            self.windows_remediator = WindowsServerRemediator()
+        else:
+            self.windows_remediator = None
         
         # Linux and EKS require AWS credentials
         # These will be initialized when credentials are available
@@ -61,20 +84,21 @@ class UnifiedRemediationDashboard:
         """Initialize AWS connectors with credentials"""
         try:
             # Initialize Linux
-            self.linux_connector = LinuxEC2Connector(
-                region=self.aws_region,
-                aws_access_key=aws_access_key,
-                aws_secret_key=aws_secret_key
-            )
-            self.linux_engine = LinuxDistributionRemediator(self.linux_connector)
-            
-            # Initialize EKS if cluster name provided
-            if eks_cluster_name:
-                self.eks_connector = EKSConnector(
-                    cluster_name=eks_cluster_name,
+            if LINUX_AVAILABLE:
+                self.linux_connector = LinuxEC2Connector(
                     region=self.aws_region,
                     aws_access_key=aws_access_key,
                     aws_secret_key=aws_secret_key
+                )
+                self.linux_engine = LinuxDistributionRemediator(self.linux_connector)
+            
+            # Initialize EKS
+            if EKS_AVAILABLE and eks_cluster_name:
+                self.eks_connector = EKSConnector(
+                    region=self.aws_region,
+                    aws_access_key=aws_access_key,
+                    aws_secret_key=aws_secret_key,
+                    cluster_name=eks_cluster_name
                 )
                 self.eks_engine = EKSRemediationEngine(self.eks_connector)
             
@@ -83,6 +107,73 @@ class UnifiedRemediationDashboard:
         except Exception as e:
             st.error(f"Failed to initialize connectors: {str(e)}")
             return False
+    
+    def show_module_status(self):
+        """Display status of available remediation modules"""
+        st.markdown("### 📦 Remediation Modules Status")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if WINDOWS_AVAILABLE:
+                st.success("✅ **Windows Module**\nLoaded & Ready")
+            else:
+                st.error("❌ **Windows Module**\nNot Found")
+                with st.expander("📥 How to fix"):
+                    st.markdown("""
+                    Upload `windows_server_remediation_MERGED_ENHANCED.py` to your Streamlit app directory.
+                    
+                    **Download from:**
+                    - Your outputs folder
+                    - File: windows_server_remediation_MERGED_ENHANCED.py (1,067 lines)
+                    """)
+        
+        with col2:
+            if LINUX_AVAILABLE:
+                st.success("✅ **Linux Module**\nLoaded & Ready")
+            else:
+                st.error("❌ **Linux Module**\nNot Found")
+                with st.expander("📥 How to fix"):
+                    st.markdown("""
+                    Upload `linux_distribution_remediation_MERGED_ENHANCED.py` to your Streamlit app directory.
+                    
+                    **Download from:**
+                    - Your outputs folder
+                    - File: linux_distribution_remediation_MERGED_ENHANCED.py (959 lines)
+                    """)
+        
+        with col3:
+            if EKS_AVAILABLE:
+                st.success("✅ **EKS Module**\nLoaded & Ready")
+            else:
+                st.error("❌ **EKS Module**\nNot Found")
+                with st.expander("📥 How to fix"):
+                    st.markdown("""
+                    Upload `eks_remediation_complete.py` to your Streamlit app directory.
+                    
+                    **Download from:**
+                    - Your outputs folder
+                    - File: eks_remediation_complete.py (550 lines)
+                    """)
+        
+        # Show deployment instructions if any modules missing
+        if not (WINDOWS_AVAILABLE and LINUX_AVAILABLE and EKS_AVAILABLE):
+            st.markdown("---")
+            st.warning("⚠️ **Some modules are missing**")
+            st.info("""
+            **For full functionality, ensure all 4 files are in your Streamlit app directory:**
+            
+            1. `windows_server_remediation_MERGED_ENHANCED.py`
+            2. `linux_distribution_remediation_MERGED_ENHANCED.py`
+            3. `eks_remediation_complete.py`
+            4. `unified_remediation_dashboard.py` (this file)
+            
+            **All files are available in your /mnt/user-data/outputs/ folder.**
+            """)
+        else:
+            st.success("🎉 **All modules loaded successfully!**")
+        
+        st.markdown("---")
     
     def collect_all_vulnerabilities(self) -> List[Dict]:
         """
@@ -96,7 +187,7 @@ class UnifiedRemediationDashboard:
         all_vulnerabilities = []
         
         # Windows EC2 vulnerabilities
-        if 'windows_instances' in st.session_state:
+        if self.windows_remediator and 'windows_instances' in st.session_state:
             for instance in st.session_state.windows_instances:
                 instance_id = instance['instance_id']
                 # Detect or default Windows Server version
@@ -213,6 +304,9 @@ class UnifiedRemediationDashboard:
         st.markdown("# 🎯 Unified Remediation Dashboard")
         st.markdown("**Comprehensive view of all resources requiring remediation**")
         st.markdown("---")
+        
+        # Show module status
+        self.show_module_status()
         
         # Collect all vulnerabilities
         all_vulns = self.collect_all_vulnerabilities()
