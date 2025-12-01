@@ -102,6 +102,28 @@ except ImportError:
     FINOPS_SCENE_AVAILABLE = False
     print("Note: finops_scene_7_complete.py not found - using built-in version")
 
+try:
+    from eks_container_vulnerability_module import render_eks_container_vulnerabilities_tab
+    EKS_VULN_MODULE_AVAILABLE = True
+except ImportError:
+    EKS_VULN_MODULE_AVAILABLE = False
+    print("Note: eks_container_vulnerability_module.py not found - using built-in version")
+    
+    # Fallback placeholder function
+    def render_eks_container_vulnerabilities_tab(mode="demo"):
+        st.markdown("### 🐳 EKS Container Vulnerabilities")
+        st.info("💡 **Module Not Available:** Upload `eks_container_vulnerability_module.py` to enable EKS container scanning")
+        st.markdown("""
+        This feature provides:
+        - EKS container base image vulnerability scanning
+        - Application-level dependency scanning
+        - NIST NVD database integration
+        - AI-powered remediation scripts
+        - Bulk vulnerability management
+        
+        **To enable:** Upload `eks_container_vulnerability_module.py` to your repository
+        """)
+
 # ⚠️ IMPORTANT: Do NOT import render_enterprise_integration_scene from external file
 # Always use the built-in version defined in this file which properly handles demo_mode
 INTEGRATION_SCENE_EXTERNAL = False
@@ -6420,8 +6442,14 @@ def render_inspector_vulnerability_dashboard():
     
     st.markdown("---")
     
-    # Main tabs for Windows and Linux
-    os_tabs = st.tabs(["🪟 Windows Vulnerabilities", "🐧 Linux Vulnerabilities", "📊 Analytics", "🤖 AI Remediation"])
+    # Main tabs for Windows, Linux, EKS Containers, Analytics, and AI Remediation
+    os_tabs = st.tabs([
+        "🪟 Windows Vulnerabilities", 
+        "🐧 Linux Vulnerabilities", 
+        "🐳 EKS Container Vulnerabilities",
+        "📊 Analytics", 
+        "🤖 AI Remediation"
+    ])
     
     # Windows Vulnerabilities Tab
     with os_tabs[0]:
@@ -6606,8 +6634,15 @@ def render_inspector_vulnerability_dashboard():
                     st.markdown("**Generated Bash Script:**")
                     st.code(st.session_state[f'linux_script_{idx}'], language='bash')
     
-    # Analytics Tab
+    # EKS Container Vulnerabilities Tab
     with os_tabs[2]:
+        # Pass the current mode (demo or live) to the EKS vulnerability module
+        current_mode = st.session_state.get('demo_mode', True)
+        mode_str = "demo" if current_mode else "live"
+        render_eks_container_vulnerabilities_tab(mode=mode_str)
+    
+    # Analytics Tab
+    with os_tabs[3]:
         st.markdown("### 📊 Vulnerability Analytics")
         
         col1, col2 = st.columns(2)
@@ -6659,7 +6694,7 @@ def render_inspector_vulnerability_dashboard():
         st.plotly_chart(fig, use_container_width=True)
     
     # AI Remediation Tab
-    with os_tabs[3]:
+    with os_tabs[4]:
         st.markdown("### 🤖 AI-Powered Bulk Remediation")
         
         st.markdown("""
