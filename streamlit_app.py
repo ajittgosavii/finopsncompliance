@@ -6719,12 +6719,34 @@ def render_inspector_vulnerability_dashboard():
                     st.markdown("**Generated Bash Script:**")
                     st.code(st.session_state[f'linux_script_{idx}'], language='bash')
     
-    # EKS Container Vulnerabilities Tab
+    # EKS Container Vulnerabilities Tab - Enhanced with Enterprise Dashboard
     with os_tabs[2]:
-        # Pass the current mode (demo or live) to the EKS vulnerability module
-        current_mode = st.session_state.get('demo_mode', True)
-        mode_str = "demo" if current_mode else "live"
-        render_eks_container_vulnerabilities_tab(mode=mode_str)
+        st.markdown("### 🐳 EKS Container Vulnerability Management")
+        
+        if EKS_ENTERPRISE_AVAILABLE:
+            st.success("✅ EKS Enterprise dashboard loaded")
+            st.info("📌 Complete Q1-Q2 2025 roadmap with Phases 1-4: Live scanning, auto-remediation, multi-cluster, and AI/ML features")
+            
+            # Render the full enterprise EKS dashboard (all phases 1-4)
+            render_enterprise_vulnerability_dashboard()
+        else:
+            # Fallback to basic EKS module if enterprise not available
+            if EKS_VULN_MODULE_AVAILABLE:
+                st.info("📌 Using basic EKS module. Upload `eks_vulnerability_enterprise_complete.py` for enterprise features.")
+                current_mode = st.session_state.get('demo_mode', True)
+                mode_str = "demo" if current_mode else "live"
+                render_eks_container_vulnerabilities_tab(mode=mode_str)
+            else:
+                st.warning("⚠️ EKS vulnerability modules not loaded. Upload modules to enable container security features.")
+                st.markdown("""
+                **Available with full enterprise module:**
+                - **Phase 1:** Live scanner integration (Trivy, Snyk, AWS Inspector v2)
+                - **Phase 2:** Auto-remediation with one-click fixes and rollback
+                - **Phase 3:** Multi-cluster management, compliance mapping (PCI-DSS, HIPAA, SOC 2), PDF/Excel reports, Slack/Teams notifications
+                - **Phase 4:** ML risk scoring, natural language queries with Claude AI, automated triage
+                
+                **To enable:** Upload `eks_vulnerability_enterprise_complete.py` (82 KB) to your repository
+                """)
     
     # Analytics Tab
     with os_tabs[3]:
@@ -6806,11 +6828,10 @@ def render_inspector_vulnerability_dashboard():
         st.markdown("### 💻 OS-Specific Remediation by Flavour")
         st.info("📌 **NEW:** Select your specific OS version/distribution to generate tailored remediation scripts")
         
-        # Create tabs for different OS types and EKS
+        # Create tabs for Windows and Linux only (EKS is in its own dedicated tab)
         remediation_tabs = st.tabs([
             "🪟 Windows Server", 
-            "🐧 Linux Distributions",
-            "🐳 EKS Container Security"
+            "🐧 Linux Distributions"
         ])
         
         # ===== WINDOWS SERVER TAB =====
@@ -6882,31 +6903,8 @@ def render_inspector_vulnerability_dashboard():
                         st.success("✅ Basic remediation plan generated!")
                         st.session_state['linux_bulk_plan'] = True
         
-        # ===== EKS CONTAINER SECURITY TAB =====
-        with remediation_tabs[2]:
-            st.markdown("#### EKS Container Vulnerability Management")
-            
-            if EKS_ENTERPRISE_AVAILABLE:
-                st.success("✅ EKS Enterprise dashboard loaded")
-                
-                # Render the full enterprise EKS dashboard (all phases 1-4)
-                render_enterprise_vulnerability_dashboard()
-            else:
-                # Fallback to basic EKS view if module not available
-                st.warning("⚠️ Enhanced EKS dashboard not loaded. Upload `eks_vulnerability_enterprise_complete.py` for full enterprise features.")
-                st.markdown("""
-                **Enterprise features available with full module:**
-                - Phase 1: Live scanner integration (Trivy, Snyk, AWS Inspector v2)
-                - Phase 2: Auto-remediation with rollback
-                - Phase 3: Multi-cluster management, compliance, reports
-                - Phase 4: ML risk scoring, NLP queries, auto-triage
-                """)
-                
-                if EKS_VULN_MODULE_AVAILABLE:
-                    st.info("📌 Using basic EKS module. Upload enterprise module for advanced features.")
-                    render_eks_container_vulnerabilities_tab(mode=st.session_state.get('demo_mode', True))
-                else:
-                    st.error("❌ No EKS vulnerability modules available. Please upload required files.")
+        # Note: EKS Container Security is now in its own dedicated tab (EKS Container Vulnerabilities)
+        # This keeps AI Remediation focused on OS-level patching (Windows/Linux)
         
         # Legacy bulk remediation plans (shown below tabs if generated)
         if st.session_state.get('windows_bulk_plan') or st.session_state.get('linux_bulk_plan'):
