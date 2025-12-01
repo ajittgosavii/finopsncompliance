@@ -801,12 +801,19 @@ def render_windows_remediation_ui():
     
     st.markdown("## 🪟 Windows Server Vulnerability Remediation")
     
-    # Initialize remediator
-    if 'windows_remediator' not in st.session_state:
-        claude_client = st.session_state.get('claude_client')
-        st.session_state.windows_remediator = WindowsServerRemediator(claude_client)
+    # Initialize remediator with safe error handling
+    remediator = st.session_state.get('windows_remediator')
     
-    remediator = st.session_state.windows_remediator
+    # Check if remediator exists and is the right type
+    if not remediator or not isinstance(remediator, WindowsServerRemediator):
+        claude_client = st.session_state.get('claude_client')
+        remediator = WindowsServerRemediator(claude_client)
+        st.session_state.windows_remediator = remediator
+    
+    # Double-check that we have a valid remediator
+    if not hasattr(remediator, 'list_supported_versions'):
+        st.error("⚠️ Windows remediator initialization failed. Please refresh the page.")
+        return
     
     # Version selector
     col1, col2 = st.columns(2)
