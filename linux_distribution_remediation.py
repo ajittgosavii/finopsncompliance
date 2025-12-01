@@ -915,12 +915,19 @@ def render_linux_remediation_ui():
     
     st.markdown("## 🐧 Linux Distribution Vulnerability Remediation")
     
-    # Initialize remediator
-    if 'linux_remediator' not in st.session_state:
-        claude_client = st.session_state.get('claude_client')
-        st.session_state.linux_remediator = LinuxRemediator(claude_client)
+    # Initialize remediator with safe error handling
+    remediator = st.session_state.get('linux_remediator')
     
-    remediator = st.session_state.linux_remediator
+    # Check if remediator exists and is the right type
+    if not remediator or not isinstance(remediator, LinuxRemediator):
+        claude_client = st.session_state.get('claude_client')
+        remediator = LinuxRemediator(claude_client)
+        st.session_state.linux_remediator = remediator
+    
+    # Double-check that we have a valid remediator
+    if not hasattr(remediator, 'get_distribution_info'):
+        st.error("⚠️ Linux remediator initialization failed. Please refresh the page.")
+        return
     
     # Version selector
     col1, col2 = st.columns(2)
