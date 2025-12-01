@@ -2,9 +2,9 @@ streamlit
 boto3
 pandas
 plotly
-kubernetes
 python-dateutil
 python-dotenv
-cryptography
+anthropic
+numpy
 openpyxl
-scikit-learn
+cryptography
