@@ -6539,11 +6539,7 @@ def render_inspector_vulnerability_dashboard():
     # with os_tabs[0]:
     # EKS Container Vulnerabilities Tab - Enhanced with Enterprise Dashboard
     with os_tabs[0]:
-        st.markdown("### 🐳 EKS Container Vulnerability Management")
-        
-        if EKS_ENTERPRISE_AVAILABLE:
-            st.success("✅ EKS Enterprise dashboard loaded")
-            st.info("📌 Complete Q1-Q2 2025 roadmap with Phases 1-4: Live scanning, auto-remediation, multi-cluster, and AI/ML features")
+    if EKS_ENTERPRISE_AVAILABLE:
             
             # Render the full enterprise EKS dashboard (all phases 1-4)
             render_enterprise_vulnerability_dashboard()
