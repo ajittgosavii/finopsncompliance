@@ -291,30 +291,6 @@ except Exception as e:
     def render_batch_remediation_ui():
         st.error(f"❌ Error loading Batch Remediation module")
         st.code(str(e))
-    
-    # Fallback placeholder function
-    def render_batch_remediation_tab(available_threats=None):
-        st.markdown("### ⚡ Batch Threat Remediation")
-        st.info("💡 **Coming Soon:** Bulk remediation across multiple threats and accounts")
-        st.markdown("""
-        This feature will enable:
-        - Remediate multiple threats simultaneously
-        - Apply fixes across multiple AWS accounts
-        - Schedule remediation during maintenance windows
-        - Rollback capabilities with audit trail
-        - Compliance reporting for all remediation actions
-        
-        **To enable:** Upload `batch_remediation_production.py` to your repository
-        """)
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Pending Remediations", "0")
-        with col2:
-            st.metric("Scheduled Actions", "0")
-        with col3:
-            st.metric("Success Rate", "N/A")
-
- 
 
 
 # Import Enterprise Features (v5.0)
@@ -8834,7 +8810,7 @@ def main():
         st.markdown("## 🤖 AI-Powered Remediation")
         
         # Feature Status Banner
-        if CODE_GEN_MODULE_AVAILABLE and BATCH_MODULE_AVAILABLE:
+        if CODE_GEN_MODULE_AVAILABLE and BATCH_REMEDIATION_AVAILABLE:
             if CODE_GENERATION_ENABLED and BATCH_REMEDIATION_ENABLED:
                 st.success("✅ **Production Mode Enabled:** All AI remediation features are active")
             elif CODE_GENERATION_ENABLED or BATCH_REMEDIATION_ENABLED:
@@ -8850,7 +8826,7 @@ def main():
             missing_modules = []
             if not CODE_GEN_MODULE_AVAILABLE:
                 missing_modules.append("code_generation_production.py")
-            if not BATCH_MODULE_AVAILABLE:
+            if not BATCH_REMEDIATION_AVAILABLE:
                 missing_modules.append("batch_remediation_production.py")
             st.warning(f"📦 **Modules Not Found:** Upload {', '.join(missing_modules)} to enable production features")
         
@@ -8878,7 +8854,7 @@ def main():
     with ai_tabs[3]:
         # Batch Remediation - PRODUCTION IMPLEMENTATION
         available_threats = st.session_state.get('available_threats', [])
-        render_batch_remediation_tab(available_threats=available_threats)
+        render_batch_remediation_ui()
     
     with tabs[5]:
         render_github_gitops_tab()
