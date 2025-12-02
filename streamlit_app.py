@@ -6622,6 +6622,10 @@ def render_inspector_vulnerability_dashboard():
     with os_tabs[2]:
         st.markdown("### 🤖 AI-Powered Bulk Remediation")
         
+        # Get data from inspector for fallback metrics
+        windows_data = inspector_data.get('windows_vulns', {})
+        linux_data = inspector_data.get('linux_vulns', {})
+        
         # Intelligent Patch Management header
         with st.expander("🧠 Intelligent Patch Management", expanded=False):
             st.markdown("""
@@ -6631,17 +6635,7 @@ def render_inspector_vulnerability_dashboard():
             </div>
             """, unsafe_allow_html=True)
         
-        # Quick stats overview
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("🪟 Windows Vulnerabilities", windows_data.get('total', 0))
-        with col2:
-            st.metric("🐧 Linux Vulnerabilities", linux_data.get('total', 0))
-        with col3:
-            total_auto_fixable = (windows_data.get('critical', 0) + windows_data.get('high', 0) + 
-                                 linux_data.get('critical', 0) + linux_data.get('high', 0))
-            st.metric("⚡ Auto-Fixable", total_auto_fixable)
-        
+        # Quick overview removed - metrics now shown within each OS sub-tab
         st.markdown("---")
         st.markdown("### 💻 OS-Specific Remediation by Flavour")
         st.info("📌 **NEW:** Select your specific OS version/distribution to generate tailored remediation scripts")
