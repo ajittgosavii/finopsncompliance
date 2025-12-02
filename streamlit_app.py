@@ -127,15 +127,15 @@ except ImportError:
 # ===== NEW: OS-Specific Remediation by Flavour =====
 # Windows Server remediation with OS version selection
 try:
-    from windows_server_remediation_MERGED_ENHANCED import render_windows_remediation_ui
+    from windows_server_remediation import render_windows_remediation_ui
     WINDOWS_REMEDIATION_AVAILABLE = True
 except ImportError:
     WINDOWS_REMEDIATION_AVAILABLE = False
-    print("Note: windows_server_remediation_MERGED_ENHANCED.py not found - using placeholder")
+    print("Note: windows_server_remediation.py not found - using placeholder")
     
     def render_windows_remediation_ui():
         st.markdown("### 🪟 Windows Server Remediation by OS Flavour")
-        st.info("💡 **Module Not Available:** Upload `windows_server_remediation_MERGED_ENHANCED.py` to enable Windows remediation by OS version")
+        st.info("💡 **Module Not Available:** Upload `windows_server_remediation.py` to enable Windows remediation by OS version")
         st.markdown("""
         **This feature provides:**
         - ✅ Select Windows Server version (2025, 2022, 2019, 2016, 2012 R2)
@@ -145,20 +145,20 @@ except ImportError:
         - ✅ KB article installation
         - ✅ Reboot scheduling and management
         
-        **To enable:** Upload `windows_server_remediation_MERGED_ENHANCED.py` (32 KB) to your repository
+        **To enable:** Upload `windows_server_remediation.py` (32 KB) to your repository
         """)
 
 # Linux distribution remediation with distro selection
 try:
-    from linux_distribution_remediation_MERGED_ENHANCED import render_linux_remediation_ui
+    from linux_distribution_remediation import render_linux_remediation_ui
     LINUX_REMEDIATION_AVAILABLE = True
 except ImportError:
     LINUX_REMEDIATION_AVAILABLE = False
-    print("Note: linux_distribution_remediation_MERGED_ENHANCED.py not found - using placeholder")
+    print("Note: linux_distribution_remediation.py not found - using placeholder")
     
     def render_linux_remediation_ui():
         st.markdown("### 🐧 Linux Distribution Remediation by OS Flavour")
-        st.info("💡 **Module Not Available:** Upload `linux_distribution_remediation_MERGED_ENHANCED.py` to enable Linux remediation by distribution")
+        st.info("💡 **Module Not Available:** Upload `linux_distribution_remediation.py` to enable Linux remediation by distribution")
         st.markdown("""
         **This feature provides:**
         - ✅ Select Linux distribution (Ubuntu, RHEL, Amazon Linux, Rocky, Alma, etc.)
@@ -168,7 +168,7 @@ except ImportError:
         - ✅ Security-focused updates
         - ✅ Reboot detection and management
         
-        **To enable:** Upload `linux_distribution_remediation_MERGED_ENHANCED.py` (33 KB) to your repository
+        **To enable:** Upload `linux_distribution_remediation.py` (33 KB) to your repository
         """)
 
 # EKS Container Vulnerability Enterprise Dashboard (All Phases 1-4)
@@ -6527,200 +6527,18 @@ def render_inspector_vulnerability_dashboard():
     
     st.markdown("---")
     
-    # Main tabs for Windows, Linux, EKS Containers, Analytics, and AI Remediation
+    # Main tabs for EKS Containers, Analytics, and AI Remediation
+    # Note: Windows and Linux remediation are now under AI Remediation tab
     os_tabs = st.tabs([
-        "🪟 Windows Vulnerabilities", 
-        "🐧 Linux Vulnerabilities", 
         "🐳 EKS Container Vulnerabilities",
         "📊 Analytics", 
         "🤖 AI Remediation"
     ])
     
-    # Windows Vulnerabilities Tab
-    with os_tabs[0]:
-        st.markdown("### 🪟 Windows OS Vulnerabilities")
-        
-        windows_data = inspector_data.get('windows_vulns', {})
-        
-        # Windows metrics
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total Windows Vulns", windows_data.get('total', 0))
-        with col2:
-            st.metric("Critical", windows_data.get('critical', 0), 
-                     delta_color="inverse")
-        with col3:
-            st.metric("High", windows_data.get('high', 0),
-                     delta_color="inverse")
-        with col4:
-            st.metric("Affected Instances", windows_data.get('instances', 0))
-        
-        st.markdown("---")
-        
-        # Windows vulnerability findings
-        st.markdown("#### 🔍 Critical Windows Vulnerabilities")
-        
-        windows_findings = windows_data.get('findings', [])
-        
-        for idx, vuln in enumerate(windows_findings):
-            severity_class = vuln['severity'].lower()
-            severity_color = {
-                'critical': '#ff4444',
-                'high': '#FF9900',
-                'medium': '#ffbb33',
-                'low': '#00C851'
-            }.get(severity_class, '#gray')
-            
-            with st.expander(f"🚨 {vuln['cve']} - {vuln['title']} [{vuln['severity']}]"):
-                col1, col2 = st.columns([2, 1])
-                
-                with col1:
-                    st.markdown(f"""
-                    **CVE ID:** {vuln['cve']}  
-                    **Severity:** <span style='color: {severity_color}; font-weight: bold;'>{vuln['severity']}</span>  
-                    **CVSS Score:** {vuln.get('cvss_score', 'N/A')} / 10.0  
-                    **Package:** {vuln['package']}  
-                    **Current Version:** {vuln['installed_version']}  
-                    **Fixed Version:** {vuln['fixed_version']}  
-                    **Affected Instances:** {vuln['affected_instances']}
-                    
-                    **Description:**  
-                    {vuln['description']}
-                    
-                    **Remediation:**  
-                    {vuln['remediation']}
-                    """, unsafe_allow_html=True)
-                
-                with col2:
-                    st.markdown("**Quick Actions:**")
-                    
-                    if st.button(f"🤖 AI Analysis", key=f"win_ai_{idx}", use_container_width=True):
-                        with st.spinner("Analyzing with Claude AI..."):
-                            analysis = analyze_vulnerability_with_ai(
-                                st.session_state.get('claude_client'),
-                                vuln
-                            )
-                            st.session_state[f'win_analysis_{idx}'] = analysis
-                    
-                    if st.button(f"💻 Generate Patch Script", key=f"win_script_{idx}", use_container_width=True):
-                        with st.spinner("Generating PowerShell script..."):
-                            script = generate_patch_script(
-                                st.session_state.get('claude_client'),
-                                vuln,
-                                'windows'
-                            )
-                            st.session_state[f'win_script_{idx}'] = script
-                    
-                    if st.button(f"🚀 Deploy Patch", key=f"win_deploy_{idx}", use_container_width=True, type="primary"):
-                        st.info("Deploying via AWS Systems Manager...")
-                        time.sleep(1)
-                        st.success(f"✅ Patch deployed to {vuln['affected_instances']} instances")
-                
-                # Show AI analysis if generated
-                if f'win_analysis_{idx}' in st.session_state:
-                    st.markdown("---")
-                    st.markdown(st.session_state[f'win_analysis_{idx}'])
-                
-                # Show script if generated
-                if f'win_script_{idx}' in st.session_state:
-                    st.markdown("---")
-                    st.markdown("**Generated PowerShell Script:**")
-                    st.code(st.session_state[f'win_script_{idx}'], language='powershell')
-    
-    # Linux Vulnerabilities Tab
-    with os_tabs[1]:
-        st.markdown("### 🐧 Linux OS Vulnerabilities")
-        
-        linux_data = inspector_data.get('linux_vulns', {})
-        
-        # Linux metrics
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total Linux Vulns", linux_data.get('total', 0))
-        with col2:
-            st.metric("Critical", linux_data.get('critical', 0),
-                     delta_color="inverse")
-        with col3:
-            st.metric("High", linux_data.get('high', 0),
-                     delta_color="inverse")
-        with col4:
-            st.metric("Affected Instances", linux_data.get('instances', 0))
-        
-        st.markdown("---")
-        
-        # Linux vulnerability findings
-        st.markdown("#### 🔍 Critical Linux Vulnerabilities")
-        
-        linux_findings = linux_data.get('findings', [])
-        
-        for idx, vuln in enumerate(linux_findings):
-            severity_class = vuln['severity'].lower()
-            severity_color = {
-                'critical': '#ff4444',
-                'high': '#FF9900',
-                'medium': '#ffbb33',
-                'low': '#00C851'
-            }.get(severity_class, '#gray')
-            
-            with st.expander(f"🚨 {vuln['cve']} - {vuln['title']} [{vuln['severity']}]"):
-                col1, col2 = st.columns([2, 1])
-                
-                with col1:
-                    st.markdown(f"""
-                    **CVE ID:** {vuln['cve']}  
-                    **Severity:** <span style='color: {severity_color}; font-weight: bold;'>{vuln['severity']}</span>  
-                    **CVSS Score:** {vuln.get('cvss_score', 'N/A')} / 10.0  
-                    **Package:** {vuln['package']}  
-                    **Distribution:** {vuln.get('distribution', 'N/A')}  
-                    **Current Version:** {vuln['installed_version']}  
-                    **Fixed Version:** {vuln['fixed_version']}  
-                    **Affected Instances:** {vuln['affected_instances']}
-                    
-                    **Description:**  
-                    {vuln['description']}
-                    
-                    **Remediation:**  
-                    {vuln['remediation']}
-                    """, unsafe_allow_html=True)
-                
-                with col2:
-                    st.markdown("**Quick Actions:**")
-                    
-                    if st.button(f"🤖 AI Analysis", key=f"linux_ai_{idx}", use_container_width=True):
-                        with st.spinner("Analyzing with Claude AI..."):
-                            analysis = analyze_vulnerability_with_ai(
-                                st.session_state.get('claude_client'),
-                                vuln
-                            )
-                            st.session_state[f'linux_analysis_{idx}'] = analysis
-                    
-                    if st.button(f"💻 Generate Patch Script", key=f"linux_script_{idx}", use_container_width=True):
-                        with st.spinner("Generating Bash script..."):
-                            script = generate_patch_script(
-                                st.session_state.get('claude_client'),
-                                vuln,
-                                'linux'
-                            )
-                            st.session_state[f'linux_script_{idx}'] = script
-                    
-                    if st.button(f"🚀 Deploy Patch", key=f"linux_deploy_{idx}", use_container_width=True, type="primary"):
-                        st.info("Deploying via AWS Systems Manager...")
-                        time.sleep(1)
-                        st.success(f"✅ Patch deployed to {vuln['affected_instances']} instances")
-                
-                # Show AI analysis if generated
-                if f'linux_analysis_{idx}' in st.session_state:
-                    st.markdown("---")
-                    st.markdown(st.session_state[f'linux_analysis_{idx}'])
-                
-                # Show script if generated
-                if f'linux_script_{idx}' in st.session_state:
-                    st.markdown("---")
-                    st.markdown("**Generated Bash Script:**")
-                    st.code(st.session_state[f'linux_script_{idx}'], language='bash')
-    
+    # Windows Vulnerabilities Tab - REMOVED (now under AI Remediation tab)
+    # with os_tabs[0]:
     # EKS Container Vulnerabilities Tab - Enhanced with Enterprise Dashboard
-    with os_tabs[2]:
+    with os_tabs[0]:
         st.markdown("### 🐳 EKS Container Vulnerability Management")
         
         if EKS_ENTERPRISE_AVAILABLE:
@@ -6749,7 +6567,7 @@ def render_inspector_vulnerability_dashboard():
                 """)
     
     # Analytics Tab
-    with os_tabs[3]:
+    with os_tabs[1]:
         st.markdown("### 📊 Vulnerability Analytics")
         
         col1, col2 = st.columns(2)
@@ -6801,7 +6619,7 @@ def render_inspector_vulnerability_dashboard():
         st.plotly_chart(fig, use_container_width=True)
     
     # AI Remediation Tab - ENHANCED with OS Flavour Selection
-    with os_tabs[4]:
+    with os_tabs[2]:
         st.markdown("### 🤖 AI-Powered Bulk Remediation")
         
         # Intelligent Patch Management header
@@ -6853,7 +6671,7 @@ def render_inspector_vulnerability_dashboard():
                 render_windows_remediation_ui()
             else:
                 # Fallback to basic stats if module not available
-                st.warning("⚠️ Enhanced Windows remediation module not loaded. Upload `windows_server_remediation_MERGED_ENHANCED.py` for OS-specific features.")
+                st.warning("⚠️ Enhanced Windows remediation module not loaded. Upload `windows_server_remediation.py` for OS-specific features.")
                 
                 col1, col2 = st.columns(2)
                 with col1:
@@ -6887,7 +6705,7 @@ def render_inspector_vulnerability_dashboard():
                 render_linux_remediation_ui()
             else:
                 # Fallback to basic stats if module not available
-                st.warning("⚠️ Enhanced Linux remediation module not loaded. Upload `linux_distribution_remediation_MERGED_ENHANCED.py` for OS-specific features.")
+                st.warning("⚠️ Enhanced Linux remediation module not loaded. Upload `linux_distribution_remediation.py` for OS-specific features.")
                 
                 col1, col2 = st.columns(2)
                 with col1:
