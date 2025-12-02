@@ -352,25 +352,30 @@ def render_batch_remediation_tab(available_threats: List[Dict] = None):
     # Threat Selection
     st.markdown("#### 1️⃣ Select Threats for Batch Remediation")
     
-    # Create DataFrame for display
-    threat_df = pd.DataFrame([
-        {
-            'Select': False,
-            'Threat ID': t.get('threat_id', 'UNKNOWN'),
-            'Severity': t.get('severity', 'UNKNOWN'),
-            'Type': t.get('threat_type', 'Unknown'),
-            'Event': t.get('event_name', 'Unknown'),
-            'Account': t.get('account_id', 'Unknown'),
-            'Time': t.get('timestamp', 'Unknown')[:19] if t.get('timestamp') else 'Unknown'
-        }
-        for t in available_threats
-    ])
+    # Initialize threat selection state if not exists
+    if 'batch_threat_df' not in st.session_state or st.session_state.get('refresh_threat_list', False):
+        # Create DataFrame for display
+        threat_df = pd.DataFrame([
+            {
+                'Select': False,
+                'Threat ID': t.get('threat_id', 'UNKNOWN'),
+                'Severity': t.get('severity', 'UNKNOWN'),
+                'Type': t.get('threat_type', 'Unknown'),
+                'Event': t.get('event_name', 'Unknown'),
+                'Account': t.get('account_id', 'Unknown'),
+                'Time': t.get('timestamp', 'Unknown')[:19] if t.get('timestamp') else 'Unknown'
+            }
+            for t in available_threats
+        ])
+        st.session_state.batch_threat_df = threat_df
+        st.session_state.refresh_threat_list = False
     
-    # Display threat selection table
+    # Display threat selection table with persistent state
     edited_df = st.data_editor(
-        threat_df,
+        st.session_state.batch_threat_df,
         hide_index=True,
         use_container_width=True,
+        key="batch_threat_selector",  # ← KEY FIX: Unique key preserves state
         column_config={
             "Select": st.column_config.CheckboxColumn(
                 "Select",
@@ -384,6 +389,9 @@ def render_batch_remediation_tab(available_threats: List[Dict] = None):
         }
     )
     
+    # Update session state with edited dataframe
+    st.session_state.batch_threat_df = edited_df
+    
     selected_threats = [
         available_threats[i] 
         for i, row in edited_df.iterrows() 
@@ -391,6 +399,14 @@ def render_batch_remediation_tab(available_threats: List[Dict] = None):
     ]
     
     st.markdown(f"**Selected:** {len(selected_threats)} threat(s)")
+    
+    # Add clear selections button
+    if len(selected_threats) > 0:
+        col_info, col_clear = st.columns([3, 1])
+        with col_clear:
+            if st.button("🔄 Clear Selections", use_container_width=True):
+                st.session_state.refresh_threat_list = True
+                st.rerun()
     
     if len(selected_threats) == 0:
         st.info("👆 Select one or more threats from the table above to begin batch remediation.")
@@ -554,6 +570,9 @@ def execute_batch_remediation_ui(selected_threats: List[Dict], options: Dict):
         st.session_state.remediation_history = []
     
     st.session_state.remediation_history.extend(results['details'])
+    
+    # Clear selections after successful remediation
+    st.session_state.refresh_threat_list = True
     
     # Success summary
     st.markdown("---")
