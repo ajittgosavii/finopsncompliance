@@ -1051,7 +1051,7 @@ def render_linux_remediation_ui():
                 'requires_reboot': 'kernel' in vuln['packageName'].lower()
             }
             
-            confidence = remediator.calculate_confidence_score(vuln, remediation_plan)
+            confidence = remediator.calculate_confidence_score(vuln, remediation_plan, selected_distro)
             vuln['confidence'] = confidence
             
             if confidence >= 0.85:
