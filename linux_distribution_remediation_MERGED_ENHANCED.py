@@ -1067,9 +1067,9 @@ def render_linux_remediation_ui():
     col1, col2 = st.columns(2)
     
     with col1:
-        create_snapshot = st.checkbox("✅ Create System Snapshot", value=True)
-        enable_rollback = st.checkbox("✅ Enable Automatic Rollback", value=True)
-        auto_reboot = st.checkbox("🔄 Auto-Reboot if Required", value=False)
+        create_snapshot = st.checkbox("✅ Create System Snapshot", value=True, key="linux_snapshot")
+        enable_rollback = st.checkbox("✅ Enable Automatic Rollback", value=True, key="linux_rollback")
+        auto_reboot = st.checkbox("🔄 Auto-Reboot if Required", value=False, key="linux_reboot")
     
     with col2:
         available_pkg_mgrs = []
@@ -1080,8 +1080,8 @@ def render_linux_remediation_ui():
         else:
             available_pkg_mgrs = ['apt', 'yum', 'dnf']
         
-        pkg_manager = st.selectbox("📦 Package Manager", options=available_pkg_mgrs)
-        maintenance_window = st.selectbox("⏰ Maintenance Window", options=["Immediate", "Next Weekend", "Custom Schedule"])
+        pkg_manager = st.selectbox("📦 Package Manager", options=available_pkg_mgrs, key="linux_pkg_mgr")
+        maintenance_window = st.selectbox("⏰ Maintenance Window", options=["Immediate", "Next Weekend", "Custom Schedule"], key="linux_maint")
     
     st.divider()
     
@@ -1113,13 +1113,13 @@ def render_linux_remediation_ui():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("🔍 Scan for Vulnerabilities", use_container_width=True, type="primary"):
+        if st.button("🔍 Scan for Vulnerabilities", use_container_width=True, type="primary", key="linux_scan"):
             with st.spinner(f"Scanning {selected_distro} servers..."):
                 st.success(f"✅ Scan completed for {selected_distro}")
                 st.info(f"Found {critical_count} critical, {high_count} high, and 38 medium severity issues")
     
     with col2:
-        if st.button("🛠️ Generate Remediation Scripts", use_container_width=True):
+        if st.button("🛠️ Generate Remediation Scripts", use_container_width=True, key="linux_generate"):
             st.markdown("#### 🔧 Generated Remediation Scripts")
             
             for vuln in sample_vulnerabilities[:2]:
@@ -1146,7 +1146,7 @@ def render_linux_remediation_ui():
                     )
     
     with col3:
-        if st.button("🚀 Execute Remediation", use_container_width=True):
+        if st.button("🚀 Execute Remediation", use_container_width=True, key="linux_execute"):
             with st.spinner("Executing remediation via AWS SSM..."):
                 progress_bar = st.progress(0)
                 for i, vuln in enumerate(sample_vulnerabilities):

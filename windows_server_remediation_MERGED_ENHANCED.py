@@ -1173,13 +1173,13 @@ def render_windows_remediation_ui():
     col1, col2 = st.columns(2)
     
     with col1:
-        create_restore = st.checkbox("✅ Create System Restore Point", value=True)
-        enable_rollback = st.checkbox("✅ Enable Automatic Rollback", value=True)
-        auto_reboot = st.checkbox("🔄 Auto-Reboot if Required", value=False)
+        create_restore = st.checkbox("✅ Create System Restore Point", value=True, key="windows_restore")
+        enable_rollback = st.checkbox("✅ Enable Automatic Rollback", value=True, key="windows_rollback")
+        auto_reboot = st.checkbox("🔄 Auto-Reboot if Required", value=False, key="windows_reboot")
     
     with col2:
-        pkg_manager = st.selectbox("📦 Package Manager", options=["Windows Update", "WSUS", "Chocolatey", "WinGet"])
-        maintenance_window = st.selectbox("⏰ Maintenance Window", options=["Immediate", "Next Weekend", "Custom Schedule"])
+        pkg_manager = st.selectbox("📦 Package Manager", options=["Windows Update", "WSUS", "Chocolatey", "WinGet"], key="windows_pkg_mgr")
+        maintenance_window = st.selectbox("⏰ Maintenance Window", options=["Immediate", "Next Weekend", "Custom Schedule"], key="windows_maint")
     
     st.divider()
     
@@ -1212,13 +1212,13 @@ def render_windows_remediation_ui():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("🔍 Scan for Vulnerabilities", use_container_width=True, type="primary"):
+        if st.button("🔍 Scan for Vulnerabilities", use_container_width=True, type="primary", key="windows_scan"):
             with st.spinner(f"Scanning {selected_version} servers..."):
                 st.success(f"✅ Scan completed for {selected_version}")
                 st.info(f"Found {critical_count} critical, {high_count} high, and 45 medium severity issues")
     
     with col2:
-        if st.button("🛠️ Generate Remediation Scripts", use_container_width=True):
+        if st.button("🛠️ Generate Remediation Scripts", use_container_width=True, key="windows_generate"):
             st.markdown("#### 🔧 Generated Remediation Scripts")
             
             for vuln in sample_vulnerabilities[:2]:
@@ -1245,7 +1245,7 @@ def render_windows_remediation_ui():
                     )
     
     with col3:
-        if st.button("🚀 Execute Remediation", use_container_width=True):
+        if st.button("🚀 Execute Remediation", use_container_width=True, key="windows_execute"):
             with st.spinner("Executing remediation via AWS SSM..."):
                 progress_bar = st.progress(0)
                 for i, vuln in enumerate(sample_vulnerabilities):
