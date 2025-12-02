@@ -969,7 +969,7 @@ def render_linux_remediation_ui():
     st.markdown("### 🐧 Linux Distribution Remediation by OS Flavour")
     
     # Initialize the remediator with backend class from this file
-    remediator = LinuxRemediator()
+    remediator = LinuxDistributionRemediator()
     
     # Distribution Selection
     col1, col2 = st.columns([2, 1])
