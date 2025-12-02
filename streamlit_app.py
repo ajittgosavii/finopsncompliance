@@ -53,6 +53,8 @@ import time
 import hashlib
 import base64
 import os
+import sys
+
 
 # ===== AWS CREDENTIALS FROM STREAMLIT SECRETS =====
 # Load AWS credentials from secrets and set as environment variables
@@ -252,13 +254,43 @@ except ImportError:
         **To enable:** Upload `code_generation_production.py` to your repository
         """)
 
+# Ensure current directory is in Python path
+if '.' not in sys.path:
+    sys.path.insert(0, '.')
+
+# ==================== BATCH REMEDIATION MODULE IMPORT ====================
 try:
-    from batch_remediation_production import render_batch_remediation_tab, BATCH_REMEDIATION_ENABLED
-    BATCH_MODULE_AVAILABLE = True
-except ImportError:
+    from batch_remediation_production import (
+        render_batch_remediation_ui,    # ← CORRECT FUNCTION NAME
+        execute_batch_remediation,
+        BATCH_REMEDIATION_ENABLED
+    )
+    BATCH_REMEDIATION_AVAILABLE = True  # ← CONSISTENT VARIABLE NAME
+    print("✅ Batch remediation module loaded successfully")
+    
+except ImportError as e:
+    print(f"⚠️ ImportError loading batch_remediation_production: {e}")
+    BATCH_REMEDIATION_AVAILABLE = False
     BATCH_REMEDIATION_ENABLED = False
-    BATCH_MODULE_AVAILABLE = False
-    print("Note: batch_remediation_production.py not found - using placeholder")
+    
+    def render_batch_remediation_ui():
+        st.warning("⚠️ Modules Not Found: Upload batch_remediation_production.py to enable production features")
+        st.info("💡 Coming Soon: Bulk remediation across multiple threats and accounts")
+    
+    def execute_batch_remediation(*args, **kwargs):
+        return {'status': 'unavailable'}
+
+except Exception as e:
+    print(f"❌ Exception loading batch_remediation_production: {e}")
+    import traceback
+    traceback.print_exc()
+    
+    BATCH_REMEDIATION_AVAILABLE = False
+    BATCH_REMEDIATION_ENABLED = False
+    
+    def render_batch_remediation_ui():
+        st.error(f"❌ Error loading Batch Remediation module")
+        st.code(str(e))
     
     # Fallback placeholder function
     def render_batch_remediation_tab(available_threats=None):
