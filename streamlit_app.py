@@ -6539,7 +6539,7 @@ def render_inspector_vulnerability_dashboard():
     # with os_tabs[0]:
     # EKS Container Vulnerabilities Tab - Enhanced with Enterprise Dashboard
     with os_tabs[0]:
-    if EKS_ENTERPRISE_AVAILABLE:
+         if EKS_ENTERPRISE_AVAILABLE:
             
             # Render the full enterprise EKS dashboard (all phases 1-4)
             render_enterprise_vulnerability_dashboard()
