@@ -6539,29 +6539,29 @@ def render_inspector_vulnerability_dashboard():
     # with os_tabs[0]:
     # EKS Container Vulnerabilities Tab - Enhanced with Enterprise Dashboard
     with os_tabs[0]:
-         if EKS_ENTERPRISE_AVAILABLE:
-            
-            # Render the full enterprise EKS dashboard (all phases 1-4)
-            render_enterprise_vulnerability_dashboard()
-        else:
-            # Fallback to basic EKS module if enterprise not available
-            if EKS_VULN_MODULE_AVAILABLE:
-                st.info("📌 Using basic EKS module. Upload `eks_vulnerability_enterprise_complete.py` for enterprise features.")
-                current_mode = st.session_state.get('demo_mode', True)
-                mode_str = "demo" if current_mode else "live"
-                render_eks_container_vulnerabilities_tab(mode=mode_str)
-            else:
-                st.warning("⚠️ EKS vulnerability modules not loaded. Upload modules to enable container security features.")
-                st.markdown("""
-                **Available with full enterprise module:**
-                - **Phase 1:** Live scanner integration (Trivy, Snyk, AWS Inspector v2)
-                - **Phase 2:** Auto-remediation with one-click fixes and rollback
-                - **Phase 3:** Multi-cluster management, compliance mapping (PCI-DSS, HIPAA, SOC 2), PDF/Excel reports, Slack/Teams notifications
-                - **Phase 4:** ML risk scoring, natural language queries with Claude AI, automated triage
+        if EKS_ENTERPRISE_AVAILABLE:
                 
-                **To enable:** Upload `eks_vulnerability_enterprise_complete.py` (82 KB) to your repository
-                """)
-    
+                # Render the full enterprise EKS dashboard (all phases 1-4)
+                render_enterprise_vulnerability_dashboard()
+            else:
+                # Fallback to basic EKS module if enterprise not available
+                if EKS_VULN_MODULE_AVAILABLE:
+                    st.info("📌 Using basic EKS module. Upload `eks_vulnerability_enterprise_complete.py` for enterprise features.")
+                    current_mode = st.session_state.get('demo_mode', True)
+                    mode_str = "demo" if current_mode else "live"
+                    render_eks_container_vulnerabilities_tab(mode=mode_str)
+                else:
+                    st.warning("⚠️ EKS vulnerability modules not loaded. Upload modules to enable container security features.")
+                    st.markdown("""
+                    **Available with full enterprise module:**
+                    - **Phase 1:** Live scanner integration (Trivy, Snyk, AWS Inspector v2)
+                    - **Phase 2:** Auto-remediation with one-click fixes and rollback
+                    - **Phase 3:** Multi-cluster management, compliance mapping (PCI-DSS, HIPAA, SOC 2), PDF/Excel reports, Slack/Teams notifications
+                    - **Phase 4:** ML risk scoring, natural language queries with Claude AI, automated triage
+                    
+                    **To enable:** Upload `eks_vulnerability_enterprise_complete.py` (82 KB) to your repository
+                    """)
+        
     # Analytics Tab
     with os_tabs[1]:
         st.markdown("### 📊 Vulnerability Analytics")
