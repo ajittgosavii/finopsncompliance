@@ -127,15 +127,15 @@ except ImportError:
 # ===== NEW: OS-Specific Remediation by Flavour =====
 # Windows Server remediation with OS version selection
 try:
-    from windows_server_remediation import render_windows_remediation_ui
+    from windows_server_remediation_MERGED_ENHANCED import render_windows_remediation_ui
     WINDOWS_REMEDIATION_AVAILABLE = True
 except ImportError:
     WINDOWS_REMEDIATION_AVAILABLE = False
-    print("Note: windows_server_remediation.py not found - using placeholder")
+    print("Note: windows_server_remediation_MERGED_ENHANCED.py not found - using placeholder")
     
     def render_windows_remediation_ui():
         st.markdown("### 🪟 Windows Server Remediation by OS Flavour")
-        st.info("💡 **Module Not Available:** Upload `windows_server_remediation.py` to enable Windows remediation by OS version")
+        st.info("💡 **Module Not Available:** Upload `windows_server_remediation_MERGED_ENHANCED.py` to enable Windows remediation by OS version")
         st.markdown("""
         **This feature provides:**
         - ✅ Select Windows Server version (2025, 2022, 2019, 2016, 2012 R2)
@@ -145,20 +145,20 @@ except ImportError:
         - ✅ KB article installation
         - ✅ Reboot scheduling and management
         
-        **To enable:** Upload `windows_server_remediation.py` (32 KB) to your repository
+        **To enable:** Upload `windows_server_remediation_MERGED_ENHANCED.py` to your repository
         """)
 
 # Linux distribution remediation with distro selection
 try:
-    from linux_distribution_remediation import render_linux_remediation_ui
+    from linux_distribution_remediation_MERGED_ENHANCED import render_linux_remediation_ui
     LINUX_REMEDIATION_AVAILABLE = True
 except ImportError:
     LINUX_REMEDIATION_AVAILABLE = False
-    print("Note: linux_distribution_remediation.py not found - using placeholder")
+    print("Note: linux_distribution_remediation_MERGED_ENHANCED.py not found - using placeholder")
     
     def render_linux_remediation_ui():
         st.markdown("### 🐧 Linux Distribution Remediation by OS Flavour")
-        st.info("💡 **Module Not Available:** Upload `linux_distribution_remediation.py` to enable Linux remediation by distribution")
+        st.info("💡 **Module Not Available:** Upload `linux_distribution_remediation_MERGED_ENHANCED.py` to enable Linux remediation by distribution")
         st.markdown("""
         **This feature provides:**
         - ✅ Select Linux distribution (Ubuntu, RHEL, Amazon Linux, Rocky, Alma, etc.)
@@ -168,7 +168,7 @@ except ImportError:
         - ✅ Security-focused updates
         - ✅ Reboot detection and management
         
-        **To enable:** Upload `linux_distribution_remediation.py` (33 KB) to your repository
+        **To enable:** Upload `linux_distribution_remediation_MERGED_ENHANCED.py` (33 KB) to your repository
         """)
 
 # EKS Container Vulnerability Enterprise Dashboard (All Phases 1-4)
@@ -6665,7 +6665,7 @@ def render_inspector_vulnerability_dashboard():
                 render_windows_remediation_ui()
             else:
                 # Fallback to basic stats if module not available
-                st.warning("⚠️ Enhanced Windows remediation module not loaded. Upload `windows_server_remediation.py` for OS-specific features.")
+                st.warning("⚠️ Enhanced Windows remediation module not loaded. Upload `windows_server_remediation_MERGED_ENHANCED.py` for OS-specific features.")
                 
                 col1, col2 = st.columns(2)
                 with col1:
@@ -6699,7 +6699,7 @@ def render_inspector_vulnerability_dashboard():
                 render_linux_remediation_ui()
             else:
                 # Fallback to basic stats if module not available
-                st.warning("⚠️ Enhanced Linux remediation module not loaded. Upload `linux_distribution_remediation.py` for OS-specific features.")
+                st.warning("⚠️ Enhanced Linux remediation module not loaded. Upload `linux_distribution_remediation_MERGED_ENHANCED.py` for OS-specific features.")
                 
                 col1, col2 = st.columns(2)
                 with col1:
