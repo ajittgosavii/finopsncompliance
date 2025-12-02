@@ -13,7 +13,7 @@ try:
     from linux_distribution_remediation_backend import (
         LinuxRemediator,
         LINUX_DISTRIBUTIONS,
-        NIST_LINUX_CONTROLS
+        LINUX_NIST_MAP
     )
     BACKEND_AVAILABLE = True
 except ImportError:
@@ -26,6 +26,7 @@ except ImportError:
         'Amazon Linux 2023': {'family': 'RedHat', 'package_manager': 'dnf'},
         'Rocky Linux 9': {'family': 'RedHat', 'package_manager': 'dnf'}
     }
+    LINUX_NIST_MAP = {}
 
 # Initialize the backend remediator (with all the comprehensive logic)
 if BACKEND_AVAILABLE:
@@ -263,15 +264,21 @@ def render_linux_remediation_ui():
     with st.expander("📋 NIST & CIS Compliance Mapping", expanded=False):
         st.markdown("### NIST Controls Addressed")
         
-        # Use backend NIST_LINUX_CONTROLS if available
-        try:
-            for control_id, control_info in NIST_LINUX_CONTROLS.items():
+        # Use backend LINUX_NIST_MAP (actual structure from backend)
+        if LINUX_NIST_MAP:
+            for control_id, control_info in LINUX_NIST_MAP.items():
+                # Get bash commands count
+                bash_cmds = len(control_info.get('bash_commands', []))
+                confidence = control_info.get('confidence', 0.85)
+                auto_fix = "✅ Yes" if control_info.get('auto_remediate', False) else "⚠️ Manual"
+                
                 st.markdown(f"""
                 **{control_id}** - {control_info['name']}
-                - *Description:* {control_info['description']}
-                - *Remediation:* {control_info['remediation_approach']}
+                - *Bash Commands:* {bash_cmds} scripts
+                - *Confidence:* {int(confidence * 100)}%
+                - *Auto-Remediate:* {auto_fix}
                 """)
-        except:
+        else:
             st.markdown("""
             **Common NIST Controls:**
             - **AC-17**: Remote Access - SSH security updates
@@ -351,7 +358,7 @@ def render_linux_remediation_ui():
         
         **Supported Distributions:** {len(LINUX_DISTRIBUTIONS)}
         
-        **NIST Controls Mapped:** {len(NIST_LINUX_CONTROLS) if 'NIST_LINUX_CONTROLS' in dir() else 'Multiple'}
+        **NIST Controls Mapped:** {len(LINUX_NIST_MAP)}
         
         **Features:**
         - ✅ Comprehensive Bash script generation (1000+ lines of logic)

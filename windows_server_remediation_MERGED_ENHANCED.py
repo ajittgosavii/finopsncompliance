@@ -254,12 +254,20 @@ def render_windows_remediation_ui():
     with st.expander("📋 NIST & CIS Compliance Mapping", expanded=False):
         st.markdown("### NIST Controls Addressed")
         
-        # Use backend NIST_REMEDIATION_MAP
+        # Use backend NIST_REMEDIATION_MAP (actual structure from backend)
         for control_id, control_info in NIST_REMEDIATION_MAP.items():
+            # Get registry fixes count and PS commands count
+            reg_fixes = len(control_info.get('registry_fixes', []))
+            ps_cmds = len(control_info.get('powershell_commands', []))
+            confidence = control_info.get('confidence', 0.85)
+            auto_fix = "✅ Yes" if control_info.get('auto_remediate', False) else "⚠️ Manual"
+            
             st.markdown(f"""
             **{control_id}** - {control_info['name']}
-            - *Description:* {control_info['description']}
-            - *Remediation:* {control_info['remediation_approach']}
+            - *Registry Fixes:* {reg_fixes} configurations
+            - *PowerShell Commands:* {ps_cmds} scripts
+            - *Confidence:* {int(confidence * 100)}%
+            - *Auto-Remediate:* {auto_fix}
             """)
         
         st.markdown("---")
