@@ -780,7 +780,7 @@ def render_portfolio_dashboard():
         })
         fig = px.pie(env_data, values="Count", names="Environment", hole=0.4)
         fig.update_layout(height=300)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     
     with col2:
         st.markdown("#### Compliance Distribution")
@@ -790,7 +790,7 @@ def render_portfolio_dashboard():
         })
         fig = px.bar(compliance_data, x="Framework", y="Accounts")
         fig.update_layout(height=300)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     
     st.markdown("---")
     
@@ -811,7 +811,7 @@ def render_portfolio_dashboard():
         })
     
     df = pd.DataFrame(account_data)
-    st.dataframe(df, use_container_width=True, hide_index=True, height=400)
+    st.dataframe(df, width="stretch", hide_index=True, height=400)
     
     # Quick stats
     col1, col2, col3 = st.columns(3)
@@ -987,7 +987,7 @@ def render_create_account():
     col_act1, col_act2, col_act3, col_act4 = st.columns([1, 1, 1, 2])
     
     with col_act1:
-        if st.button("🔍 Validate Configuration", type="secondary", use_container_width=True, key="create_validate_btn"):
+        if st.button("🔍 Validate Configuration", type="secondary", width="stretch", key="create_validate_btn"):
             with st.spinner("Running validation checks..."):
                 time.sleep(2)
                 validation = run_readiness_validation({})
@@ -1009,11 +1009,11 @@ def render_create_account():
                                 st.warning(f"⚠️ {check['name']}: {check['message']}")
     
     with col_act2:
-        if st.button("💾 Save as Draft", type="secondary", use_container_width=True, key="create_save_draft_btn"):
+        if st.button("💾 Save as Draft", type="secondary", width="stretch", key="create_save_draft_btn"):
             st.success("✅ Configuration saved as draft")
     
     with col_act3:
-        if st.button("🚀 Launch Onboarding", type="primary", use_container_width=True, key="create_launch_btn"):
+        if st.button("🚀 Launch Onboarding", type="primary", width="stretch", key="create_launch_btn"):
             if not account_name:
                 st.error("❌ Please provide an account name")
             else:
@@ -1154,10 +1154,10 @@ def render_template_card(key: str, template: Dict):
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📋 Details", key=f"details_{key}", use_container_width=True):
+        if st.button("📋 Details", key=f"details_{key}", width="stretch"):
             show_template_details(key, template)
     with col2:
-        if st.button("🚀 Use Template", key=f"use_{key}", type="primary", use_container_width=True):
+        if st.button("🚀 Use Template", key=f"use_{key}", type="primary", width="stretch"):
             st.session_state[f"selected_template_{key}"] = True
             apply_template(key, template)
 
@@ -1187,7 +1187,7 @@ def show_template_details(key: str, template: Dict):
             # Cost breakdown chart
             breakdown_df = pd.DataFrame(list(cost['breakdown'].items()), columns=['Category', 'Cost'])
             fig = px.bar(breakdown_df, x='Category', y='Cost', title="Cost Breakdown by Category")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
             
             st.markdown("#### 🎯 Features Included")
             for feature in template["features"]:
@@ -1269,7 +1269,7 @@ Staging-App-001,Financial Services,Staging,us-east-1,"SOC 2",15000"""
             sample_csv,
             "account_template.csv",
             "text/csv",
-            use_container_width=True
+            width="stretch"
         )
         
         uploaded_file = st.file_uploader("Upload CSV", type=['csv'])
@@ -1278,12 +1278,12 @@ Staging-App-001,Financial Services,Staging,us-east-1,"SOC 2",15000"""
             df = pd.read_csv(uploaded_file)
             st.success(f"✅ Loaded {len(df)} accounts from CSV")
             
-            st.dataframe(df, use_container_width=True)
+            st.dataframe(df, width="stretch")
             
             # Validation
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("🔍 Validate All", type="secondary", use_container_width=True, key="batch_validate"):
+                if st.button("🔍 Validate All", type="secondary", width="stretch", key="batch_validate"):
                     with st.spinner("Validating all accounts..."):
                         time.sleep(2)
                         st.success(f"✅ {len(df)-2} accounts valid, 2 errors found")
@@ -1292,7 +1292,7 @@ Staging-App-001,Financial Services,Staging,us-east-1,"SOC 2",15000"""
                         st.error("❌ Row 5: Budget exceeds portfolio allocation")
             
             with col2:
-                if st.button("🚀 Provision All", type="primary", use_container_width=True, key="batch_provision"):
+                if st.button("🚀 Provision All", type="primary", width="stretch", key="batch_provision"):
                     st.success(f"✅ Started batch provisioning of {len(df)} accounts")
                     st.info("⏱️ Estimated completion: 25 minutes (parallel provisioning)")
     
@@ -1332,7 +1332,7 @@ Staging-App-001,Financial Services,Staging,us-east-1,"SOC 2",15000"""
                         "Est. Cost": f"${ACCOUNT_TEMPLATES[template_key]['estimated_cost']['average']:,}"
                     })
             
-            st.dataframe(pd.DataFrame(preview_data), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(preview_data), width="stretch", hide_index=True)
             
             st.button("🚀 Provision All Accounts", type="primary", key="batch_provision_final")
     
@@ -1387,7 +1387,7 @@ Staging-App-001,Financial Services,Staging,us-east-1,"SOC 2",15000"""
                 "Time": time_taken
             })
         
-        st.dataframe(pd.DataFrame(status_data), use_container_width=True, hide_index=True, height=400)
+        st.dataframe(pd.DataFrame(status_data), width="stretch", hide_index=True, height=400)
 
 def render_account_modification():
     """Render account modification interface"""
@@ -1498,7 +1498,7 @@ def render_account_modification():
     ]
     
     drift_df = pd.DataFrame(drift_items)
-    st.dataframe(drift_df, use_container_width=True, hide_index=True)
+    st.dataframe(drift_df, width="stretch", hide_index=True)
     
     if st.button("🔧 Remediate All Drift"):
         st.success("✅ Drift remediation initiated. 2 resources will be corrected.")
@@ -1552,7 +1552,7 @@ def render_account_cloning():
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("🔍 Preview Clone Configuration", use_container_width=True):
+        if st.button("🔍 Preview Clone Configuration", width="stretch"):
             st.success("✅ Clone configuration validated")
             
             with st.expander("View Clone Details"):
@@ -1573,7 +1573,7 @@ def render_account_cloning():
                 """)
     
     with col2:
-        if st.button("🚀 Clone Account", type="primary", use_container_width=True):
+        if st.button("🚀 Clone Account", type="primary", width="stretch"):
             with st.spinner("Cloning account..."):
                 time.sleep(3)
                 st.success(f"✅ Account '{new_name}' cloned successfully!")
@@ -1621,7 +1621,7 @@ def render_offboarding():
                 {"Severity": "🟡 Warning", "Issue": "DNS records pointing to this account", "Action": "Update DNS before offboarding"},
             ]
             
-            st.dataframe(pd.DataFrame(issues), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(issues), width="stretch", hide_index=True)
     
     st.markdown("---")
     
@@ -1694,7 +1694,7 @@ def render_offboarding():
         confirm = st.checkbox("⚠️ I understand this action is irreversible after retention period", key="offboard_confirm")
     
     with col2:
-        if st.button("🔴 Start Offboarding", type="primary", disabled=not confirm, use_container_width=True):
+        if st.button("🔴 Start Offboarding", type="primary", disabled=not confirm, width="stretch"):
             st.success("✅ Offboarding initiated")
             st.info("""
             **Next Steps:**
@@ -1768,18 +1768,18 @@ def render_approval_workflow():
                 col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
                 
                 with col1:
-                    if st.button("✅ Approve", key=f"approve_{approval['Request ID']}", type="primary", use_container_width=True):
+                    if st.button("✅ Approve", key=f"approve_{approval['Request ID']}", type="primary", width="stretch"):
                         st.success(f"✅ Approved {approval['Request ID']}")
                         st.info("Request moved to next approval stage: CTO Final Review")
                 
                 with col2:
-                    if st.button("⏸️ Request Changes", key=f"changes_{approval['Request ID']}", use_container_width=True):
+                    if st.button("⏸️ Request Changes", key=f"changes_{approval['Request ID']}", width="stretch"):
                         changes = st.text_area("Required Changes", key=f"changes_text_{approval['Request ID']}")
                         if st.button("Send", key=f"send_changes_{approval['Request ID']}"):
                             st.warning("Change request sent to requestor")
                 
                 with col3:
-                    if st.button("❌ Reject", key=f"reject_{approval['Request ID']}", use_container_width=True):
+                    if st.button("❌ Reject", key=f"reject_{approval['Request ID']}", width="stretch"):
                         reason = st.text_area("Rejection Reason", key=f"reject_reason_{approval['Request ID']}")
                         if st.button("Confirm Rejection", key=f"confirm_reject_{approval['Request ID']}"):
                             st.error("Request rejected")
@@ -1806,7 +1806,7 @@ def render_approval_workflow():
             },
         ]
         
-        st.dataframe(pd.DataFrame(my_requests), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(my_requests), width="stretch", hide_index=True)
     
     with tab3:
         st.markdown("#### 📜 Approval History (Last 30 Days)")
@@ -1822,7 +1822,7 @@ def render_approval_workflow():
                 "Reviewer": "You"
             })
         
-        st.dataframe(pd.DataFrame(history), use_container_width=True, hide_index=True, height=400)
+        st.dataframe(pd.DataFrame(history), width="stretch", hide_index=True, height=400)
 
 def render_ai_assistant():
     """Render AI-powered configuration assistant"""
@@ -1964,7 +1964,7 @@ def render_ai_assistant():
                 # Cost breakdown chart
                 breakdown_df = pd.DataFrame(list(cost_breakdown.items()), columns=['Category', 'Cost'])
                 fig = px.bar(breakdown_df, x='Category', y='Cost', title="Monthly Cost Breakdown")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
                 
                 st.markdown("#### 💡 Cost Optimization Opportunities")
                 st.markdown("""
@@ -2019,12 +2019,12 @@ def render_ai_assistant():
             col1, col2, col3 = st.columns([1, 1, 2])
             
             with col1:
-                if st.button("✅ Apply Recommended Config", type="primary", use_container_width=True):
+                if st.button("✅ Apply Recommended Config", type="primary", width="stretch"):
                     st.success("✅ Configuration applied to account creation form!")
                     st.info("Switch to 'Create Account' tab to review and launch provisioning.")
             
             with col2:
-                if st.button("💾 Save as Template", use_container_width=True):
+                if st.button("💾 Save as Template", width="stretch"):
                     st.success("✅ Saved as custom template")
             
             with col3:
@@ -2057,7 +2057,7 @@ def render_network_designer():
                     ]
                     
                     conflict_df = pd.DataFrame(conflicts)
-                    st.dataframe(conflict_df, use_container_width=True, hide_index=True)
+                    st.dataframe(conflict_df, width="stretch", hide_index=True)
                     
                     st.error("❌ Conflict detected with vpc-1234abcd")
                     st.info("💡 Suggested alternative: 10.100.0.0/16")
@@ -2089,7 +2089,7 @@ def render_network_designer():
                             "Usable IPs": "251"
                         })
                 
-                st.dataframe(pd.DataFrame(subnet_data), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(subnet_data), width="stretch", hide_index=True)
                 
                 st.info(f"**Total Subnets:** {len(subnet_data)}")
     
@@ -2181,7 +2181,7 @@ def render_network_designer():
             {"Source Account": "DR-Account", "Target Account": "Production-App-001", "Connection": "VPN", "Status": "⚠️ Degraded"},
         ]
         
-        st.dataframe(pd.DataFrame(connectivity_data), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(connectivity_data), width="stretch", hide_index=True)
         
         if st.button("🔍 Test All Connections"):
             st.success("✅ Connectivity test completed: 4/5 connections healthy")
@@ -2223,11 +2223,11 @@ def render_dependency_mapping():
         
         with col1:
             st.markdown("**⬆️ Depends On (Upstream)**")
-            st.dataframe(pd.DataFrame(dependencies["Depends On (Upstream)"]), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(dependencies["Depends On (Upstream)"]), width="stretch", hide_index=True)
         
         with col2:
             st.markdown("**⬇️ Depended Upon By (Downstream)**")
-            st.dataframe(pd.DataFrame(dependencies["Depended Upon By (Downstream)"]), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(dependencies["Depended Upon By (Downstream)"]), width="stretch", hide_index=True)
         
         # Metrics
         col1, col2, col3, col4 = st.columns(4)

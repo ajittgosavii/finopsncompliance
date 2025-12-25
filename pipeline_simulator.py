@@ -301,14 +301,14 @@ def render_pipeline_execution_simulator():
     col1, col2, col3 = st.columns([2, 2, 1])
     
     with col1:
-        if st.button("▶️ Start Pipeline Run", type="primary", use_container_width=True):
+        if st.button("▶️ Start Pipeline Run", type="primary", width="stretch"):
             st.session_state.pipeline_running = True
             st.session_state.current_stage = 0
             st.session_state.pipeline_start_time = time.time()
             st.rerun()
     
     with col2:
-        if st.button("⏹️ Stop Pipeline", use_container_width=True):
+        if st.button("⏹️ Stop Pipeline", width="stretch"):
             st.session_state.pipeline_running = False
             # Reset all stages
             for stage in PIPELINE_STAGES:
@@ -626,7 +626,7 @@ def render_security_findings_timeline():
             # Timeline view
             st.dataframe(
                 df[['id', 'type', 'severity', 'stage', 'status']].head(10),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 column_config={
                     "id": "Finding ID",
@@ -653,7 +653,7 @@ def render_security_findings_timeline():
                 }
             )
             fig.update_traces(textposition='inside', textinfo='percent+label')
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
     else:
         st.info("No security findings to display")
 
@@ -700,7 +700,7 @@ def render_pipeline_history():
             yaxis_title="Duration (seconds)",
             hovermode='x unified'
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     else:
         st.info("No pipeline execution history yet. Run the pipeline to see history.")
 

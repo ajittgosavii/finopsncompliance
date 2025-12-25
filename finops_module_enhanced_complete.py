@@ -929,7 +929,7 @@ def render_ai_query_interface(cost_data: Dict, context: Dict = None):
     
     col1, col2 = st.columns([1, 4])
     with col1:
-        ask_button = st.button("🔍 Ask Claude", type="primary", use_container_width=True)
+        ask_button = st.button("🔍 Ask Claude", type="primary", width="stretch")
     
     if ask_button and query:
         with st.spinner("🤔 Claude is thinking..."):
@@ -1118,7 +1118,7 @@ def render_ai_executive_report(cost_data: Dict):
                 data=report,
                 file_name=f"executive_report_{datetime.now().strftime('%Y%m%d')}.md",
                 mime="text/markdown",
-                use_container_width=True
+                width="stretch"
             )
         
         with col2:
@@ -1133,7 +1133,7 @@ def render_ai_executive_report(cost_data: Dict):
                 data=json.dumps(report_json, indent=2),
                 file_name=f"executive_report_{datetime.now().strftime('%Y%m%d')}.json",
                 mime="application/json",
-                use_container_width=True
+                width="stretch"
             )
         
         with col3:
@@ -1160,7 +1160,7 @@ def render_ai_executive_report(cost_data: Dict):
                 data=html_report,
                 file_name=f"executive_report_{datetime.now().strftime('%Y%m%d')}.html",
                 mime="text/html",
-                use_container_width=True
+                width="stretch"
             )
 
 # ============================================================================
@@ -1293,7 +1293,7 @@ def render_enhanced_finops_dashboard():
                     color='Cost',
                     color_continuous_scale='Oranges'
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
     
     # Executive Report Tab
     with tabs[5]:
@@ -1355,7 +1355,7 @@ def render_finops_dashboard():
                 {'Service': k, 'Cost': f"${v:,.2f}"}
                 for k, v in sorted(service_costs.items(), key=lambda x: x[1], reverse=True)
             ])
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(df, width="stretch", hide_index=True)
 
 # ============================================================================
 # MODULE INITIALIZATION MESSAGE

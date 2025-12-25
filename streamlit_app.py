@@ -56,17 +56,46 @@ import os
 import sys
 
 
-# ===== AWS CREDENTIALS FROM STREAMLIT SECRETS =====
-# Load AWS credentials from secrets and set as environment variables
-# This allows boto3 to automatically find credentials everywhere
+# ===== AWS CONNECTOR (Same as WAF Scanner) =====
+# Import AWS connector module for credential handling
 try:
-    if 'aws' in st.secrets:
-        os.environ['AWS_ACCESS_KEY_ID'] = st.secrets['aws']['access_key_id']
-        os.environ['AWS_SECRET_ACCESS_KEY'] = st.secrets['aws']['secret_access_key']
-        os.environ['AWS_DEFAULT_REGION'] = st.secrets['aws'].get('region', 'us-east-1')
-        print("✅ AWS credentials loaded from Streamlit secrets")
-except Exception as e:
-    print(f"⚠️ Could not load AWS credentials from secrets: {e}")
+    from aws_connector import (
+        get_aws_session, 
+        get_aws_credentials_from_secrets,
+        get_aws_client,
+        test_aws_connection,
+        AWSCredentials
+    )
+    AWS_CONNECTOR_AVAILABLE = True
+    print("✅ AWS Connector module loaded")
+except ImportError as e:
+    AWS_CONNECTOR_AVAILABLE = False
+    print(f"⚠️ AWS Connector not available: {e}")
+
+# Initialize AWS session using the connector (like WAF Scanner does)
+_aws_session = None
+_aws_credentials_valid = False
+_aws_credential_error = None
+
+if AWS_CONNECTOR_AVAILABLE:
+    try:
+        _aws_session = get_aws_session()
+        if _aws_session:
+            # Test the connection
+            success, message, identity = test_aws_connection(_aws_session)
+            if success:
+                _aws_credentials_valid = True
+                print(f"✅ AWS Connection established: {message}")
+                # Set environment variables for other modules that use boto3 directly
+                # This is handled by the session, no need to set env vars
+            else:
+                _aws_credential_error = message
+                print(f"❌ AWS Connection failed: {message}")
+        else:
+            print("⚠️ No AWS session available")
+    except Exception as e:
+        _aws_credential_error = str(e)
+        print(f"❌ AWS initialization error: {e}")
 # ==================================================
 
 # Try to import external modules, fall back to built-in versions if not available
@@ -224,6 +253,38 @@ except ImportError:
         
         **To enable:** Upload `eks_vulnerability_enterprise_complete.py` (82 KB) to your repository
         """)
+
+# Unified Remediation Dashboard - Single pane of glass for all remediations
+try:
+    from unified_remediation_dashboard import UnifiedRemediationDashboard, render_unified_remediation_dashboard
+    UNIFIED_REMEDIATION_AVAILABLE = True
+except ImportError:
+    UNIFIED_REMEDIATION_AVAILABLE = False
+    print("Note: unified_remediation_dashboard.py not found - using placeholder")
+    
+    def render_unified_remediation_dashboard():
+        st.markdown("### 🎯 Unified Remediation Dashboard")
+        st.info("💡 **Module Not Available:** Upload `unified_remediation_dashboard.py` to enable unified remediation view")
+        st.markdown("""
+        **This dashboard provides:**
+        - Single view of Windows EC2, Linux EC2, and EKS containers
+        - Confidence scoring for each remediation
+        - Auto-remediate vs Manual intervention recommendations
+        - Bulk remediation capabilities
+        - NIST control tracking
+        - ML-based risk prediction (optional with scikit-learn)
+        
+        **To enable:** Upload `unified_remediation_dashboard.py` to your repository
+        """)
+
+# EKS Remediation with Kubernetes API integration
+try:
+    from eks_remediation_complete import EKSConnector, EKSRemediationEngine
+    EKS_K8S_REMEDIATION_AVAILABLE = True
+except ImportError:
+    EKS_K8S_REMEDIATION_AVAILABLE = False
+    print("Note: eks_remediation_complete.py not found - K8s API remediation not available")
+
 # ===== END NEW IMPORTS =====
 
 # ⚠️ IMPORTANT: Do NOT import render_enterprise_integration_scene from external file
@@ -287,10 +348,11 @@ except Exception as e:
     
     BATCH_REMEDIATION_AVAILABLE = False
     BATCH_REMEDIATION_ENABLED = False
+    _batch_error_msg = str(e)
     
     def render_batch_remediation_ui():
         st.error(f"❌ Error loading Batch Remediation module")
-        st.code(str(e))
+        st.code(_batch_error_msg)
 
 
 # Import Enterprise Features (v5.0)
@@ -445,7 +507,35 @@ class OrganizationManager:
                 ]
             }
         except Exception as e:
-            st.error(f"Error fetching organization: {str(e)}")
+            error_msg = str(e)
+            if 'AccessDeniedException' in error_msg:
+                st.error("""
+                ❌ **Access Denied to AWS Organizations API**
+                
+                This usually means your AWS account is a **member account**, not the management account.
+                
+                **AWS Organizations APIs can only be called from the management (root) account.**
+                
+                **Options:**
+                1. Use credentials from your organization's **management account**
+                2. Disable "Multi-Account Mode" and use single-account monitoring
+                3. Enable "Demo Mode" to see sample data
+                """)
+            elif 'UnrecognizedClientException' in error_msg or 'security token' in error_msg.lower():
+                st.error("""
+                ❌ **AWS Organizations API Authentication Error**
+                
+                Possible causes:
+                1. Your account is not part of an AWS Organization
+                2. AWS Organizations is not enabled
+                3. IAM permissions missing for `organizations:DescribeOrganization`
+                
+                **To fix:**
+                - Disable "Multi-Account Mode" in the sidebar
+                - Or enable "Demo Mode" to see sample data
+                """)
+            else:
+                st.error(f"Error fetching organization: {error_msg}")
             return None
 
 class MultiAccountDataAggregator:
@@ -1420,15 +1510,151 @@ def get_compliance_data_for_mode():
 # AWS CLIENT INITIALIZATION
 # ============================================================================
 
-@st.cache_resource
-def get_aws_clients(access_key: str, secret_key: str, region: str):
-    """Initialize AWS service clients with comprehensive service coverage"""
+# NOTE: Removed @st.cache_resource to ensure credentials are always fresh
+# If you experience slow performance, you can add back: @st.cache_resource(ttl=300)
+def get_aws_clients(access_key: str = None, secret_key: str = None, region: str = None, session_token: str = None):
+    """Initialize AWS service clients with comprehensive service coverage
+    
+    Uses aws_connector module for AssumeRole support.
+    If no credentials provided, uses aws_connector to get session.
+    
+    Args:
+        access_key: AWS Access Key ID (optional - uses connector if not provided)
+        secret_key: AWS Secret Access Key (optional - uses connector if not provided)
+        region: AWS Region (optional - defaults to us-east-1)
+        session_token: Optional AWS Session Token
+    """
+    
     try:
-        session = boto3.Session(
-            aws_access_key_id=access_key,
-            aws_secret_access_key=secret_key,
-            region_name=region
-        )
+        # Try to use aws_connector first (supports AssumeRole)
+        if AWS_CONNECTOR_AVAILABLE:
+            from aws_connector import get_aws_session, test_aws_connection
+            
+            session = get_aws_session()
+            
+            if session:
+                # Test the connection
+                success, message, identity = test_aws_connection(session)
+                if success:
+                    print(f"✅ Using aws_connector session: {message}")
+                    
+                    # Initialize clients dictionary using the assumed role session
+                    clients = {
+                        # Security Services
+                        'securityhub': session.client('securityhub'),
+                        'config': session.client('config'),
+                        'guardduty': session.client('guardduty'),
+                        'inspector': session.client('inspector2'),
+                        'cloudtrail': session.client('cloudtrail'),
+                        
+                        # Account & Identity
+                        'organizations': session.client('organizations'),
+                        'sts': session.client('sts'),
+                        'iam': session.client('iam'),
+                        
+                        # Compute & Storage
+                        'lambda': session.client('lambda'),
+                        's3': session.client('s3'),
+                        'ec2': session.client('ec2'),
+                        
+                        # Infrastructure
+                        'cloudformation': session.client('cloudformation'),
+                        'ssm': session.client('ssm'),
+                        
+                        # Orchestration & Messaging
+                        'stepfunctions': session.client('stepfunctions'),
+                        'eventbridge': session.client('events'),
+                        'sns': session.client('sns'),
+                        
+                        # AI Services
+                        'bedrock-runtime': session.client('bedrock-runtime')
+                    }
+                    
+                    # Store account info
+                    st.session_state.aws_account_id = identity.get('account', 'Unknown')
+                    
+                    # Initialize service_status
+                    if 'service_status' not in st.session_state:
+                        st.session_state.service_status = {}
+                    
+                    # Cost Explorer (must use us-east-1)
+                    try:
+                        clients['ce'] = session.client('ce', region_name='us-east-1')
+                        st.session_state.service_status['Cost Explorer'] = 'active'
+                        print("✅ Cost Explorer initialized: active")
+                    except Exception as e:
+                        clients['ce'] = None
+                        st.session_state.service_status['Cost Explorer'] = 'inactive'
+                        print(f"⚠️ Cost Explorer: {e}")
+                    
+                    # Compute Optimizer
+                    try:
+                        clients['compute-optimizer'] = session.client('compute-optimizer', region_name='us-east-1')
+                        st.session_state.service_status['Compute Optimizer'] = 'active'
+                        print("✅ Compute Optimizer initialized: active")
+                    except Exception as e:
+                        clients['compute-optimizer'] = None
+                        st.session_state.service_status['Compute Optimizer'] = 'inactive'
+                    
+                    # Cost Anomaly Detection (via Cost Explorer)
+                    st.session_state.service_status['Cost Anomaly Detection'] = st.session_state.service_status.get('Cost Explorer', 'inactive')
+                    
+                    print(f"DEBUG: Final service_status = {st.session_state.service_status}")
+                    
+                    return clients
+                else:
+                    print(f"⚠️ aws_connector session test failed: {message}")
+    
+    except Exception as e:
+        print(f"⚠️ aws_connector error: {e}")
+    
+    # Fallback: Use direct credentials if provided
+    if not access_key or not secret_key:
+        st.error("❌ AWS credentials are empty and aws_connector failed.")
+        return None
+    
+    # Strip any accidental whitespace
+    access_key = access_key.strip()
+    secret_key = secret_key.strip()
+    region = (region or 'us-east-1').strip()
+    if session_token:
+        session_token = session_token.strip()
+    
+    try:
+        # Check if this looks like temporary credentials (starts with ASIA)
+        if access_key.startswith('ASIA') and not session_token:
+            st.error("❌ **Temporary credentials detected** (ASIA...) but no session_token provided.")
+            return None
+        
+        # Create session with or without session token
+        session_kwargs = {
+            'aws_access_key_id': access_key,
+            'aws_secret_access_key': secret_key,
+            'region_name': region
+        }
+        if session_token:
+            session_kwargs['aws_session_token'] = session_token
+            
+        session = boto3.Session(**session_kwargs)
+        
+        # CRITICAL: Validate credentials first with STS
+        try:
+            sts_client = session.client('sts')
+            identity = sts_client.get_caller_identity()
+            account_id = identity.get('Account', 'Unknown')
+            arn = identity.get('Arn', 'Unknown')
+            print(f"✅ AWS Credentials Valid (fallback) - Account: {account_id}, ARN: {arn}")
+        except Exception as e:
+            error_msg = str(e)
+            if 'InvalidClientTokenId' in error_msg:
+                st.error("❌ **Invalid AWS Access Key ID**")
+            elif 'SignatureDoesNotMatch' in error_msg:
+                st.error("❌ **Invalid AWS Secret Access Key**")
+            elif 'UnrecognizedClientException' in error_msg:
+                st.error("❌ **Invalid Security Token** - Check credentials format in secrets.toml")
+            else:
+                st.error(f"❌ **AWS Authentication Failed**: {error_msg}")
+            return None
         
         # Initialize clients dictionary
         clients = {
@@ -1441,7 +1667,7 @@ def get_aws_clients(access_key: str, secret_key: str, region: str):
             
             # Account & Identity
             'organizations': session.client('organizations'),
-            'sts': session.client('sts'),
+            'sts': sts_client,
             'iam': session.client('iam'),
             
             # Compute & Storage
@@ -1462,8 +1688,7 @@ def get_aws_clients(access_key: str, secret_key: str, region: str):
             'bedrock-runtime': session.client('bedrock-runtime')
         }
         
-        # FinOps Services - Initialize BEFORE returning
-        # Initialize service_status if it doesn't exist
+        # FinOps Services
         if 'service_status' not in st.session_state:
             st.session_state.service_status = {}
         
@@ -1471,11 +1696,9 @@ def get_aws_clients(access_key: str, secret_key: str, region: str):
         try:
             clients['ce'] = session.client('ce', region_name='us-east-1')
             st.session_state.service_status['Cost Explorer'] = 'active'
-            print("✅ Cost Explorer initialized: active")
         except Exception as e:
             clients['ce'] = None
             st.session_state.service_status['Cost Explorer'] = 'inactive'
-            print(f"⚠️ Cost Explorer initialization failed: {e}")
         
         # Compute Optimizer
         try:
@@ -1495,8 +1718,11 @@ def get_aws_clients(access_key: str, secret_key: str, region: str):
             st.session_state.service_status['Cost Anomaly Detection'] = 'inactive'
             print("⚠️ Cost Anomaly Detection: inactive (no Cost Explorer)")
         
-        # Store boto3 session for finops_module to use
+        # Store boto3 session for other modules to use
         st.session_state.boto3_session = session
+        
+        # Store account info for reference
+        st.session_state.aws_account_id = account_id
         
         # Debug: Print final service status
         print(f"DEBUG: Final service_status = {st.session_state.service_status}")
@@ -1626,7 +1852,24 @@ def fetch_security_hub_findings(client) -> Dict[str, Any]:
         }
     except ClientError as e:
         error_code = e.response['Error']['Code']
-        if error_code == 'InvalidAccessException':
+        error_msg = e.response['Error'].get('Message', str(e))
+        
+        if error_code == 'UnrecognizedClientException':
+            st.error(f"""
+            ❌ **Security Hub: Authentication Error**
+            
+            Error: `{error_msg}`
+            
+            **This usually means:**
+            1. AWS credentials are invalid or expired
+            2. The IAM user/role doesn't have Security Hub permissions
+            
+            **To fix:**
+            - Verify your credentials in Streamlit Secrets are correct
+            - Add this IAM permission: `securityhub:GetFindings`
+            - Click **"🔄 Clear Cache & Reconnect"** in the sidebar
+            """)
+        elif error_code == 'InvalidAccessException':
             st.warning("""
             ⚠️ **AWS Security Hub: InvalidAccessException**
             
@@ -1796,7 +2039,11 @@ def fetch_config_compliance(client) -> Dict[str, Any]:
             'NON_COMPLIANT': non_compliant
         }
     except Exception as e:
-        st.error(f"Error fetching Config compliance: {str(e)}")
+        error_msg = str(e)
+        if 'UnrecognizedClientException' in error_msg or 'security token' in error_msg.lower():
+            st.error("Error fetching Config compliance: AWS Config may not be enabled in this region, or IAM permissions are missing for `config:DescribeComplianceByConfigRule`")
+        else:
+            st.error(f"Error fetching Config compliance: {error_msg}")
         return {}
 
 def fetch_guardduty_findings(client) -> Dict[str, Any]:
@@ -3002,7 +3249,7 @@ deny[msg] {
             
             with col2:
                 st.markdown("**Actions:**")
-                if st.button("✅ Select", key=f"select_opa_{policy_id}", use_container_width=True, type="primary"):
+                if st.button("✅ Select", key=f"select_opa_{policy_id}", width="stretch", type="primary"):
                     st.session_state.selected_opa_policy_name = policy['name']
                     st.session_state.selected_opa_policy_id = policy_id
                     st.session_state.selected_opa_policy_rego = policy['rego']
@@ -3081,7 +3328,7 @@ def render_opa_deployment_interface():
     if st.button(
         "🚀 Deploy OPA Policy", 
         type="primary", 
-        use_container_width=True, 
+        width="stretch", 
         key="deploy_opa_button",
         disabled=deploy_disabled
     ):
@@ -3283,7 +3530,7 @@ def render_kics_configuration():
             
             with col2:
                 st.markdown("**Actions:**")
-                if st.button("✅ Select", key=f"select_kics_{profile_id}", use_container_width=True, type="primary"):
+                if st.button("✅ Select", key=f"select_kics_{profile_id}", width="stretch", type="primary"):
                     st.session_state.selected_kics_profile = profile_id
                     st.session_state.selected_kics_config = profile
                     st.success(f"✅ Selected!")
@@ -3402,7 +3649,7 @@ def render_kics_deployment_interface():
     if st.button(
         "🚀 Deploy KICS Scanning",
         type="primary",
-        use_container_width=True,
+        width="stretch",
         key="deploy_kics_button",
         disabled=deploy_disabled
     ):
@@ -3610,7 +3857,7 @@ def render_enhanced_scp_violations():
                     with col2:
                         st.markdown("**Actions:**")
                         
-                        if st.button(f"🤖 AI Analysis", key=f"scp_ai_{scp['PolicyName']}_{idx}", use_container_width=True):
+                        if st.button(f"🤖 AI Analysis", key=f"scp_ai_{scp['PolicyName']}_{idx}", width="stretch"):
                             with st.spinner("Claude is analyzing..."):
                                 analysis = f"""
                                 **🤖 AI Analysis - {violation.get('ViolationType')}**
@@ -3647,7 +3894,7 @@ def render_enhanced_scp_violations():
                                 """
                                 st.session_state[f'scp_analysis_{scp["PolicyName"]}_{idx}'] = analysis
                         
-                        if st.button(f"💻 Generate Fix", key=f"scp_script_{scp['PolicyName']}_{idx}", use_container_width=True):
+                        if st.button(f"💻 Generate Fix", key=f"scp_script_{scp['PolicyName']}_{idx}", width="stretch"):
                             with st.spinner("Generating remediation script..."):
                                 script = f"""
 # AWS Lambda - Auto-Remediate {violation.get('ViolationType')}
@@ -3669,7 +3916,7 @@ def lambda_handler(event, context):
                                 st.session_state[f'scp_script_{scp["PolicyName"]}_{idx}'] = script
                         
                         if st.button(f"🚀 Deploy Fix", key=f"scp_deploy_{scp['PolicyName']}_{idx}", 
-                                   use_container_width=True, type="primary"):
+                                   width="stretch", type="primary"):
                             with st.spinner("Deploying remediation..."):
                                 time.sleep(2)
                                 st.success(f"✅ Remediated {violation.get('ResourceType')} in account {violation.get('AccountId')}")
@@ -3796,20 +4043,20 @@ def render_enhanced_opa_violations():
             with col2:
                 st.markdown("**Actions:**")
                 
-                if st.button(f"🤖 AI Analysis", key=f"opa_ai_{idx}", use_container_width=True):
+                if st.button(f"🤖 AI Analysis", key=f"opa_ai_{idx}", width="stretch"):
                     with st.spinner("Claude is analyzing..."):
                         time.sleep(1)
                         st.success("✅ AI Analysis complete")
                         st.session_state[f'opa_analysis_{idx}'] = True
                 
-                if st.button(f"💻 Generate Fix", key=f"opa_script_{idx}", use_container_width=True):
+                if st.button(f"💻 Generate Fix", key=f"opa_script_{idx}", width="stretch"):
                     with st.spinner("Generating fix..."):
                         time.sleep(1)
                         st.success("✅ Fix generated")
                         st.session_state[f'opa_script_{idx}'] = True
                 
                 if st.button(f"🚀 Deploy Fix", key=f"opa_deploy_{idx}", 
-                           use_container_width=True, type="primary"):
+                           width="stretch", type="primary"):
                     with st.spinner("Deploying..."):
                         time.sleep(2)
                         st.success(f"✅ Fixed in {violation.get('AccountName')}")
@@ -3910,20 +4157,20 @@ def render_enhanced_kics_findings():
             with col2:
                 st.markdown("**Actions:**")
                 
-                if st.button(f"🤖 AI Analysis", key=f"kics_ai_{idx}", use_container_width=True):
+                if st.button(f"🤖 AI Analysis", key=f"kics_ai_{idx}", width="stretch"):
                     with st.spinner("Analyzing IaC security..."):
                         time.sleep(1)
                         st.success("✅ Analysis complete")
                         st.session_state[f'kics_analysis_{idx}'] = True
                 
-                if st.button(f"💻 Generate Fix", key=f"kics_script_{idx}", use_container_width=True):
+                if st.button(f"💻 Generate Fix", key=f"kics_script_{idx}", width="stretch"):
                     with st.spinner("Generating fixed Terraform..."):
                         time.sleep(1)
                         st.success("✅ Fix generated")
                         st.session_state[f'kics_script_{idx}'] = True
                 
                 if st.button(f"🚀 Create PR", key=f"kics_pr_{idx}", 
-                           use_container_width=True, type="primary"):
+                           width="stretch", type="primary"):
                     with st.spinner("Creating pull request..."):
                         time.sleep(2)
                         st.success(f"✅ PR created: #42 - Fix {finding['Title']}")
@@ -4569,11 +4816,22 @@ def calculate_overall_compliance_score(data: Dict[str, Any]) -> float:
         # AWS Config provides the real compliance percentage
         return float(config_data['compliance_rate'])
     
-    # Fallback: If no Config data, calculate from passed data or return 0%
+    # Fallback: If no Config data, calculate from passed data
     if data and isinstance(data, dict):
+        # Check if Security Hub service is not enabled
+        if data.get('service_status') == 'NOT_ENABLED':
+            # Security Hub not enabled - return 0% as we can't determine compliance
+            return 0.0
+        
         # Calculate from Security Hub data if available
         total_findings = data.get('total_findings', 0)
-        if total_findings > 0:
+        
+        # If we successfully queried Security Hub and got 0 findings, that's 100% compliance!
+        # This is different from "no data available"
+        if total_findings == 0 and 'findings_by_severity' in data:
+            # We got a valid response with 0 findings = perfect compliance
+            return 100.0
+        elif total_findings > 0:
             # If we have findings, calculate based on severity
             critical = data.get('critical', 0)
             high = data.get('high', 0)
@@ -4650,7 +4908,8 @@ def get_portfolio_stats(portfolio: str) -> Dict[str, Any]:
         if total_findings > 0:
             compliance_score = max(0.0, 100.0 - (critical_count * 10) - (high_count * 5))
         else:
-            compliance_score = 0.0
+            # No findings means 100% compliance (no security issues found)
+            compliance_score = 100.0 if len(portfolio_accounts) > 0 else 0.0
         
         # Get remediation rate
         remediation_history = st.session_state.get('remediation_history', [])
@@ -4770,20 +5029,25 @@ def render_overall_score_card(score: float, sec_hub_data: Dict = None):
     with col4:
         st.metric("Critical Findings", critical_findings, critical_findings_delta)
     
-    # Progress bar
+    # Progress bar with dynamic messaging based on status
+    if status == "Excellent":
+        status_message = "Your organization's security posture is excellent. Keep up the good work with continuous monitoring and remediation."
+    elif status == "Good":
+        status_message = "Your organization's security posture is good. Continue monitoring and addressing any remaining findings."
+    elif status == "Needs Improvement":
+        status_message = "Your organization's security posture needs improvement. Focus on resolving high-severity findings to improve your score."
+    elif status == "Poor":
+        status_message = "Your organization's security posture is poor. Immediate attention is required to address critical and high findings."
+    else:  # Critical
+        status_message = "Your organization's security posture is critical. Urgent action is required to remediate security findings and improve compliance."
+    
     st.markdown(f"""
     <div class='score-card {color}'>
         <h3>Compliance Status: {status}</h3>
-        <p>Your organization's security posture is {status.lower()}. Keep up the good work with continuous monitoring and remediation.</p>
+        <p>{status_message}</p>
     </div>
     """, unsafe_allow_html=True)
 
-def render_service_status_grid():
-    """Render service status overview"""
-    st.markdown("### 🎛️ Service Status Overview")
-    
-    # CHECK DEMO MODE
-    # Replace the services dictionary section in render_service_status_grid()
 # Starting around line 2845
 
 def render_service_status_grid():
@@ -5011,7 +5275,7 @@ def render_compliance_standards_chart(standards_data: Dict[str, float]):
     )
     
     fig.update_layout(height=400, showlegend=False)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 def render_portfolio_view():
     """Render portfolio-based account view"""
@@ -5135,25 +5399,25 @@ def render_policy_guardrails():
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            if st.button("🔍 Run Full Scan", use_container_width=True, type="primary"):
+            if st.button("🔍 Run Full Scan", width="stretch", type="primary"):
                 with st.spinner("🤖 AI is scanning all guardrails..."):
                     time.sleep(2)
                     st.success("✅ Scan completed! Found 3 new violations")
         
         with col2:
-            if st.button("⚡ Auto-Remediate All", use_container_width=True):
+            if st.button("⚡ Auto-Remediate All", width="stretch"):
                 with st.spinner("🔧 AI is applying remediations..."):
                     time.sleep(2)
                     st.success("✅ 2 violations auto-remediated")
         
         with col3:
-            if st.button("📋 Generate Report", use_container_width=True):
+            if st.button("📋 Generate Report", width="stretch"):
                 with st.spinner("📝 Generating AI report..."):
                     time.sleep(1)
                     st.success("✅ Report generated")
         
         with col4:
-            if st.button("🎯 Prioritize Issues", use_container_width=True):
+            if st.button("🎯 Prioritize Issues", width="stretch"):
                 with st.spinner("🧠 AI is analyzing risk..."):
                     time.sleep(1)
                     st.success("✅ Issues prioritized by risk")
@@ -5258,14 +5522,14 @@ def render_policy_guardrails():
             {'Repository': 'future-minds/infrastructure', 'Secret Type': 'Private Key', 'Severity': 'CRITICAL', 'Status': 'Under Review', 'Detected': '2024-11-22'},
         ]
         df_secrets = pd.DataFrame(secret_alerts)
-        st.dataframe(df_secrets, use_container_width=True, hide_index=True)
+        st.dataframe(df_secrets, width="stretch", hide_index=True)
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("🚨 Revoke All Active Secrets", use_container_width=True, type="primary"):
+            if st.button("🚨 Revoke All Active Secrets", width="stretch", type="primary"):
                 st.success("✅ Initiated secret revocation workflow")
         with col2:
-            if st.button("📧 Notify Security Team", use_container_width=True):
+            if st.button("📧 Notify Security Team", width="stretch"):
                 st.success("✅ Security team notified")
         
         st.markdown("---")
@@ -5288,7 +5552,7 @@ def render_policy_guardrails():
                             'Low': '#4CAF50'
                         },
                         title="Vulnerabilities by Severity")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         with col2:
             lang_data = pd.DataFrame({
@@ -5297,7 +5561,7 @@ def render_policy_guardrails():
             })
             fig = px.pie(lang_data, values='Vulnerabilities', names='Language', 
                         title="Vulnerabilities by Language", hole=0.4)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         st.markdown("---")
         
@@ -5309,7 +5573,7 @@ def render_policy_guardrails():
             {'Pipeline': 'Pre-commit Hooks', 'Status': 'Active', 'Last Scan': '5 mins ago', 'Findings': '0'},
         ]
         df_integration = pd.DataFrame(integration_status)
-        st.dataframe(df_integration, use_container_width=True, hide_index=True)
+        st.dataframe(df_integration, width="stretch", hide_index=True)
     
     # PolicyBot & Bulldozer Tab
     with guardrail_tabs[4]:
@@ -5345,7 +5609,7 @@ def render_policy_guardrails():
             {'Policy Name': 'Signed Commits Required', 'Scope': 'All branches', 'Status': 'Active', 'Violations': '7'},
         ]
         df_policies = pd.DataFrame(policy_rules)
-        st.dataframe(df_policies, use_container_width=True, hide_index=True)
+        st.dataframe(df_policies, width="stretch", hide_index=True)
         
         st.markdown("---")
         
@@ -5386,7 +5650,7 @@ def render_policy_guardrails():
             {'PR #': '1236', 'Title': 'Fix database credentials', 'Status': 'Blocked - Security review', 'Time': '6 hours ago', 'Author': 'backend-team'},
         ]
         df_pr = pd.DataFrame(pr_activity)
-        st.dataframe(df_pr, use_container_width=True, hide_index=True)
+        st.dataframe(df_pr, width="stretch", hide_index=True)
     
     # Custom Probot Apps Tab
     with guardrail_tabs[5]:
@@ -5579,7 +5843,7 @@ def render_policy_guardrails():
             {'Standard': 'CIS AWS Foundations', 'Coverage': '99.1%', 'Findings': '8', 'Status': 'Compliant'},
         ]
         df_compliance = pd.DataFrame(compliance_standards)
-        st.dataframe(df_compliance, use_container_width=True, hide_index=True)
+        st.dataframe(df_compliance, width="stretch", hide_index=True)
         
         st.markdown("---")
         
@@ -5594,7 +5858,7 @@ def render_policy_guardrails():
             {'Rule Name': 'cloudtrail-enabled', 'Non-Compliant Resources': '3', 'Severity': 'CRITICAL'},
         ]
         df_config = pd.DataFrame(config_rules)
-        st.dataframe(df_config, use_container_width=True, hide_index=True)
+        st.dataframe(df_config, width="stretch", hide_index=True)
         
         st.markdown("---")
         
@@ -5627,7 +5891,7 @@ def render_policy_guardrails():
                          title='Wiz.io Risk Score Trend (Last 30 Days)')
             fig.add_hline(y=70, line_dash="dash", line_color="green", 
                          annotation_text="Target Score")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         st.markdown("---")
         
@@ -5744,7 +6008,7 @@ def render_policy_guardrails():
         fig = px.area(cost_data, x='Date', y=['EC2', 'S3', 'RDS', 'Lambda', 'Other'],
                      title='Daily Cost by Service (Last 30 Days)',
                      labels={'value': 'Cost ($)', 'variable': 'Service'})
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         
         st.markdown("---")
         
@@ -5762,7 +6026,7 @@ def render_policy_guardrails():
                 {'Budget Name': 'S3 Storage', 'Limit': '$80,000', 'Current': '$72,345', 'Status': 'On Track'},
             ]
             df_budgets = pd.DataFrame(budgets)
-            st.dataframe(df_budgets, use_container_width=True, hide_index=True)
+            st.dataframe(df_budgets, width="stretch", hide_index=True)
         
         with col2:
             st.markdown("**Recent Cost Anomalies:**")
@@ -5772,7 +6036,7 @@ def render_policy_guardrails():
                 {'Date': '2024-11-15', 'Service': 'RDS', 'Anomaly': '+32% spike', 'Impact': '$5,678', 'Status': 'Resolved'},
             ]
             df_anomalies = pd.DataFrame(anomalies)
-            st.dataframe(df_anomalies, use_container_width=True, hide_index=True)
+            st.dataframe(df_anomalies, width="stretch", hide_index=True)
         
         st.markdown("---")
         
@@ -5797,7 +6061,7 @@ def render_policy_guardrails():
             {'Category': 'Performance', 'Recommendation': 'Enable CloudFront for S3', 'Potential Savings': '$2,100/month', 'Priority': 'MEDIUM'},
         ]
         df_recommendations = pd.DataFrame(recommendations)
-        st.dataframe(df_recommendations, use_container_width=True, hide_index=True)
+        st.dataframe(df_recommendations, width="stretch", hide_index=True)
         
         st.markdown("---")
         
@@ -5990,7 +6254,7 @@ def render_policy_guardrails():
             fig = px.line(task_data, x='Date', y=['Tasks Completed', 'Auto-Remediated'],
                          title='AI Agent Activity (Last 30 Days)',
                          labels={'value': 'Count', 'variable': 'Metric'})
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         with col2:
             # Accuracy by agent type
@@ -6003,7 +6267,7 @@ def render_policy_guardrails():
                         title='AI Agent Accuracy Rates',
                         color='Accuracy',
                         color_continuous_scale='Greens')
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         st.markdown("---")
         
@@ -6017,7 +6281,7 @@ def render_policy_guardrails():
         
         col1, col2, col3 = st.columns([1, 1, 2])
         with col1:
-            if st.button("🤖 Analyze with Claude", use_container_width=True, type="primary"):
+            if st.button("🤖 Analyze with Claude", width="stretch", type="primary"):
                 if user_query:
                     with st.spinner("🧠 Claude AI is analyzing..."):
                         time.sleep(2)
@@ -6040,7 +6304,7 @@ def render_policy_guardrails():
                     st.warning("Please enter a question or description")
         
         with col2:
-            if st.button("🚀 Auto-Fix", use_container_width=True):
+            if st.button("🚀 Auto-Fix", width="stretch"):
                 with st.spinner("Applying remediation..."):
                     time.sleep(1)
                     st.success("✅ Public access blocked on 8 S3 buckets")
@@ -6081,7 +6345,7 @@ def render_ai_insights_panel(client):
             label_visibility="collapsed"
         )
         
-        if st.button("🤖 Analyze with AI", use_container_width=True, type="primary"):
+        if st.button("🤖 Analyze with AI", width="stretch", type="primary"):
             finding_data = {
                 'type': finding_type,
                 'severity': 'HIGH',
@@ -6146,22 +6410,22 @@ def render_remediation_dashboard():
         }
         return [colors.get(row['Severity'], '')] * len(row)
     
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("⚡ Remediate All Auto-Fixable", type="primary", use_container_width=True):
+        if st.button("⚡ Remediate All Auto-Fixable", type="primary", width="stretch"):
             with st.spinner("Remediating findings..."):
                 time.sleep(2)
                 st.success("✅ Successfully remediated 4 findings!")
     
     with col2:
-        if st.button("🔍 View Details", use_container_width=True):
+        if st.button("🔍 View Details", width="stretch"):
             st.info("Detailed remediation plans available")
     
     with col3:
-        if st.button("📊 Export Report", use_container_width=True):
+        if st.button("📊 Export Report", width="stretch"):
             st.info("Remediation report export coming soon")
     
     st.markdown("---")
@@ -6176,7 +6440,7 @@ def render_remediation_dashboard():
     })
     
     fig = px.funnel(flow_data, x='Count', y='Stage', color='Stage')
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 # ============================================================================
 # SIDEBAR
@@ -6215,6 +6479,35 @@ def render_enterprise_multi_account_sidebar():
     else:
         # Try to get real organization
         org_client = (st.session_state.get('aws_clients') or {}).get('organizations')
+        
+        # If no client in session state, try to create one using aws_connector
+        if not org_client:
+            try:
+                # Use aws_connector which handles AssumeRole
+                if AWS_CONNECTOR_AVAILABLE:
+                    from aws_connector import get_aws_session
+                    session = get_aws_session()
+                    if session:
+                        org_client = session.client('organizations')
+                        print("✅ Organizations client created via aws_connector")
+                else:
+                    # Fallback to direct session (won't have AssumeRole)
+                    aws_secrets = st.secrets.get('aws', {})
+                    access_key = aws_secrets.get('access_key_id') or aws_secrets.get('management_access_key_id')
+                    secret_key = aws_secrets.get('secret_access_key') or aws_secrets.get('management_secret_access_key')
+                    region = aws_secrets.get('region') or aws_secrets.get('default_region', 'us-east-1')
+                    
+                    if access_key and secret_key:
+                        import boto3
+                        session = boto3.Session(
+                            aws_access_key_id=access_key,
+                            aws_secret_access_key=secret_key,
+                            region_name=region
+                        )
+                        org_client = session.client('organizations')
+            except Exception as e:
+                st.warning(f"⚠️ Could not create Organizations client: {str(e)}")
+        
         if org_client:
             org_data = OrganizationManager.get_live_organization(org_client)
         else:
@@ -6257,11 +6550,11 @@ def render_enterprise_multi_account_sidebar():
         # Select all / Clear buttons
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Select All", key="select_all_accounts", use_container_width=True):
+            if st.button("Select All", key="select_all_accounts", width="stretch"):
                 st.session_state.temp_select_all = [f"{acc['id']} - {acc['name']}" for acc in accounts_in_selected_ous]
                 st.rerun()
         with col2:
-            if st.button("Clear", key="clear_accounts", use_container_width=True):
+            if st.button("Clear", key="clear_accounts", width="stretch"):
                 st.session_state.temp_select_all = []
                 st.rerun()
         
@@ -6356,7 +6649,8 @@ def render_sidebar():
             st.warning("📊 Demo Mode: Showing sample data")
         else:
             if st.session_state.get('aws_connected'):
-                st.success("✅ Live Mode: Connected to AWS")
+                account_id = st.session_state.get('aws_account_id', 'Unknown')
+                st.success(f"✅ Live Mode: Connected to AWS\n\n**Account:** `{account_id}`")
             else:
                 st.error("❌ Live Mode: Not connected")
         
@@ -6371,31 +6665,134 @@ def render_sidebar():
         st.markdown("### 🔐 Credentials")
         
         try:
-            has_aws = all(k in st.secrets.get("aws", {}) for k in ["access_key_id", "secret_access_key", "region"])
+            # Support both naming conventions for AWS credentials
+            aws_secrets = st.secrets.get("aws", {})
+            has_aws_standard = all(k in aws_secrets for k in ["access_key_id", "secret_access_key"])
+            has_aws_management = all(k in aws_secrets for k in ["management_access_key_id", "management_secret_access_key"])
+            has_aws = has_aws_standard or has_aws_management
+            
+            # Get the actual values using either naming convention
+            aws_access_key = aws_secrets.get('access_key_id') or aws_secrets.get('management_access_key_id', '')
+            aws_secret_key = aws_secrets.get('secret_access_key') or aws_secrets.get('management_secret_access_key', '')
+            aws_region = aws_secrets.get('region') or aws_secrets.get('default_region', 'us-east-1')
+            
+            # Debug: Check for common issues
+            access_key_issues = []
+            secret_key_issues = []
+            
+            if aws_access_key:
+                # AKIA = IAM user, ASIA = STS temp credentials, AIDA = IAM user ID, AROA = Role ID
+                if not aws_access_key.startswith(('AKIA', 'ASIA', 'AIDA', 'AROA')):
+                    access_key_issues.append(f"Starts with '{aws_access_key[:4]}' - expected 'AKIA' (IAM) or 'ASIA' (temp)")
+                if len(aws_access_key) != 20:
+                    access_key_issues.append(f"Length is {len(aws_access_key)}, should be 20")
+                if '\n' in aws_access_key or '\r' in aws_access_key:
+                    access_key_issues.append("Contains newline characters!")
+                if ' ' in aws_access_key:
+                    access_key_issues.append("Contains spaces!")
+                # Check for temporary credentials needing session token
+                if aws_access_key.startswith('ASIA'):
+                    session_token = aws_secrets.get('session_token') or aws_secrets.get('aws_session_token')
+                    if not session_token:
+                        access_key_issues.append("⚠️ ASIA key = temp credentials - needs session_token!")
+                    
+            if aws_secret_key:
+                if len(aws_secret_key) != 40:
+                    secret_key_issues.append(f"Length is {len(aws_secret_key)}, should be 40")
+                if '\n' in aws_secret_key or '\r' in aws_secret_key:
+                    secret_key_issues.append("Contains newline characters!")
+                if aws_secret_key.startswith('"') or aws_secret_key.endswith('"'):
+                    secret_key_issues.append("Has extra quote characters!")
+                if ' ' in aws_secret_key:
+                    secret_key_issues.append("Contains spaces!")
+            
             has_claude = "api_key" in st.secrets.get("anthropic", {})
             has_github = "token" in st.secrets.get("github", {})
             
             st.markdown(f"{'✅' if has_aws else '❌'} AWS Credentials")
             if has_aws:
-                current_region = st.secrets["aws"]["region"]
-                st.markdown(f"📍 **Region:** `{current_region}`")
+                st.markdown(f"📍 **Region:** `{aws_region}`")
+                # Show masked access key for debugging
+                masked_key = aws_access_key[:4] + "..." + aws_access_key[-4:] if len(aws_access_key) > 8 else "****"
+                masked_secret = aws_secret_key[:4] + "..." + aws_secret_key[-4:] if len(aws_secret_key) > 8 else "****"
+                st.caption(f"Key: `{masked_key}` ({len(aws_access_key)} chars)")
+                st.caption(f"Secret: `{masked_secret}` ({len(aws_secret_key)} chars)")
+                
+                # Show any issues found
+                if access_key_issues:
+                    st.warning(f"⚠️ Access Key issues: {', '.join(access_key_issues)}")
+                if secret_key_issues:
+                    st.warning(f"⚠️ Secret Key issues: {', '.join(secret_key_issues)}")
+                    
             st.markdown(f"{'✅' if has_claude else '❌'} Claude AI API Key")
             st.markdown(f"{'✅' if has_github else '❌'} GitHub Token")
+            
+            # Add Test Credentials button for debugging
+            if has_aws:
+                if st.button("🧪 Test AWS Credentials", key="test_aws_creds"):
+                    with st.spinner("Testing credentials..."):
+                        try:
+                            import boto3
+                            # Get session token if present
+                            aws_session_token = aws_secrets.get('session_token') or aws_secrets.get('aws_session_token')
+                            
+                            session_kwargs = {
+                                'aws_access_key_id': aws_access_key.strip(),
+                                'aws_secret_access_key': aws_secret_key.strip(),
+                                'region_name': aws_region.strip()
+                            }
+                            if aws_session_token:
+                                session_kwargs['aws_session_token'] = aws_session_token.strip()
+                                
+                            test_session = boto3.Session(**session_kwargs)
+                            sts = test_session.client('sts')
+                            identity = sts.get_caller_identity()
+                            st.success(f"✅ Credentials VALID!\n\nAccount: `{identity['Account']}`\n\nARN: `{identity['Arn']}`")
+                        except Exception as e:
+                            error_msg = str(e)
+                            tips = []
+                            if 'SignatureDoesNotMatch' in error_msg:
+                                tips.append("Your secret_access_key may have special characters. Wrap it in quotes in secrets.toml")
+                            if 'InvalidClientTokenId' in error_msg:
+                                tips.append("Your access_key_id appears to be invalid. Check for typos.")
+                            if 'UnrecognizedClientException' in error_msg or 'security token' in error_msg.lower():
+                                tips.append("Check secrets.toml format - values with special chars (+/=) must be quoted")
+                                if aws_access_key.startswith('ASIA'):
+                                    tips.append("You're using temp credentials (ASIA...) - add session_token to secrets.toml")
+                            
+                            tip_text = "\n".join([f"• {t}" for t in tips]) if tips else "Check your secrets.toml format"
+                            st.error(f"❌ Credentials FAILED:\n\n`{error_msg}`\n\n**Tips:**\n{tip_text}")
+            
+            # Add Reconnect button
+            if has_aws:
+                if st.button("🔄 Reconnect to AWS", key="clear_cache_reconnect"):
+                    # Clear the session state and reconnect
+                    st.session_state.aws_connected = False
+                    st.session_state.aws_clients = None
+                    st.session_state.pop('boto3_session', None)
+                    st.session_state.pop('aws_account_id', None)
+                    st.rerun()
             
             # 🆕 Only auto-connect if NOT in demo mode
             if not demo_mode:
                 # Auto-connect AWS
                 if has_aws and not st.session_state.get('aws_connected'):
                     with st.spinner("Connecting to AWS..."):
+                        # Get session token if present (for temporary credentials)
+                        aws_session_token = aws_secrets.get('session_token') or aws_secrets.get('aws_session_token')
                         clients = get_aws_clients(
-                            st.secrets["aws"]["access_key_id"],
-                            st.secrets["aws"]["secret_access_key"],
-                            st.secrets["aws"]["region"]
+                            aws_access_key,
+                            aws_secret_key,
+                            aws_region,
+                            aws_session_token
                         )
                         if clients:
                             st.session_state.aws_clients = clients
                             st.session_state.aws_connected = True
                             st.rerun()
+                        else:
+                            # Connection failed - credentials invalid
+                            st.session_state.aws_connected = False
                 
                 # Auto-connect Claude
                 if has_claude and not st.session_state.get('claude_connected'):
@@ -6442,17 +6839,17 @@ def render_sidebar():
         # Quick Actions
         st.markdown("### ⚡ Quick Actions")
         
-        if st.button("🔄 Refresh Data", use_container_width=True):
+        if st.button("🔄 Refresh Data", width="stretch"):
             st.cache_data.clear()
             st.rerun()
         
-        if st.button("📊 Export Report", use_container_width=True):
+        if st.button("📊 Export Report", width="stretch"):
             st.info("Report export functionality coming soon")
         
-        if st.button("🔔 Configure Alerts", use_container_width=True):
+        if st.button("🔔 Configure Alerts", width="stretch"):
             st.info("Alert configuration coming soon")
         
-        if st.button("🤖 Run AI Analysis", use_container_width=True):
+        if st.button("🤖 Run AI Analysis", width="stretch"):
             st.info("Full AI security analysis coming soon")
         
         st.markdown("---")
@@ -6608,7 +7005,7 @@ def render_inspector_vulnerability_dashboard():
                 
                 fig = px.bar(os_df, x='OS', y='Total', color='Total',
                             color_continuous_scale=['#4CAF50', '#FFC107', '#FF9900', '#F44336'])
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
         
         with col2:
             # Vulnerability categories
@@ -6622,7 +7019,7 @@ def render_inspector_vulnerability_dashboard():
                 ).sort_values('Count', ascending=False)
                 
                 fig = px.pie(cat_df, values='Count', names='Category', hole=0.4)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
         
         st.markdown("---")
         
@@ -6639,7 +7036,7 @@ def render_inspector_vulnerability_dashboard():
         fig = px.line(trend_data, x='Date', y=['Critical', 'High', 'Medium'],
                      labels={'value': 'Count', 'variable': 'Severity'},
                      color_discrete_map={'Critical': '#F44336', 'High': '#FF9900', 'Medium': '#FFC107'})
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     
     # AI Remediation Tab - ENHANCED with OS Flavour Selection
     with os_tabs[2]:
@@ -6698,7 +7095,7 @@ def render_inspector_vulnerability_dashboard():
                     st.metric("High", windows_data.get('high', 0))
                     st.metric("Auto-Fixable", windows_data.get('critical', 0) + windows_data.get('high', 0))
                 
-                if st.button("🤖 Generate Windows Remediation Plan (Basic)", use_container_width=True, type="primary"):
+                if st.button("🤖 Generate Windows Remediation Plan (Basic)", width="stretch", type="primary"):
                     with st.spinner("Analyzing Windows vulnerabilities..."):
                         time.sleep(2)
                         st.success("✅ Basic remediation plan generated!")
@@ -6732,7 +7129,7 @@ def render_inspector_vulnerability_dashboard():
                     st.metric("High", linux_data.get('high', 0))
                     st.metric("Auto-Fixable", linux_data.get('critical', 0) + linux_data.get('high', 0))
                 
-                if st.button("🤖 Generate Linux Remediation Plan (Basic)", use_container_width=True, type="primary"):
+                if st.button("🤖 Generate Linux Remediation Plan (Basic)", width="stretch", type="primary"):
                     with st.spinner("Analyzing Linux vulnerabilities..."):
                         time.sleep(2)
                         st.success("✅ Basic remediation plan generated!")
@@ -6843,7 +7240,7 @@ def render_overview_dashboard():
             account_data.sort(key=lambda x: x['Risk Score'], reverse=True)
             
             df = pd.DataFrame(account_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(df, width="stretch", hide_index=True)
             
             # Risk indicator
             high_risk_accounts = len([a for a in account_data if a['Critical'] > 0])
@@ -6913,7 +7310,7 @@ def render_overview_dashboard():
                     height=400,
                     margin=dict(t=20, b=20, l=20, r=20)
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
                 
                 # Show severity breakdown table
                 st.markdown("#### Severity Breakdown")
@@ -6921,7 +7318,7 @@ def render_overview_dashboard():
                     {'Severity': k, 'Count': v, 'Percentage': f"{(v/sec_hub['total_findings']*100):.1f}%"}
                     for k, v in severity_data.items() if v > 0
                 ])
-                st.dataframe(severity_df, use_container_width=True, hide_index=True)
+                st.dataframe(severity_df, width="stretch", hide_index=True)
             else:
                 # All findings are zero
                 st.info("No findings with standard severity levels. All findings may be informational.")
@@ -6965,7 +7362,7 @@ def render_ai_remediation_tab():
             
             resource_id = st.text_input("Resource ID", "arn:aws:s3:::example-bucket")
             
-            if st.button("🤖 Generate Code", type="primary", use_container_width=True):
+            if st.button("🤖 Generate Code", type="primary", width="stretch"):
                 finding = {
                     'type': finding_type,
                     'resource': resource_id,
@@ -6984,10 +7381,10 @@ def render_ai_remediation_tab():
                 
                 col_a, col_b = st.columns(2)
                 with col_a:
-                    if st.button("📋 Copy Code", use_container_width=True):
+                    if st.button("📋 Copy Code", width="stretch"):
                         st.success("Code copied to clipboard!")
                 with col_b:
-                    if st.button("🚀 Deploy to Lambda", use_container_width=True):
+                    if st.button("🚀 Deploy to Lambda", width="stretch"):
                         st.info("Deployment functionality coming soon")
     
     with tabs[2]:
@@ -7276,13 +7673,13 @@ def render_github_gitops_tab():
                 
                 with col2:
                     st.markdown("**Actions:**")
-                    if st.button(f"🔧 Auto Remediate", key=f"detect_{detection['id']}", use_container_width=True, type="primary"):
+                    if st.button(f"🔧 Auto Remediate", key=f"detect_{detection['id']}", width="stretch", type="primary"):
                         st.success("✅ Remediation workflow triggered!")
                     
-                    if st.button(f"📋 Create Issue", key=f"issue_{detection['id']}", use_container_width=True):
+                    if st.button(f"📋 Create Issue", key=f"issue_{detection['id']}", width="stretch"):
                         st.info("GitHub issue created: #156")
                     
-                    if st.button(f"🚫 Suppress", key=f"suppress_{detection['id']}", use_container_width=True):
+                    if st.button(f"🚫 Suppress", key=f"suppress_{detection['id']}", width="stretch"):
                         st.warning("Detection suppressed")
     
     # ==================== REMEDIATION TAB ====================
@@ -7460,22 +7857,22 @@ def enforce_mfa(username):
                     st.markdown("**Actions:**")
                     
                     if rem['status'] == 'Code Generated':
-                        if st.button(f"✅ Approve & Deploy", key=f"approve_{rem['id']}", use_container_width=True, type="primary"):
+                        if st.button(f"✅ Approve & Deploy", key=f"approve_{rem['id']}", width="stretch", type="primary"):
                             st.success("✅ Deploying remediation...")
                         
-                        if st.button(f"📝 Review Code", key=f"review_{rem['id']}", use_container_width=True):
+                        if st.button(f"📝 Review Code", key=f"review_{rem['id']}", width="stretch"):
                             st.info(f"Opening PR {rem['github_pr']}")
                     
                     elif rem['status'] == 'Deployed':
                         st.success("✅ Successfully deployed")
-                        if st.button(f"📊 View Logs", key=f"logs_{rem['id']}", use_container_width=True):
+                        if st.button(f"📊 View Logs", key=f"logs_{rem['id']}", width="stretch"):
                             st.info("Opening CloudWatch logs...")
                     
                     elif rem['status'] == 'Pending Approval':
-                        if st.button(f"🚀 Deploy Now", key=f"deploy_{rem['id']}", use_container_width=True, type="primary"):
+                        if st.button(f"🚀 Deploy Now", key=f"deploy_{rem['id']}", width="stretch", type="primary"):
                             st.success("✅ Deployment started")
                     
-                    if st.button(f"🔗 View in GitHub", key=f"github_{rem['id']}", use_container_width=True):
+                    if st.button(f"🔗 View in GitHub", key=f"github_{rem['id']}", width="stretch"):
                         st.info(f"Opening PR {rem['github_pr']}")
         
         st.markdown("---")
@@ -7509,7 +7906,7 @@ def enforce_mfa(username):
             policy_severity = st.selectbox("Severity", ["Critical", "High", "Medium", "Low"], key="policy_severity")
             auto_deploy = st.checkbox("Auto-deploy after validation", value=False)
             
-            if st.button("Create Pull Request", type="primary", use_container_width=True):
+            if st.button("Create Pull Request", type="primary", width="stretch"):
                 with st.spinner("Creating PR..."):
                     time.sleep(1)
                     st.success("✅ Pull Request #42 created successfully!")
@@ -7525,7 +7922,7 @@ def enforce_mfa(username):
             st.markdown("**Preview Impact:**")
             st.info("📊 This policy will affect 47 S3 buckets across 12 AWS accounts")
             
-            if st.button("🔍 Validate Policy", key="validate_policy_button", use_container_width=True):
+            if st.button("🔍 Validate Policy", key="validate_policy_button", width="stretch"):
                 with st.spinner("Running KICS scan..."):
                     time.sleep(1)
                     st.success("✅ Policy validation passed - No security issues found")
@@ -7573,7 +7970,7 @@ def render_account_lifecycle_tab():
             9. ✓ Send notifications
             """)
         
-        if st.button("🚀 Start Onboarding", type="primary", use_container_width=True):
+        if st.button("🚀 Start Onboarding", type="primary", width="stretch"):
             if account_id and account_name:
                 with st.spinner("Onboarding account..."):
                     result = onboard_aws_account(
@@ -7631,7 +8028,7 @@ def render_account_lifecycle_tab():
             7. ⊘ Generate report
             """)
         
-        if st.button("🗑️ Start Offboarding", type="primary", disabled=not confirm_offboarding, use_container_width=True):
+        if st.button("🗑️ Start Offboarding", type="primary", disabled=not confirm_offboarding, width="stretch"):
             account_id = account_options[selected_account]
             
             with st.spinner("Offboarding account..."):
@@ -7681,7 +8078,7 @@ def render_account_lifecycle_tab():
                 })
             
             df = pd.DataFrame(account_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(df, width="stretch", hide_index=True)
         else:
             st.info("No accounts found. Connect to AWS Organizations to see accounts.")
         
@@ -7692,7 +8089,7 @@ def render_account_lifecycle_tab():
         lifecycle_events = st.session_state.get('account_lifecycle_events', [])
         if lifecycle_events:
             events_df = pd.DataFrame(lifecycle_events[-10:])  # Last 10 events
-            st.dataframe(events_df, use_container_width=True, hide_index=True)
+            st.dataframe(events_df, width="stretch", hide_index=True)
         else:
             st.info("No lifecycle events recorded yet.")
 
@@ -7827,7 +8224,7 @@ def render_unified_compliance_dashboard():
         fig = px.line(trend_data, x='Date', y=['AWS Security Hub', 'AWS Config', 'OPA', 'KICS', 'Wiz.io', 'Overall'],
                       labels={'value': 'Compliance %', 'variable': 'Source'})
         fig.update_layout(height=400, hovermode='x unified')
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     else:
         # LIVE/REAL MODE - Show placeholder message
         st.info("""
@@ -7854,7 +8251,7 @@ def render_unified_compliance_dashboard():
             {'Source': 'AWS Config', 'Category': 'Non-Compliant Resources', 'Severity': 'MEDIUM', 'Count': 14, 'Status': 'Active', 'SLA': '1 week'}
         ]
         df = pd.DataFrame(consolidated_findings)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(df, width="stretch", hide_index=True)
     else:
         # LIVE/REAL MODE - Show placeholder
         st.info("""
@@ -8079,7 +8476,7 @@ def render_jira_plugin():
             auto_assign = st.checkbox("Auto-assign to security team", 
                                      value=config.get('auto_assign', False))
         
-        submitted = st.form_submit_button("💾 Save & Test Connection", use_container_width=True)
+        submitted = st.form_submit_button("💾 Save & Test Connection", width="stretch")
         
         if submitted:
             config_data = {
@@ -8146,7 +8543,7 @@ def render_servicenow_plugin():
             notify = st.checkbox("Send email notifications", 
                                 value=config.get('notify', True))
         
-        submitted = st.form_submit_button("💾 Save & Test Connection", use_container_width=True)
+        submitted = st.form_submit_button("💾 Save & Test Connection", width="stretch")
         
         if submitted:
             config_data = {
@@ -8218,7 +8615,7 @@ def render_slack_plugin():
             thread_alerts = st.checkbox("Use threads for updates", 
                                        value=config.get('thread_alerts', True))
         
-        submitted = st.form_submit_button("💾 Save & Test Connection", use_container_width=True)
+        submitted = st.form_submit_button("💾 Save & Test Connection", width="stretch")
         
         if submitted:
             config_data = {
@@ -8290,7 +8687,7 @@ def render_github_plugin():
             create_issues = st.checkbox("Create GitHub issues for findings", 
                                        value=config.get('create_issues', False))
         
-        submitted = st.form_submit_button("💾 Save & Test Connection", use_container_width=True)
+        submitted = st.form_submit_button("💾 Save & Test Connection", width="stretch")
         
         if submitted:
             config_data = {
@@ -8349,7 +8746,7 @@ def render_pagerduty_plugin():
             auto_resolve = st.checkbox("Auto-resolve when remediated", 
                                       value=config.get('auto_resolve', True))
         
-        submitted = st.form_submit_button("💾 Save & Test Connection", use_container_width=True)
+        submitted = st.form_submit_button("💾 Save & Test Connection", width="stretch")
         
         if submitted:
             config_data = {
@@ -8403,7 +8800,7 @@ def render_wizio_plugin():
             sync_vulnerabilities = st.checkbox("Sync vulnerability findings", 
                                               value=config.get('sync_vulnerabilities', True))
         
-        submitted = st.form_submit_button("💾 Save Configuration", use_container_width=True)
+        submitted = st.form_submit_button("💾 Save Configuration", width="stretch")
         
         if submitted:
             config_data = {
@@ -8454,7 +8851,7 @@ def render_snyk_plugin():
             fail_on_critical = st.checkbox("Block deployments on critical", 
                                           value=config.get('fail_on_critical', True))
         
-        submitted = st.form_submit_button("💾 Save Configuration", use_container_width=True)
+        submitted = st.form_submit_button("💾 Save Configuration", width="stretch")
         
         if submitted:
             config_data = {
@@ -8502,7 +8899,7 @@ def render_gitlab_plugin():
             sync_policies = st.checkbox("Sync policies from GitLab", 
                                        value=config.get('sync_policies', True))
         
-        submitted = st.form_submit_button("💾 Save Configuration", use_container_width=True)
+        submitted = st.form_submit_button("💾 Save Configuration", width="stretch")
         
         if submitted:
             config_data = {
@@ -8689,7 +9086,7 @@ def render_enterprise_integration_scene():
     
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("📥 Export All Configurations", use_container_width=True):
+        if st.button("📥 Export All Configurations", width="stretch"):
             config_json = json.dumps(st.session_state.get('integrations', {}), indent=2)
             st.download_button(
                 label="💾 Download JSON",
@@ -8699,7 +9096,7 @@ def render_enterprise_integration_scene():
             )
     
     with col2:
-        if st.button("🔄 Test All Connections", use_container_width=True):
+        if st.button("🔄 Test All Connections", width="stretch"):
             with st.spinner("Testing connections..."):
                 results = []
                 for service, config in st.session_state.get('integrations', {}).items():
@@ -8711,7 +9108,7 @@ def render_enterprise_integration_scene():
                     st.info(result)
     
     with col3:
-        if st.button("❌ Clear All Configurations", use_container_width=True):
+        if st.button("❌ Clear All Configurations", width="stretch"):
             if 'integrations' in st.session_state:
                 st.session_state.integrations = {}
                 st.success("✅ All configurations cleared!")
@@ -8771,11 +9168,12 @@ def main():
         "🔬 Inspector Vulnerabilities",    # Tab 2
         "🚧 Tech Guardrails",              # Tab 3
         "🤖 AI Remediation",               # Tab 4
-        "🐙 GitHub & GitOps",              # Tab 5
-        "🔄 Account Lifecycle",            # Tab 6
-        "🔍 Security Findings",            # Tab 7
-        "💰 FinOps & Cost Management",     # Tab 8
-        "🔗 Enterprise Integrations"  # NEW TAB
+        "🎯 Unified Remediation",          # Tab 5 - NEW
+        "🐙 GitHub & GitOps",              # Tab 6
+        "🔄 Account Lifecycle",            # Tab 7
+        "🔍 Security Findings",            # Tab 8
+        "💰 FinOps & Cost Management",     # Tab 9
+        "🔗 Enterprise Integrations"       # Tab 10
     ])
     
     # TABS
@@ -8856,16 +9254,40 @@ def main():
         available_threats = st.session_state.get('available_threats', [])
         render_batch_remediation_ui()
     
-    with tabs[5]:
-        render_github_gitops_tab()
+    with tabs[5]:  # 🎯 Unified Remediation - NEW TAB
+        st.markdown("## 🎯 Unified Remediation Dashboard")
+        st.markdown("*Single pane of glass for all remediation activities across Windows, Linux, and EKS*")
+        
+        if UNIFIED_REMEDIATION_AVAILABLE:
+            render_unified_remediation_dashboard()
+        else:
+            st.warning("⚠️ Unified Remediation module not loaded")
+            st.info("""
+            **To enable this feature:**
+            1. Ensure `unified_remediation_dashboard.py` is in your app directory
+            2. Ensure `windows_server_remediation_MERGED_ENHANCED.py` is available
+            3. Ensure `linux_distribution_remediation_MERGED_ENHANCED.py` is available
+            4. Optionally add `eks_remediation_complete.py` for K8s API integration
+            
+            **Features when enabled:**
+            - Single view of Windows EC2, Linux EC2, and EKS containers
+            - Confidence scoring for each remediation
+            - Auto-remediate vs Manual intervention recommendations
+            - Bulk remediation capabilities
+            - NIST control tracking
+            - ML-based risk prediction (optional)
+            """)
     
     with tabs[6]:
+        render_github_gitops_tab()
+    
+    with tabs[7]:
         render_enhanced_account_lifecycle()
         sub_tabs = st.tabs(["Templates", "🤖 AI Assistant", "Deploy"])
     with sub_tabs[1]:
         render_complete_ai_assistant_scene()
     
-    with tabs[7]:
+    with tabs[8]:
         st.markdown("## 🔍 Security Findings - Comprehensive View")
         
         # Check if in demo mode
@@ -8979,7 +9401,7 @@ def main():
                         template='plotly_dark',
                         height=300
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
             
             with col2:
                 st.markdown("#### Severity Breakdown")
@@ -9017,7 +9439,7 @@ def main():
                     }
                     for f in sec_hub_data['findings'][:50]
                 ])
-                st.dataframe(findings_df, use_container_width=True, height=400, hide_index=True)
+                st.dataframe(findings_df, width="stretch", height=400, hide_index=True)
             elif is_demo:
                 st.info("💡 In demo mode. Real findings will appear here in live mode with AWS connection.")
             else:
@@ -9051,7 +9473,7 @@ def main():
                     template='plotly_dark',
                     height=400
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             
             if not is_demo and not (compliant or non_compliant):
                 st.info("📝 Connect to AWS and enable Config to see compliance data.")
@@ -9085,7 +9507,7 @@ def main():
                     template='plotly_dark',
                     height=300
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             
             if not is_demo and guardduty_data.get('total_findings', 0) == 0:
                 st.success("✅ No active threats detected. Your environment is secure!")
@@ -9127,7 +9549,7 @@ def main():
                     template='plotly_dark',
                     height=300
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             
             if not is_demo and inspector_data.get('total_vulnerabilities', 0) == 0:
                 st.success("✅ No vulnerabilities found. Great job!")
@@ -9162,14 +9584,14 @@ def main():
                     height=400,
                     hovermode='x unified'
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
                 
                 st.info("📊 Historical trend data will be available after running in live mode for 30+ days.")
             else:
                 st.info("📊 Trend analysis requires historical data. Continue using the platform to build trend insights.")
 
     
-    with tabs[8]:  # 💰 FinOps & Cost Management
+    with tabs[9]:  # 💰 FinOps & Cost Management
         st.markdown("## 💰 FinOps & Cost Management")
         
         # Create sub-tabs
@@ -9274,7 +9696,7 @@ def main():
                     legend=dict(orientation='h', yanchor='bottom', y=1.02)
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             
             with col2:
                 st.markdown("### Budget Health")
@@ -9446,7 +9868,7 @@ def main():
                     showlegend=True
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             
             with col2:
                 st.markdown("### Quick Stats")
@@ -9540,7 +9962,7 @@ def main():
                         legend=dict(font=dict(color='#FFFFFF', size=11)),
                         font=dict(color='#FFFFFF')
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
         
                 with col2:
                     st.markdown("### Monthly Spend Breakdown")
@@ -9596,7 +10018,7 @@ def main():
                     yaxis_range=[70, 100],
                     hovermode='x unified'
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
     
         with finops_tab2:
                 st.subheader("🤖 AI/ML Workload Cost Analysis")
@@ -9662,7 +10084,7 @@ def main():
                         hovermode='x unified'
                     )
             
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
         
                 with col2:
                     st.markdown("### Cost Drivers")
@@ -9704,7 +10126,7 @@ def main():
                         'Jobs': [145, 234, 345, 456]
                     })
             
-                    st.dataframe(training_data, use_container_width=True, hide_index=True)
+                    st.dataframe(training_data, width="stretch", hide_index=True)
         
                 with col2:
                     st.markdown("#### Inference Endpoints")
@@ -9778,7 +10200,7 @@ def main():
                         hovermode='x unified'
                     )
             
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
         
                 with col2:
                     st.markdown("### Bedrock Details")
@@ -9822,7 +10244,7 @@ def main():
                 with col1:
                     st.dataframe(
                         gpu_data,
-                        use_container_width=True,
+                        width="stretch",
                         hide_index=True,
                         column_config={
                             "Hourly_Cost": st.column_config.NumberColumn("$/Hour", format="$%.2f"),
@@ -10003,7 +10425,7 @@ def main():
                 st.markdown("### 📊 Cost Anomaly Timeline")
         
                     # Generate anomaly data
-                dates = pd.date_range(end=datetime.now(), periods=168, freq='H')  # 7 days hourly
+                dates = pd.date_range(end=datetime.now(), periods=168, freq='h')  # 7 days hourly
                 baseline = np.random.normal(120000, 5000, 168)
                 actual = baseline.copy()
         
@@ -10050,7 +10472,7 @@ def main():
                     legend=dict(orientation='h', yanchor='bottom', y=1.02)
                 )
         
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
         
                 st.markdown("---")
         
@@ -10322,7 +10744,7 @@ def main():
                         plot_bgcolor='rgba(0,0,0,0)'
                     )
             
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
         
                 with col2:
                     st.markdown("### 🚨 Budget Alerts")
@@ -10423,7 +10845,7 @@ def main():
                         paper_bgcolor='rgba(0,0,0,0)'
                     )
             
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
         
                 with col2:
                     st.markdown("### 📊 Forecast Summary")
@@ -10463,7 +10885,7 @@ def main():
         
                 st.dataframe(
                     variance_data,
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                     column_config={
                         'Budget': st.column_config.NumberColumn('Budget', format='$%d'),
@@ -10523,21 +10945,21 @@ def main():
                         paper_bgcolor='rgba(0,0,0,0)'
                     )
             
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
         
                 with col2:
                     st.markdown("### 🎯 Quick Actions")
             
-                    if st.button("🧹 Clean Unattached EBS", use_container_width=True, type="primary"):
+                    if st.button("🧹 Clean Unattached EBS", width="stretch", type="primary"):
                         st.success("✅ Initiated cleanup of 567 unattached EBS volumes")
             
-                    if st.button("🗑️ Delete Old Snapshots", use_container_width=True):
+                    if st.button("🗑️ Delete Old Snapshots", width="stretch"):
                         st.success("✅ Queued 1,245 snapshots for deletion")
             
-                    if st.button("🔌 Release Unused EIPs", use_container_width=True):
+                    if st.button("🔌 Release Unused EIPs", width="stretch"):
                         st.success("✅ Released 89 unused Elastic IPs")
             
-                    if st.button("⏹️ Stop Idle EC2", use_container_width=True):
+                    if st.button("⏹️ Stop Idle EC2", width="stretch"):
                         st.info("⚠️ Review required: 234 instances flagged")
             
                     st.markdown("---")
@@ -10572,7 +10994,7 @@ def main():
                             'Owner': random.choice(['dev-team', 'data-science', 'platform', 'unknown'])
                         })
             
-                    st.dataframe(pd.DataFrame(idle_ec2), use_container_width=True, hide_index=True)
+                    st.dataframe(pd.DataFrame(idle_ec2), width="stretch", hide_index=True)
             
                     col1, col2, col3 = st.columns(3)
                     with col1:
@@ -10595,7 +11017,7 @@ def main():
                             'Last Attached To': f'i-{random.randint(10000000, 99999999):08x}'
                         })
             
-                    st.dataframe(pd.DataFrame(unattached_ebs), use_container_width=True, hide_index=True)
+                    st.dataframe(pd.DataFrame(unattached_ebs), width="stretch", hide_index=True)
             
                     col1, col2, col3 = st.columns(3)
                     with col1:
@@ -10617,7 +11039,7 @@ def main():
                             'Monthly Cost': f'${random.randint(2, 25)}'
                         })
             
-                    st.dataframe(pd.DataFrame(old_snapshots), use_container_width=True, hide_index=True)
+                    st.dataframe(pd.DataFrame(old_snapshots), width="stretch", hide_index=True)
             
                     st.warning("""
                     **⚠️ Recommendation**: Implement lifecycle policy to auto-delete snapshots older than 90 days 
@@ -10741,7 +11163,7 @@ def main():
                         legend=dict(font=dict(color='#FFFFFF'))
                     )
             
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
         
                 with col2:
                     st.markdown("### 📋 Allocation Summary")
@@ -10794,7 +11216,7 @@ def main():
         
                 st.dataframe(
                     df_chargeback,
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                     column_config={
                         'EC2': st.column_config.NumberColumn('EC2', format='$%d'),
@@ -10807,13 +11229,13 @@ def main():
         
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    if st.button("📧 Email Report", use_container_width=True):
+                    if st.button("📧 Email Report", width="stretch"):
                         st.success("✅ Report sent to finance@company.com")
                 with col2:
-                    if st.button("📥 Export CSV", use_container_width=True):
+                    if st.button("📥 Export CSV", width="stretch"):
                         st.success("✅ Downloaded chargeback_nov2024.csv")
                 with col3:
-                    if st.button("📊 Export to SAP", use_container_width=True):
+                    if st.button("📊 Export to SAP", width="stretch"):
                         st.success("✅ Exported to SAP FICO module")
         
                 st.markdown("---")
@@ -10890,7 +11312,7 @@ def main():
                         paper_bgcolor='rgba(0,0,0,0)'
                     )
             
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
         
                 with col2:
                     st.markdown("### 📈 Cost per Active User Trend")
@@ -10919,7 +11341,7 @@ def main():
                         paper_bgcolor='rgba(0,0,0,0)'
                     )
             
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
         
                 st.markdown("---")
         
@@ -10938,7 +11360,7 @@ def main():
         
                 st.dataframe(
                     app_economics,
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                     column_config={
                         'Monthly Cost': st.column_config.NumberColumn('Monthly Cost', format='$%d'),
@@ -11016,7 +11438,7 @@ def main():
                     paper_bgcolor='rgba(0,0,0,0)'
                 )
         
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
         
                 st.success("""
                 **📈 Key Insight**: Cloud cost ratio improved from 19.4% to 17.9% over 6 months, 
@@ -11051,7 +11473,7 @@ def main():
                 with col1:
                     st.markdown("### 📊 Carbon Emissions Trend")
             
-                    dates = pd.date_range(end=datetime.now(), periods=12, freq='M')
+                    dates = pd.date_range(end=datetime.now(), periods=12, freq='ME')
                     emissions = [1050, 1020, 980, 960, 940, 920, 900, 880, 870, 860, 850, 847]
             
                     fig = go.Figure()
@@ -11074,7 +11496,7 @@ def main():
                         paper_bgcolor='rgba(0,0,0,0)'
                     )
             
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
         
                 with col2:
                     st.markdown("### 🎯 2025 Goals")
@@ -11123,7 +11545,7 @@ def main():
                         paper_bgcolor='rgba(0,0,0,0)'
                     )
             
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
         
                 with col2:
                     st.markdown("### 📊 Emissions by Region")
@@ -11150,7 +11572,7 @@ def main():
                         paper_bgcolor='rgba(0,0,0,0)'
                     )
             
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
         
                 st.markdown("---")
         
@@ -11196,15 +11618,15 @@ def main():
                 col1, col2, col3 = st.columns(3)
         
                 with col1:
-                    if st.button("📊 Generate ESG Report", use_container_width=True, type="primary"):
+                    if st.button("📊 Generate ESG Report", width="stretch", type="primary"):
                         st.success("✅ ESG report generated for Q4 2024")
         
                 with col2:
-                    if st.button("📥 Export Carbon Data", use_container_width=True):
+                    if st.button("📥 Export Carbon Data", width="stretch"):
                         st.success("✅ Downloaded carbon_footprint_2024.csv")
         
                 with col3:
-                    if st.button("📧 Send to Sustainability Team", use_container_width=True):
+                    if st.button("📧 Send to Sustainability Team", width="stretch"):
                         st.success("✅ Report sent to sustainability@company.com")
     
                     # ==================== FINOPS TAB 10: DATA PIPELINES ====================
@@ -11368,10 +11790,10 @@ def main():
                             paper_bgcolor='rgba(0,0,0,0)'
                         )
                 
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width="stretch")
             
                     with col2:
-                        hours = pd.date_range(end=datetime.now(), periods=24, freq='H')
+                        hours = pd.date_range(end=datetime.now(), periods=24, freq='h')
                         latency = np.random.normal(2.3, 0.5, 24)
                 
                         fig = go.Figure()
@@ -11392,7 +11814,7 @@ def main():
                             paper_bgcolor='rgba(0,0,0,0)'
                         )
                 
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width="stretch")
         
                 with pipe_tab2:
                     st.markdown("### 🔌 Data Sources & Connectors")
@@ -11463,7 +11885,7 @@ def main():
                         new_source = st.selectbox("Select Source Type", 
                             ["AWS Service", "Third-Party API", "Database", "File Upload", "Custom Webhook"])
                 
-                        if st.button("🔌 Configure New Source", use_container_width=True):
+                        if st.button("🔌 Configure New Source", width="stretch"):
                             st.info("📝 Opening data source configuration wizard...")
         
                 with pipe_tab3:
@@ -11589,13 +12011,13 @@ def main():
             
                     col1, col2, col3 = st.columns(3)
                     with col1:
-                        if st.button("▶️ Run All Pipelines", type="primary", use_container_width=True):
+                        if st.button("▶️ Run All Pipelines", type="primary", width="stretch"):
                             st.success("✅ Triggered manual run for all pipelines")
                     with col2:
-                        if st.button("📊 View Execution History", use_container_width=True):
+                        if st.button("📊 View Execution History", width="stretch"):
                             st.info("📜 Opening execution history...")
                     with col3:
-                        if st.button("➕ Create New Workflow", use_container_width=True):
+                        if st.button("➕ Create New Workflow", width="stretch"):
                             st.info("📝 Opening workflow designer...")
         
                 with pipe_tab4:
@@ -11688,7 +12110,7 @@ def main():
                         recipients = st.text_input("Recipients", placeholder="email@company.com")
                         delivery = st.multiselect("Delivery Channel", ["Email", "Slack", "S3", "SFTP"])
             
-                    if st.button("📊 Create Report", type="primary", use_container_width=True):
+                    if st.button("📊 Create Report", type="primary", width="stretch"):
                         st.success("✅ Report created and scheduled successfully!")
         
                 with pipe_tab5:
@@ -11777,7 +12199,7 @@ def main():
                         severity_new = st.selectbox("Severity", ["Critical", "High", "Medium", "Low"], key="alert_severity")
                         channels = st.multiselect("Notification Channels", ["Email", "Slack", "PagerDuty", "Teams", "SNS"])
             
-                    if st.button("🔔 Create Alert", type="primary", use_container_width=True):
+                    if st.button("🔔 Create Alert", type="primary", width="stretch"):
                         st.success("✅ Alert rule created successfully!")
     
                     # ==================== FINOPS TAB 11: OPTIMIZATION ENGINE ====================
@@ -12089,7 +12511,7 @@ def main():
                             paper_bgcolor='rgba(0,0,0,0)'
                         )
                 
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width="stretch")
             
                     with col2:
                             # Predictions volume
@@ -12116,14 +12538,14 @@ def main():
                             paper_bgcolor='rgba(0,0,0,0)'
                         )
                 
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width="stretch")
             
                     col1, col2 = st.columns(2)
                     with col1:
-                        if st.button("🔄 Retrain All Models", type="primary", use_container_width=True):
+                        if st.button("🔄 Retrain All Models", type="primary", width="stretch"):
                             st.success("✅ Model retraining pipeline triggered")
                     with col2:
-                        if st.button("📊 View Model Metrics", use_container_width=True):
+                        if st.button("📊 View Model Metrics", width="stretch"):
                             st.info("📈 Opening MLflow dashboard...")
         
                 with opt_tab3:
@@ -12311,7 +12733,7 @@ def main():
                             'Owner': random.choice(['FinOps Team', 'Platform Team', 'Auto', 'Account Owner'])
                         })
             
-                    st.dataframe(pd.DataFrame(pipeline_items), use_container_width=True, hide_index=True, height=400)
+                    st.dataframe(pd.DataFrame(pipeline_items), width="stretch", hide_index=True, height=400)
         
                 with opt_tab5:
                     st.markdown("### ⚡ Auto-Implementation Engine")
@@ -12422,12 +12844,12 @@ def main():
             
                     col1, col2 = st.columns(2)
                     with col1:
-                        if st.button("💾 Save Settings", type="primary", use_container_width=True):
+                        if st.button("💾 Save Settings", type="primary", width="stretch"):
                             st.success("✅ Auto-implementation settings saved")
                     with col2:
-                        if st.button("⏸️ Pause All Auto-Implementation", use_container_width=True):
+                        if st.button("⏸️ Pause All Auto-Implementation", width="stretch"):
                             st.warning("⏸️ Auto-implementation paused")
-    with tabs[9]:
+    with tabs[10]:
         render_enterprise_integration_scene()
 
     # Footer

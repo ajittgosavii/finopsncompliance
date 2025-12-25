@@ -1105,7 +1105,7 @@ def render_linux_remediation_ui():
         })
     
     df = pd.DataFrame(vuln_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)
     
     st.divider()
     
@@ -1113,13 +1113,13 @@ def render_linux_remediation_ui():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("🔍 Scan for Vulnerabilities", use_container_width=True, type="primary", key="linux_scan"):
+        if st.button("🔍 Scan for Vulnerabilities", width="stretch", type="primary", key="linux_scan"):
             with st.spinner(f"Scanning {selected_distro} servers..."):
                 st.success(f"✅ Scan completed for {selected_distro}")
                 st.info(f"Found {critical_count} critical, {high_count} high, and 38 medium severity issues")
     
     with col2:
-        if st.button("🛠️ Generate Remediation Scripts", use_container_width=True, key="linux_generate"):
+        if st.button("🛠️ Generate Remediation Scripts", width="stretch", key="linux_generate"):
             st.markdown("#### 🔧 Generated Remediation Scripts")
             
             for vuln in sample_vulnerabilities[:2]:
@@ -1146,7 +1146,7 @@ def render_linux_remediation_ui():
                     )
     
     with col3:
-        if st.button("🚀 Execute Remediation", use_container_width=True, key="linux_execute"):
+        if st.button("🚀 Execute Remediation", width="stretch", key="linux_execute"):
             with st.spinner("Executing remediation via AWS SSM..."):
                 progress_bar = st.progress(0)
                 for i, vuln in enumerate(sample_vulnerabilities):

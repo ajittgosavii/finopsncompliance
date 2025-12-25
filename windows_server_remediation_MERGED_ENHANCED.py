@@ -1204,7 +1204,7 @@ def render_windows_remediation_ui():
         })
     
     df = pd.DataFrame(vuln_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)
     
     st.divider()
     
@@ -1212,13 +1212,13 @@ def render_windows_remediation_ui():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("🔍 Scan for Vulnerabilities", use_container_width=True, type="primary", key="windows_scan"):
+        if st.button("🔍 Scan for Vulnerabilities", width="stretch", type="primary", key="windows_scan"):
             with st.spinner(f"Scanning {selected_version} servers..."):
                 st.success(f"✅ Scan completed for {selected_version}")
                 st.info(f"Found {critical_count} critical, {high_count} high, and 45 medium severity issues")
     
     with col2:
-        if st.button("🛠️ Generate Remediation Scripts", use_container_width=True, key="windows_generate"):
+        if st.button("🛠️ Generate Remediation Scripts", width="stretch", key="windows_generate"):
             st.markdown("#### 🔧 Generated Remediation Scripts")
             
             for vuln in sample_vulnerabilities[:2]:
@@ -1245,7 +1245,7 @@ def render_windows_remediation_ui():
                     )
     
     with col3:
-        if st.button("🚀 Execute Remediation", use_container_width=True, key="windows_execute"):
+        if st.button("🚀 Execute Remediation", width="stretch", key="windows_execute"):
             with st.spinner("Executing remediation via AWS SSM..."):
                 progress_bar = st.progress(0)
                 for i, vuln in enumerate(sample_vulnerabilities):

@@ -368,7 +368,7 @@ def render_policy_card_enhanced(policy_key, policy_data):
     """, unsafe_allow_html=True)
     
     # FIXED: Working View Policy button
-    if st.button(f"View Policy", key=f"view_{policy_key}", use_container_width=True):
+    if st.button(f"View Policy", key=f"view_{policy_key}", width="stretch"):
         st.session_state.selected_policy = policy_key
         st.session_state.show_policy_modal = True
     
@@ -412,7 +412,7 @@ def render_policy_card_enhanced(policy_key, policy_data):
                     {"Account": "dev-456", "Resource": "ec2:instance/i-abc", "Region": "us-west-2", "Status": "❌ Non-Compliant"},
                     {"Account": "staging-789", "Resource": "rds:db/prod-db", "Region": "eu-west-1", "Status": "❌ Non-Compliant"},
                 ])
-                st.dataframe(violations_df, use_container_width=True)
+                st.dataframe(violations_df, width="stretch")
             
             with detail_tabs[2]:
                 st.markdown("**Compliance Framework Mapping:**")
@@ -633,11 +633,11 @@ def render_visual_policy_builder():
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        if st.button("👁️ Preview JSON", key="preview_json", use_container_width=True):
+        if st.button("👁️ Preview JSON", key="preview_json", width="stretch"):
             st.session_state.show_json = True
     
     with col2:
-        if st.button("✅ Generate Policy", key="generate_policy", use_container_width=True, type="primary"):
+        if st.button("✅ Generate Policy", key="generate_policy", width="stretch", type="primary"):
             st.success("✅ Policy generated successfully!")
             st.session_state.show_json = True
     
@@ -700,7 +700,7 @@ def render_impact_analysis():
             {"Account": "prod-manufacturing-234", "Resource Type": "ECS Cluster", "Resource": "prod-cluster", "Status": "❌ Non-Compliant", "Estimated Savings": "$1,700"},
         ])
         
-        st.dataframe(breakdown_data, use_container_width=True, height=200)
+        st.dataframe(breakdown_data, width="stretch", height=200)
         
         # Visualizations
         col1, col2 = st.columns(2)
@@ -713,7 +713,7 @@ def render_impact_analysis():
                 labels={"x": "Account", "y": "Savings ($)"},
             )
             cost_chart.update_layout(showlegend=False, height=300)
-            st.plotly_chart(cost_chart, use_container_width=True)
+            st.plotly_chart(cost_chart, width="stretch")
         
         with col2:
             st.markdown("**Compliance Score Impact:**")
@@ -729,7 +729,7 @@ def render_impact_analysis():
                 color_discrete_map={"Before": "#FF9900", "After": "#00C851"}
             )
             compliance_chart.update_layout(showlegend=False, height=300)
-            st.plotly_chart(compliance_chart, use_container_width=True)
+            st.plotly_chart(compliance_chart, width="stretch")
 
 
 def render_deployment_interface():
@@ -772,7 +772,7 @@ def render_deployment_interface():
     if not ous:
         st.warning("⚠️ Select at least one OU to deploy")
     
-    if st.button("🚀 Deploy Policy Now", key="deploy_now", type="primary", use_container_width=True, disabled=deploy_disabled):
+    if st.button("🚀 Deploy Policy Now", key="deploy_now", type="primary", width="stretch", disabled=deploy_disabled):
         # Get selected policy from session state (set in Policy Library tab)
         selected_policy_name = st.session_state.get('selected_policy_name', 'Prevent Public S3 Buckets')
         selected_policy_json = st.session_state.get('selected_policy_json', POLICY_LIBRARY['prevent_public_s3']['policy_json'])
@@ -805,7 +805,6 @@ def deploy_scp_policy(policy_name, policy_json, target_ous, deployment_mode, not
             time.sleep(2)
             
             # Generate demo policy ID
-            import uuid
             policy_id = f"p-demo-{uuid.uuid4().hex[:8]}"
             
             # Get affected accounts from organization data
@@ -989,7 +988,7 @@ def deploy_scp_policy(policy_name, policy_json, target_ous, deployment_mode, not
                 
                 # Show attachment results
                 with st.expander("📊 Deployment Details", expanded=False):
-                    st.dataframe(pd.DataFrame(attachment_results), use_container_width=True, hide_index=True)
+                    st.dataframe(pd.DataFrame(attachment_results), width="stretch", hide_index=True)
                 
                 # Send notifications
                 if notifications.get('email'):

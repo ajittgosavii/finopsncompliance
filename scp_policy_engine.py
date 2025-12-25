@@ -23,6 +23,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime, timedelta
 import random
+import time
 from typing import Dict, List, Any
 
 # ============================================================================
@@ -801,15 +802,15 @@ def render_policy_card(key: str, policy: Dict):
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("👁️ View Policy", key=f"view_lib_{key}", use_container_width=True):
+        if st.button("👁️ View Policy", key=f"view_lib_{key}", width="stretch"):
             show_policy_details(key, policy)
     
     with col2:
-        if st.button("📋 Copy JSON", key=f"copy_lib_{key}", use_container_width=True):
+        if st.button("📋 Copy JSON", key=f"copy_lib_{key}", width="stretch"):
             st.code(json.dumps(policy["policy"], indent=2), language="json")
     
     with col3:
-        if st.button("🚀 Deploy", key=f"deploy_lib_{key}", type="primary", use_container_width=True):
+        if st.button("🚀 Deploy", key=f"deploy_lib_{key}", type="primary", width="stretch"):
             st.session_state[f"deploy_policy_{key}"] = policy
             st.success(f"✅ Policy queued for deployment")
 
@@ -945,7 +946,7 @@ def render_policy_editor():
     col1, col2, col3 = st.columns([1, 1, 2])
     
     with col1:
-        if st.button("🔍 Validate Policy", type="secondary", use_container_width=True):
+        if st.button("🔍 Validate Policy", type="secondary", width="stretch"):
             validation = validate_policy_syntax(policy_json)
             
             if validation["valid"]:
@@ -964,7 +965,7 @@ def render_policy_editor():
                 st.error(f"❌ Validation failed: {validation['error']}")
     
     with col2:
-        if st.button("💾 Save Policy", type="primary", use_container_width=True):
+        if st.button("💾 Save Policy", type="primary", width="stretch"):
             validation = validate_policy_syntax(policy_json)
             
             if validation["valid"]:
@@ -1156,12 +1157,12 @@ def render_policy_testing():
                 st.markdown("#### Detailed Results")
                 
                 results_df = pd.DataFrame(results)
-                st.dataframe(results_df, use_container_width=True, hide_index=True)
+                st.dataframe(results_df, width="stretch", hide_index=True)
                 
                 # Visual representation
                 fig = px.pie(results_df, names='result', title='Policy Test Results',
                            color='result', color_discrete_map={'Denied': '#dc3545', 'Allowed': '#28a745'})
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
         else:
             st.error("Please provide a valid policy to test")
 
@@ -1262,7 +1263,7 @@ def render_policy_deployment():
                 {"Check": "Backup policies created", "Status": "✅ Passed"}
             ]
             
-            st.dataframe(pd.DataFrame(checks), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(checks), width="stretch", hide_index=True)
             
             st.warning("⚠️ **Conflicts Detected:**")
             st.markdown("""
@@ -1278,7 +1279,7 @@ def render_policy_deployment():
     col1, col2, col3 = st.columns([1, 1, 2])
     
     with col1:
-        if st.button("🚀 Deploy Policies", type="primary", use_container_width=True):
+        if st.button("🚀 Deploy Policies", type="primary", width="stretch"):
             with st.spinner("Deploying policies..."):
                 time.sleep(3)
                 
@@ -1294,7 +1295,7 @@ def render_policy_deployment():
                 """)
     
     with col2:
-        if st.button("💾 Save as Deployment Template", use_container_width=True):
+        if st.button("💾 Save as Deployment Template", width="stretch"):
             st.success("✅ Deployment template saved")
 
 def render_compliance_mapping():
@@ -1413,7 +1414,7 @@ def render_compliance_mapping():
     st.markdown("#### 📋 Detailed Requirements")
     
     req_df = pd.DataFrame(requirements)
-    st.dataframe(req_df, use_container_width=True, hide_index=True, height=400)
+    st.dataframe(req_df, width="stretch", hide_index=True, height=400)
     
     # Visualization
     fig = px.bar(req_df, x='Control', y='Coverage', 
@@ -1422,7 +1423,7 @@ def render_compliance_mapping():
                 color_continuous_scale=['red', 'yellow', 'green'])
     fig.add_hline(y=70, line_dash="dash", line_color="orange", annotation_text="Minimum Threshold")
     fig.add_hline(y=85, line_dash="dash", line_color="green", annotation_text="Target Threshold")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     
     # Gap analysis
     st.markdown("#### 🔍 Gap Analysis")
@@ -1508,7 +1509,7 @@ def render_impact_analysis():
                 {"Account": "Development-Test-001", "Affected Resources": random.randint(20, 80), "Potential Blocks": random.randint(0, 10), "Risk": "Low"},
             ]
             
-            st.dataframe(pd.DataFrame(account_impact), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(account_impact), width="stretch", hide_index=True)
             
             # Recommendations
             st.markdown("#### 💡 Recommendations")
@@ -1574,7 +1575,7 @@ def render_policy_analytics():
         
         fig = px.pie(violations_data, values='Violations', names='Category', hole=0.4)
         fig.update_layout(height=300)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     
     with col2:
         st.markdown("#### 📈 Violations Trend")
@@ -1587,7 +1588,7 @@ def render_policy_analytics():
         
         fig = px.line(violations_trend, x='Date', y='Violations')
         fig.update_layout(height=300)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     
     st.markdown("---")
     
@@ -1602,7 +1603,7 @@ def render_policy_analytics():
         {"Policy": "Require Encryption", "Violations": 98, "Accounts Affected": 6, "Last 7 Days": "+5%"},
     ]
     
-    st.dataframe(pd.DataFrame(top_violations), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(top_violations), width="stretch", hide_index=True)
     
     st.markdown("---")
     
@@ -1616,7 +1617,7 @@ def render_policy_analytics():
         {"Policy": "Require MFA", "Blocked Actions": 189, "Success Rate": "97.8%", "False Positives": 4},
     ]
     
-    st.dataframe(pd.DataFrame(effectiveness_data), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(effectiveness_data), width="stretch", hide_index=True)
 
 # ============================================================================
 # EXPORT FOR MAIN APP

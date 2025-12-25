@@ -44,7 +44,7 @@ def render_complete_ai_assistant_scene():
         )
     
     with col_temp2:
-        if st.button("🤖 Get AI Recommendations", type="primary", use_container_width=True, key="get_ai_rec"):
+        if st.button("🤖 Get AI Recommendations", type="primary", width="stretch", key="get_ai_rec"):
             st.session_state.show_ai_panel = True
     
     # AI Assistant Panel - Scene 4 Main Feature
@@ -178,7 +178,7 @@ def render_complete_ai_assistant_scene():
         # READINESS VALIDATION SECTION
         st.markdown("#### ✅ Pre-Deployment Validation")
         
-        if st.button("🔍 Run Validation Checks", use_container_width=True, type="primary", key="run_validation"):
+        if st.button("🔍 Run Validation Checks", width="stretch", type="primary", key="run_validation"):
             st.session_state.validation_complete = True
             st.session_state.show_deploy_button = True
         
@@ -253,7 +253,7 @@ def render_complete_ai_assistant_scene():
                 st.info("✅ **Ready for deployment** - All prerequisites met. Click deploy to provision your production-ready account.")
             
             with col_deploy2:
-                if st.button("🚀 Deploy Account", type="primary", use_container_width=True, key="deploy_account_btn"):
+                if st.button("🚀 Deploy Account", type="primary", width="stretch", key="deploy_account_btn"):
                     st.session_state.deployment_started = True
         
         # DEPLOYMENT PROGRESS - Real-time updates
@@ -370,15 +370,15 @@ def render_complete_ai_assistant_scene():
             col_next1, col_next2, col_next3 = st.columns(3)
             
             with col_next1:
-                if st.button("📊 View Dashboard", use_container_width=True, key="view_dash"):
+                if st.button("📊 View Dashboard", width="stretch", key="view_dash"):
                     st.info("Opening account dashboard...")
             
             with col_next2:
-                if st.button("🔐 Configure Access", use_container_width=True, key="config_access"):
+                if st.button("🔐 Configure Access", width="stretch", key="config_access"):
                     st.info("Opening IAM configuration...")
             
             with col_next3:
-                if st.button("📋 Download Report", use_container_width=True, key="download_report"):
+                if st.button("📋 Download Report", width="stretch", key="download_report"):
                     st.info("Generating provisioning report...")
 
 
@@ -390,7 +390,7 @@ def render_quick_ai_demo():
     
     st.markdown("### 🤖 AI Configuration Assistant Demo")
     
-    if st.button("▶️ Start Demo", type="primary", use_container_width=True):
+    if st.button("▶️ Start Demo", type="primary", width="stretch"):
         st.session_state.demo_mode = True
     
     if st.session_state.get('demo_mode', False):

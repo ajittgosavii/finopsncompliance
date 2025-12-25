@@ -1255,7 +1255,7 @@ def render_batch_remediation_ui():
     edited_df = st.data_editor(
         st.session_state.batch_threat_df,
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         key="batch_threat_selector",
         column_config={
             "Select": st.column_config.CheckboxColumn(
@@ -1283,7 +1283,7 @@ def render_batch_remediation_ui():
     if len(selected_threats) > 0:
         col_info, col_clear = st.columns([3, 1])
         with col_clear:
-            if st.button("🔄 Clear Selections", use_container_width=True):
+            if st.button("🔄 Clear Selections", width="stretch"):
                 st.session_state.refresh_threat_list = True
                 st.rerun()
     
@@ -1398,13 +1398,13 @@ def render_batch_remediation_ui():
     col_exec1, col_exec2 = st.columns([2, 1])
     
     with col_exec1:
-        if st.button("⚡ Execute Batch Remediation Now", type="primary", use_container_width=True):
+        if st.button("⚡ Execute Batch Remediation Now", type="primary", width="stretch"):
             st.session_state.batch_selected_threats = selected_threats
             st.session_state.batch_remediation_options = remediation_options
             execute_batch_remediation_ui(selected_threats, remediation_options)
     
     with col_exec2:
-        if st.button("📅 Schedule for Later", use_container_width=True):
+        if st.button("📅 Schedule for Later", width="stretch"):
             st.info("Schedule functionality coming soon!")
 
 

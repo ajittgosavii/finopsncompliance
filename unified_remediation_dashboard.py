@@ -411,7 +411,7 @@ class UnifiedRemediationDashboard:
             fig.add_vline(x=0.85, line_dash="dash", line_color="red", 
                          annotation_text="Auto-Remediate Threshold (85%)")
             fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         with col2:
             # Severity by confidence
@@ -429,7 +429,7 @@ class UnifiedRemediationDashboard:
                 category_orders={'severity': ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']}
             )
             fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         st.markdown("---")
     
@@ -796,12 +796,12 @@ class UnifiedRemediationDashboard:
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("🚀 Auto-Remediate All CRITICAL", type="primary", use_container_width=True):
+            if st.button("🚀 Auto-Remediate All CRITICAL", type="primary", width="stretch"):
                 critical_vulns = [v for v in all_vulns if v['severity'] == 'CRITICAL' and v['auto_remediate']]
                 self._execute_bulk_remediation(critical_vulns)
         
         with col2:
-            if st.button("⚡ Auto-Remediate All HIGH+CRITICAL", use_container_width=True):
+            if st.button("⚡ Auto-Remediate All HIGH+CRITICAL", width="stretch"):
                 high_critical_vulns = [v for v in all_vulns 
                                       if v['severity'] in ['CRITICAL', 'HIGH'] 
                                       and v['auto_remediate']]

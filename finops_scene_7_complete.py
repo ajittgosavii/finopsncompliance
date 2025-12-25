@@ -232,7 +232,7 @@ def render_predictive_finops_scene():
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
         
-        st.plotly_chart(fig_trend, use_container_width=True)
+        st.plotly_chart(fig_trend, width="stretch")
     
     with col_analysis2:
         # AI Insights Box
@@ -362,19 +362,19 @@ def render_predictive_finops_scene():
     col_action1, col_action2, col_action3, col_action4 = st.columns(4)
     
     with col_action1:
-        if st.button("🚀 Apply Recommendation", type="primary", use_container_width=True, key="apply_finops_rec"):
+        if st.button("🚀 Apply Recommendation", type="primary", width="stretch", key="apply_finops_rec"):
             st.session_state.finops_remediation_started = True
     
     with col_action2:
-        if st.button("📊 View Details", use_container_width=True, key="view_finops_details"):
+        if st.button("📊 View Details", width="stretch", key="view_finops_details"):
             st.info("Opening detailed cost analysis...")
     
     with col_action3:
-        if st.button("📅 Schedule Change", use_container_width=True, key="schedule_finops"):
+        if st.button("📅 Schedule Change", width="stretch", key="schedule_finops"):
             st.info("Scheduling during maintenance window...")
     
     with col_action4:
-        if st.button("📧 Notify Team", use_container_width=True, key="notify_finops_team"):
+        if st.button("📧 Notify Team", width="stretch", key="notify_finops_team"):
             st.success("Team notification sent!")
     
     # ============================================================================
@@ -556,7 +556,7 @@ def render_finops_dashboard_summary():
     ]
     
     df_opt = pd.DataFrame(optimizations)
-    st.dataframe(df_opt, use_container_width=True, hide_index=True)
+    st.dataframe(df_opt, width="stretch", hide_index=True)
 
 
 # ============================================================================

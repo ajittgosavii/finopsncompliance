@@ -12,6 +12,91 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import os
+
+# ============================================================================
+# HELPER: GET BOTO3 SESSION WITH CREDENTIALS FROM SECRETS
+# ============================================================================
+
+def get_boto3_session():
+    """
+    Get a boto3 session using credentials from Streamlit secrets or session state.
+    This ensures all AWS API calls use the correct credentials.
+    """
+    import boto3
+    
+    # First, try to get from session state (already validated)
+    if 'boto3_session' in st.session_state and st.session_state.boto3_session:
+        return st.session_state.boto3_session
+    
+    # Second, try to create from Streamlit secrets
+    try:
+        if 'aws' in st.secrets:
+            aws_secrets = st.secrets['aws']
+            # Support both naming conventions
+            access_key = aws_secrets.get('access_key_id') or aws_secrets.get('management_access_key_id')
+            secret_key = aws_secrets.get('secret_access_key') or aws_secrets.get('management_secret_access_key')
+            region = aws_secrets.get('region') or aws_secrets.get('default_region', 'us-east-1')
+            session_token = aws_secrets.get('session_token') or aws_secrets.get('aws_session_token')
+            
+            if access_key and secret_key:
+                # Strip whitespace from credentials
+                access_key = access_key.strip()
+                secret_key = secret_key.strip()
+                region = region.strip()
+                
+                session_kwargs = {
+                    'aws_access_key_id': access_key,
+                    'aws_secret_access_key': secret_key,
+                    'region_name': region
+                }
+                
+                # Add session token if present (for temporary credentials)
+                if session_token:
+                    session_kwargs['aws_session_token'] = session_token.strip()
+                
+                session = boto3.Session(**session_kwargs)
+                return session
+    except Exception as e:
+        print(f"Could not create boto3 session from secrets: {e}")
+    
+    # Third, try environment variables
+    env_kwargs = {}
+    if os.environ.get('AWS_ACCESS_KEY_ID') and os.environ.get('AWS_SECRET_ACCESS_KEY'):
+        env_kwargs['aws_access_key_id'] = os.environ['AWS_ACCESS_KEY_ID']
+        env_kwargs['aws_secret_access_key'] = os.environ['AWS_SECRET_ACCESS_KEY']
+        env_kwargs['region_name'] = os.environ.get('AWS_DEFAULT_REGION', 'us-east-1')
+        if os.environ.get('AWS_SESSION_TOKEN'):
+            env_kwargs['aws_session_token'] = os.environ['AWS_SESSION_TOKEN']
+        return boto3.Session(**env_kwargs)
+    
+    # Last resort: default boto3 session (may not have credentials)
+    return boto3.Session()
+
+
+def get_aws_client(service_name: str, region_name: str = None):
+    """
+    Get an AWS client for a specific service using credentials from secrets.
+    
+    Args:
+        service_name: AWS service name (e.g., 'organizations', 'securityhub')
+        region_name: Optional region override
+    
+    Returns:
+        boto3 client for the specified service
+    """
+    # First check if client exists in session state
+    if 'aws_clients' in st.session_state and st.session_state.aws_clients:
+        client = st.session_state.aws_clients.get(service_name)
+        if client:
+            return client
+    
+    # Create new client using session with credentials
+    session = get_boto3_session()
+    if region_name:
+        return session.client(service_name, region_name=region_name)
+    return session.client(service_name)
+
 
 # ============================================================================
 # ENTERPRISE AUTHENTICATION & RBAC
@@ -105,13 +190,37 @@ class EnterpriseAuth:
 class ControlTowerManager:
     """AWS Control Tower Integration with Demo/Live Mode Support"""
     
-    def __init__(self):
-        """Initialize Control Tower Manager"""
+    def __init__(self, org_client=None):
+        """Initialize Control Tower Manager
+        
+        Args:
+            org_client: Optional boto3 organizations client. If not provided,
+                       will try to get from session state or create new one.
+        """
         self.demo_mode = None  # Will be checked at runtime
+        self._org_client = org_client
         
     def _is_demo_mode(self):
         """Check if app is in demo mode"""
         return st.session_state.get('demo_mode', False)
+    
+    def _get_org_client(self):
+        """Get Organizations client from various sources"""
+        # First, use the client passed to constructor
+        if self._org_client:
+            return self._org_client
+        
+        # Second, try to get from session state (aws_clients)
+        aws_clients = st.session_state.get('aws_clients')
+        if aws_clients and aws_clients.get('organizations'):
+            return aws_clients.get('organizations')
+        
+        # Third, use the helper function that handles credentials properly
+        try:
+            return get_aws_client('organizations')
+        except Exception as e:
+            print(f"Could not create organizations client: {e}")
+            return None
     
     def get_landing_zone_status(self):
         """Get Control Tower landing zone status with demo/live support"""
@@ -128,11 +237,20 @@ class ControlTowerManager:
         else:
             # LIVE MODE - Connect to real AWS
             try:
-                import boto3
                 from botocore.exceptions import ClientError
                 
-                # Get AWS Organizations client
-                org_client = boto3.client('organizations')
+                # Get AWS Organizations client from session state
+                org_client = self._get_org_client()
+                
+                if not org_client:
+                    st.error("⚠️ AWS Organizations client not available. Please check your AWS credentials.")
+                    return {
+                        'status': 'ERROR',
+                        'version': 'N/A',
+                        'drift_status': 'ERROR',
+                        'accounts_managed': 0,
+                        'guardrails_enabled': 0
+                    }
                 
                 try:
                     # Get actual account count
@@ -212,10 +330,13 @@ class ControlTowerManager:
         else:
             # LIVE MODE - Get real OUs from AWS Organizations
             try:
-                import boto3
                 from botocore.exceptions import ClientError
                 
-                org_client = boto3.client('organizations')
+                org_client = self._get_org_client()
+                
+                if not org_client:
+                    st.error("⚠️ AWS Organizations client not available. Please check your AWS credentials.")
+                    return [{'id': 'error', 'name': 'No AWS connection', 'accounts': 0, 'compliance': 0}]
                 
                 try:
                     # Get root
@@ -278,10 +399,10 @@ class ControlTowerManager:
         else:
             # LIVE MODE - Actually provision account via AWS Organizations
             try:
-                import boto3
                 from botocore.exceptions import ClientError
                 
-                org_client = boto3.client('organizations')
+                # Use helper function to get client with proper credentials
+                org_client = get_aws_client('organizations')
                 
                 try:
                     # Create actual AWS account
@@ -448,7 +569,11 @@ def init_enterprise_session():
         st.session_state.authenticated = False
         st.session_state.user = None
         st.session_state.last_activity = datetime.now()
-        st.session_state.ct_manager = ControlTowerManager()
+        # Get organizations client from aws_clients if available
+        org_client = None
+        if 'aws_clients' in st.session_state and st.session_state.aws_clients:
+            org_client = st.session_state.aws_clients.get('organizations')
+        st.session_state.ct_manager = ControlTowerManager(org_client=org_client)
         st.session_state.cost_monitor = RealTimeCostMonitor()
 
 def render_enterprise_login():
@@ -468,7 +593,7 @@ def render_enterprise_login():
         with st.form("login_form"):
             email = st.text_input("Email", placeholder="user@company.com")
             password = st.text_input("Password", type="password", placeholder="demo123")
-            submit = st.form_submit_button("Sign In", use_container_width=True, type="primary")
+            submit = st.form_submit_button("Sign In", width="stretch", type="primary")
             
             if submit:
                 user = EnterpriseAuth.authenticate(email, password)
@@ -503,7 +628,7 @@ def render_enterprise_header():
         </div>
         """, unsafe_allow_html=True)
     with col2:
-        if st.button("🚪 Logout", use_container_width=True):
+        if st.button("🚪 Logout", width="stretch"):
             st.session_state.authenticated = False
             st.session_state.user = None
             st.rerun()
@@ -516,24 +641,24 @@ def render_enterprise_sidebar():
     
     # CFO Dashboard
     if EnterpriseAuth.check_permission(user, 'dashboard:cfo:tenant'):
-        if st.button("💰 CFO Dashboard", use_container_width=True, key="nav_cfo"):
+        if st.button("💰 CFO Dashboard", width="stretch", key="nav_cfo"):
             st.session_state.enterprise_page = 'cfo'
             st.rerun()
     
     # Control Tower
     if EnterpriseAuth.check_permission(user, 'controltower:read:tenant'):
-        if st.button("🏗️ Control Tower", use_container_width=True, key="nav_ct"):
+        if st.button("🏗️ Control Tower", width="stretch", key="nav_ct"):
             st.session_state.enterprise_page = 'controltower'
             st.rerun()
     
     # Real-Time Costs
     if EnterpriseAuth.check_permission(user, 'finops:read:tenant'):
-        if st.button("💸 Real-Time Costs", use_container_width=True, key="nav_rtc"):
+        if st.button("💸 Real-Time Costs", width="stretch", key="nav_rtc"):
             st.session_state.enterprise_page = 'realtime_costs'
             st.rerun()
     
     # Main Dashboard
-    if st.button("🏠 Main Dashboard", use_container_width=True, key="nav_main"):
+    if st.button("🏠 Main Dashboard", width="stretch", key="nav_main"):
         st.session_state.enterprise_page = None
         st.rerun()
     
@@ -552,15 +677,13 @@ def fetch_aws_live_data():
     Returns: Complete data dictionary with real AWS data
     """
     try:
-        import boto3
         from botocore.exceptions import ClientError, NoCredentialsError
-        from datetime import datetime, timedelta
         
-        # Initialize AWS clients
-        ce_client = boto3.client('ce', region_name='us-east-1')
-        sh_client = boto3.client('securityhub')
-        config_client = boto3.client('config')
-        org_client = boto3.client('organizations')
+        # Initialize AWS clients using helper function with proper credentials
+        ce_client = get_aws_client('ce', region_name='us-east-1')
+        sh_client = get_aws_client('securityhub')
+        config_client = get_aws_client('config')
+        org_client = get_aws_client('organizations')
         
         # Date range for queries
         end_date = datetime.now().date()
@@ -1197,7 +1320,7 @@ def render_cfo_dashboard():
     st.markdown("---")
     st.markdown("### 💳 Department Chargeback/Showback")
     chargeback = st.session_state.cost_monitor.get_chargeback_data()
-    st.dataframe(pd.DataFrame(chargeback), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(chargeback), width="stretch", hide_index=True)
 
 def render_enhanced_cfo_dashboard():
     """Enhanced CFO Executive Dashboard with comprehensive data integration"""
@@ -1352,7 +1475,7 @@ def render_enhanced_cfo_dashboard():
                 height=350
             )
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         with col2:
             st.markdown("#### 🔮 Forecast")
@@ -1401,7 +1524,7 @@ def render_enhanced_cfo_dashboard():
                 hole=0.4
             )
             fig.update_traces(textposition='inside', textinfo='percent+label')
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         with tab2:
             # Region breakdown bar chart
@@ -1414,7 +1537,7 @@ def render_enhanced_cfo_dashboard():
                 color_continuous_scale='Viridis'
             )
             fig.update_layout(showlegend=False, yaxis_tickformat='$,.0f')
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         with tab3:
             # Environment breakdown
@@ -1424,7 +1547,7 @@ def render_enhanced_cfo_dashboard():
                 title="Cost Distribution by Environment"
             )
             fig.update_traces(textinfo='value+percent total')
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         st.markdown("---")
         
@@ -1465,7 +1588,7 @@ def render_enhanced_cfo_dashboard():
                 height=350
             )
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         with col2:
             st.markdown("#### 🎯 Efficiency Scores")
@@ -1493,7 +1616,7 @@ def render_enhanced_cfo_dashboard():
                 'MoM Change': f"{dept['cost_change']:+.1f}%"
             })
         
-        st.dataframe(pd.DataFrame(dept_display), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(dept_display), width="stretch", hide_index=True)
         
         st.markdown("---")
         
@@ -1596,7 +1719,7 @@ def render_enhanced_cfo_dashboard():
                 'Implementation': opt['effort']
             })
         
-        st.dataframe(pd.DataFrame(opt_display), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(opt_display), width="stretch", hide_index=True)
         
         # Quick wins vs Strategic initiatives (Dynamic from data)
         col1, col2 = st.columns(2)
@@ -1811,13 +1934,13 @@ def render_enhanced_cfo_dashboard():
         # Export buttons
         col1, col2, col3 = st.columns(3)
         with col1:
-            if st.button("📊 Export to PDF", use_container_width=True):
+            if st.button("📊 Export to PDF", width="stretch"):
                 st.info("PDF export functionality coming soon")
         with col2:
-            if st.button("📧 Email Report", use_container_width=True):
+            if st.button("📧 Email Report", width="stretch"):
                 st.info("Email functionality coming soon")
         with col3:
-            if st.button("📅 Schedule Report", use_container_width=True):
+            if st.button("📅 Schedule Report", width="stretch"):
                 st.info("Scheduling functionality coming soon")
         
     except ZeroDivisionError as e:
@@ -1847,13 +1970,24 @@ def render_control_tower():
     # ⚠️ CRITICAL: Check and display mode
     is_demo = st.session_state.get('demo_mode', False)
     
+    # ⚠️ CRITICAL: Re-initialize ct_manager with current AWS credentials
+    # This ensures we use the latest credentials from session state
+    org_client = None
+    if 'aws_clients' in st.session_state and st.session_state.aws_clients:
+        org_client = st.session_state.aws_clients.get('organizations')
+    st.session_state.ct_manager = ControlTowerManager(org_client=org_client)
+    
     # Title with mode indicator
     if is_demo:
         st.title("🏗️ AWS Control Tower Management 🟠 DEMO MODE")
         st.warning("📊 Demo Mode: Showing sample data (127 accounts, 45 guardrails)")
     else:
         st.title("🏗️ AWS Control Tower Management 🟢 LIVE MODE")
-        st.info("🔗 Connected to your AWS Organization")
+        # Check if AWS is connected
+        if st.session_state.get('aws_connected') and org_client:
+            st.info("🔗 Connected to your AWS Organization")
+        else:
+            st.warning("⚠️ AWS credentials not configured. Please configure AWS credentials in sidebar.")
     
     ct = st.session_state.ct_manager
     lz = ct.get_landing_zone_status()
@@ -1870,7 +2004,7 @@ def render_control_tower():
     st.markdown("---")
     st.markdown("### 🏢 Organizational Units")
     ous = ct.get_organizational_units()
-    st.dataframe(pd.DataFrame(ous), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(ous), width="stretch", hide_index=True)
     
     st.markdown("---")
     
@@ -1893,7 +2027,7 @@ def render_control_tower():
         
         button_label = "🚀 Provision Account (Simulation)" if is_demo else "🚀 Provision Account (LIVE - Creates Real Account!)"
         
-        if st.form_submit_button(button_label, type="primary", use_container_width=True):
+        if st.form_submit_button(button_label, type="primary", width="stretch"):
             start_time = time.time()
             with st.spinner("Provisioning via Account Factory..."):
                 progress = st.progress(0)

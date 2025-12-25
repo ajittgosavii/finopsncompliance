@@ -547,12 +547,12 @@ def render_ai_threat_analysis_scene():
         st.markdown("**Analyze this threat with Claude AI:**")
     
     with col_action2:
-        if st.button("🤖 Analyze with AI", type="primary", use_container_width=True, key="analyze_threat"):
+        if st.button("🤖 Analyze with AI", type="primary", width="stretch", key="analyze_threat"):
             st.session_state.ai_analysis_started = True
             st.session_state.current_threat_id = selected_threat['threat_id']
     
     with col_action3:
-        if st.button("📋 View Details", use_container_width=True, key="view_details"):
+        if st.button("📋 View Details", width="stretch", key="view_details"):
             with st.expander("📋 Full Event Details", expanded=True):
                 st.json(selected_threat.get('event_details', {}))
     
@@ -776,7 +776,7 @@ def render_remediation_section(threat: Dict):
     
     with col_remediate2:
         st.markdown("&nbsp;")
-        if st.button("🚀 Execute Remediation", type="primary", use_container_width=True, key="execute_remediation"):
+        if st.button("🚀 Execute Remediation", type="primary", width="stretch", key="execute_remediation"):
             if remediation_options:
                 st.session_state.remediation_started = True
                 st.session_state.selected_remediation_actions = remediation_options
