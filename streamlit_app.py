@@ -6730,24 +6730,37 @@ def render_sidebar():
             # Add Test Credentials button for debugging
             if has_aws:
                 if st.button("🧪 Test AWS Credentials", key="test_aws_creds"):
-                    with st.spinner("Testing credentials..."):
+                    with st.spinner("Testing credentials with AssumeRole..."):
                         try:
-                            import boto3
-                            # Get session token if present
-                            aws_session_token = aws_secrets.get('session_token') or aws_secrets.get('aws_session_token')
-                            
-                            session_kwargs = {
-                                'aws_access_key_id': aws_access_key.strip(),
-                                'aws_secret_access_key': aws_secret_key.strip(),
-                                'region_name': aws_region.strip()
-                            }
-                            if aws_session_token:
-                                session_kwargs['aws_session_token'] = aws_session_token.strip()
+                            # Use aws_connector which handles AssumeRole
+                            if AWS_CONNECTOR_AVAILABLE:
+                                from aws_connector import get_aws_session, test_aws_connection
+                                session = get_aws_session()
+                                if session:
+                                    success, message, identity = test_aws_connection(session)
+                                    if success:
+                                        st.success(f"✅ Credentials VALID (with AssumeRole)!\n\nAccount: `{identity.get('account', 'Unknown')}`\n\nARN: `{identity.get('arn', 'Unknown')}`")
+                                    else:
+                                        st.error(f"❌ Connection test failed: {message}")
+                                else:
+                                    st.error("❌ Could not create AWS session")
+                            else:
+                                # Fallback to direct test
+                                import boto3
+                                aws_session_token = aws_secrets.get('session_token') or aws_secrets.get('aws_session_token')
                                 
-                            test_session = boto3.Session(**session_kwargs)
-                            sts = test_session.client('sts')
-                            identity = sts.get_caller_identity()
-                            st.success(f"✅ Credentials VALID!\n\nAccount: `{identity['Account']}`\n\nARN: `{identity['Arn']}`")
+                                session_kwargs = {
+                                    'aws_access_key_id': aws_access_key.strip(),
+                                    'aws_secret_access_key': aws_secret_key.strip(),
+                                    'region_name': aws_region.strip()
+                                }
+                                if aws_session_token:
+                                    session_kwargs['aws_session_token'] = aws_session_token.strip()
+                                    
+                                test_session = boto3.Session(**session_kwargs)
+                                sts = test_session.client('sts')
+                                identity = sts.get_caller_identity()
+                                st.success(f"✅ Base Credentials VALID!\n\nAccount: `{identity['Account']}`\n\nARN: `{identity['Arn']}`\n\n⚠️ Note: AssumeRole not tested")
                         except Exception as e:
                             error_msg = str(e)
                             tips = []
@@ -6759,6 +6772,8 @@ def render_sidebar():
                                 tips.append("Check secrets.toml format - values with special chars (+/=) must be quoted")
                                 if aws_access_key.startswith('ASIA'):
                                     tips.append("You're using temp credentials (ASIA...) - add session_token to secrets.toml")
+                            if 'AccessDenied' in error_msg:
+                                tips.append("AssumeRole failed - check role_arn and external_id in secrets")
                             
                             tip_text = "\n".join([f"• {t}" for t in tips]) if tips else "Check your secrets.toml format"
                             st.error(f"❌ Credentials FAILED:\n\n`{error_msg}`\n\n**Tips:**\n{tip_text}")
